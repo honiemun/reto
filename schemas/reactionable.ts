@@ -19,15 +19,9 @@ const reactionableSchema = new mongoose.Schema({
 	},
 
 	// The ID of the emoji this reactionable belongs to, if it's a custom emoji.
-	customEmojiId: {
-		type: Number,
-		required: false,
-	},
-
-	// The name of the emoji this reactionable belongs to, if it's a default Discord emoji.
-	defaultEmojiId: {
+	emojiId: {
 		type: String,
-		required: false,
+		required: true,
 	},
 
 	// The ID of the channel this reactionable sends a post to.
