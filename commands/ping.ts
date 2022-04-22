@@ -6,6 +6,7 @@ export default {
 
 	slash: 'both',
 	testOnly: true, // This only works for test servers!
+	guildOnly: false,
 
 	callback: ({}) => {
 		return '🏓 **Pong!**';

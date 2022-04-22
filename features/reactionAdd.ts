@@ -1,6 +1,9 @@
 import { Client, TextChannel } from 'discord.js'
 import WOKCommands from 'wokcommands'
 
+// Schemas
+import guildSchema from '../schemas/guild';
+
 export default (client: Client, instance: WOKCommands) => {
   // Listen for new members joining a guild
   client.on('messageReactionAdd', async (reaction, user) => {
@@ -14,9 +17,17 @@ export default (client: Client, instance: WOKCommands) => {
         return;
       }
     }
-  
-    console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
-    console.log(`${reaction.count} user(s) have given the same reaction to this message!`);
+
+    // Ignore bots
+    if (user.bot) return;
+    
+    guildSchema.findOne({ id: reaction.message.guildId }, function (err: any, guildData: any) {
+      // for each guilddata
+      guildData.entries(Object).forEach((guildElement: any) => {
+        console.log(guildElement);
+      });
+    });
+    
   });
 }
 

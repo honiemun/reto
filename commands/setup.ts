@@ -13,20 +13,18 @@ export default {
 
 	callback: async ({ interaction: msgInt, channel, guild }) => {
 
-		var plus = ''
-		var minus = ''
+		var plus = '👍'
+		var minus = '👎'
 		
 		const row = new MessageActionRow()
-			// Classic PLUS and MINUS
 			.addComponents(
+				// Classic PLUS and MINUS
 				new MessageButton()
 					.setCustomId('classicEmojis')
 					.setEmoji('911308508891336715')
 					.setLabel('Classic')
-					.setStyle('PRIMARY')
-			)
-			// Native :+1: and :-1:
-			.addComponents(
+					.setStyle('PRIMARY'),
+				// Native :+1: and :-1:
 				new MessageButton()
 					.setCustomId('nativeEmojis')
 					.setEmoji('👍')
@@ -43,11 +41,6 @@ export default {
 			components: [row]
 		})
 
-		const filter = (btnInt: ButtonInteraction) => {
-			// This message is only viewable to the person that executed the command.
-			return msgInt.user.id === btnInt.user.id;
-		}
-
 		const collector = channel.createMessageComponentCollector({
 			max: 1,
 			time: 1000 * 15,
@@ -63,19 +56,24 @@ export default {
 		collector.on('end', (collection) => {
 			switch (collection.first()?.customId) {
 				case 'classicEmojis':
+					// this doesnt work obviously bc it thinks its a local variable
+					// NO YOU DIPSHIT IT ISNT
+					// cant be arsed to find the syntax
+					// in an ideal world this code would be wrapped in a function, and i could just return the values i need
+					// unfortunately discord.js shits the bed and pisses and cums whenever i try to do that inside a collector.on
 					plus = '911308508891336715'
 					minus = '911308510388707358'
 
 				case 'nativeEmojis':
-					// no funca, esta TODO MAL
 					plus = '👍'
 					minus = '👎'
 			}
 		})
-	
+		
+		// upsert the guild database
+		// dont mind the usage of plus and minus im just testing, havent figured out how i wanna structure this yet
 		await guildSchema.findOneAndUpdate({ guildId: guild?.id }, {
 			guildId: guild?.id,
-			karmaName: guild?.name + ' Karma',
 			reactionables: [
 				{
 					// The default PLUS element.
