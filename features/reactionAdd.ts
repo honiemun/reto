@@ -1,4 +1,4 @@
-import { Client, TextChannel } from 'discord.js'
+import { Client, Emoji, TextChannel } from 'discord.js'
 import WOKCommands from 'wokcommands'
 
 // Schemas
@@ -22,10 +22,17 @@ export default (client: Client, instance: WOKCommands) => {
     if (user.bot) return;
     
     guildSchema.findOne({ id: reaction.message.guildId }, function (err: any, guildData: any) {
-      // for each guilddata
-      guildData.entries(Object).forEach((guildElement: any) => {
-        console.log(guildElement);
-      });
+      // For each Reactionable that exists inside this guild:
+      for (const i in guildData) {
+        if (guildData.hasOwnProperty(i) && guildData[i].reactionables) {
+          for (const j in guildData[i].reactionables) {
+            // If any emoji's ID on this server's reactionable list matches the emoji that we reacted with:
+            if (guildData[i].reactionables[j].emojiId == reaction.emoji.name || guildData[i].reactionables[j].emojiId == reaction.emoji.id) {
+              console.log("Emoji found!")
+            }
+          }
+        }
+      }
     });
     
   });
