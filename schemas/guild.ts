@@ -32,13 +32,15 @@ const guildSchema = new mongoose.Schema({
 	},
 
 	// The guild's Karma scores for each User.
-	members: [memberSchema.schema],
+	// TO-DO: This doesn't show up. Fix please :)
+	members: memberSchema.schema,
 
 	// An array of every Reactionable object a server has.
 	reactionables: [reactionableSchema.schema],
 
 	// An array of every User object a server has.
-	users: [userSchema.schema]
+	// TO-DO: This doesn't show up, either. Fix please :)
+	users: userSchema.schema
 });
 
 export default mongoose.model("guild", guildSchema);
