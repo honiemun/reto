@@ -1,10 +1,9 @@
 import { Client, Emoji, Guild, PartialUser, TextChannel, User } from 'discord.js'
+import Karma from '../classes/karma';
 import WOKCommands from 'wokcommands'
 
 // Schemas
 import guildSchema from '../schemas/guild';
-import userSchema from '../schemas/user';
-import memberSchema from '../schemas/member';
 
 export default (client: Client, instance: WOKCommands) => {
   // Listen for new members joining a guild
@@ -37,7 +36,7 @@ export default (client: Client, instance: WOKCommands) => {
               // AWARD KARMA
               if (currentReactionable.karmaAwarded != 0) {
                 console.log('Award ' + currentReactionable.karmaAwarded + ' to ' + user.username);
-                awardKarmaToUser(currentReactionable.karmaAwarded, user.id, reaction.message.guildId);
+                Karma.awardKarmaToUser(currentReactionable.karmaAwarded, user.id, reaction.message.guildId);
               }
 
             }
@@ -47,22 +46,6 @@ export default (client: Client, instance: WOKCommands) => {
     });
     
   });
-}
-
-async function awardKarmaToUser (karmaToAward: Number, userId: string, guildId: string | null) {
-  // Update the user's global karma
-  await userSchema.findOneAndUpdate(
-    { userId: userId },
-    { $inc : { 'globalKarma' : karmaToAward } },
-    { upsert: true }
-  ).exec();
-
-  // Update the user's karma on the specified guild
-  await memberSchema.findOneAndUpdate(
-    { userId: userId, guildId: guildId },
-    { $inc : { 'karma' : karmaToAward } },
-    { upsert: true }
-  ).exec();
 }
 
 const config = {
