@@ -6,7 +6,7 @@ Keeps track of users, their current Karma scores,
 and other miscellaneous per-user settings.
 */
 
-const userSchema = new mongoose.Schema({
+const messageSchema = new mongoose.Schema({
 
 	// The message's id.
 	messageId: {
@@ -34,4 +34,4 @@ const userSchema = new mongoose.Schema({
 	}
 });
 
-export default mongoose.model("user", userSchema);
+export default mongoose.model("message", messageSchema);

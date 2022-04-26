@@ -1,8 +1,10 @@
 import userSchema from '../schemas/user';
 import memberSchema from '../schemas/member';
+import messageSchema from '../schemas/message';
 
 export default class Karma {
-	static async awardKarmaToUser (karmaToAward: Number, userId: string, guildId: string | null) {
+	static async awardKarmaToUser (karmaToAward: number, userId: string, guildId: string | null, messageId: string | null) {
+
 		// Update the user's global karma
 		await userSchema.findOneAndUpdate(
 			{ userId: userId },
@@ -17,6 +19,14 @@ export default class Karma {
 			{ upsert: true }
 		).exec();
 
-		// TO-DO: Add points to a Message object
+		// Update the message's karma
+		await messageSchema.findOneAndUpdate(
+			{ messageId: messageId },
+			{
+				$set: { 'userId': userId, 'guildId': guildId },
+				$inc : { 'karma' : karmaToAward }
+			},
+			{ upsert: true }
+		).exec();
 	}
 }

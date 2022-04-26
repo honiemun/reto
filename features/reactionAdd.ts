@@ -1,4 +1,4 @@
-import { Client, Emoji, Guild, PartialUser, TextChannel, User } from 'discord.js'
+import { Client, Emoji, Guild, MessageReaction, PartialMessageReaction, PartialUser, TextChannel, User } from 'discord.js'
 import Karma from '../classes/karma';
 import WOKCommands from 'wokcommands'
 
@@ -6,8 +6,8 @@ import WOKCommands from 'wokcommands'
 import guildSchema from '../schemas/guild';
 
 export default (client: Client, instance: WOKCommands) => {
-  // Listen for new members joining a guild
-  client.on('messageReactionAdd', async (reaction, user) => {
+
+  async function messageReactionHandler (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser, isPositive: boolean) {
     // Partial messages are those that haven't been cached,
     // and require being fetched before use.
     if (reaction.partial) {
@@ -23,7 +23,7 @@ export default (client: Client, instance: WOKCommands) => {
     if (user.bot) return;
 
     // TODO: Ignore oneself
-    
+
     guildSchema.findOne({ id: reaction.message.guildId }, function (err: any, guildData: any) {
       // For each Reactionable that exists inside this guild:
       for (const i in guildData) {
@@ -35,16 +35,27 @@ export default (client: Client, instance: WOKCommands) => {
               
               // AWARD KARMA
               if (currentReactionable.karmaAwarded != 0) {
-                console.log('Award ' + currentReactionable.karmaAwarded + ' to ' + user.username);
-                Karma.awardKarmaToUser(currentReactionable.karmaAwarded, user.id, reaction.message.guildId);
+                // Invert value if positive is null (for removing Karma from user)
+		            var karmaToAward: number = isPositive ? currentReactionable.karmaAwarded : currentReactionable.karmaAwarded * -1;
+                console.log('Give ' + karmaToAward + ' to ' + user.username);
+                
+                Karma.awardKarmaToUser(karmaToAward, user.id, reaction.message.guildId, reaction.message.id);
               }
-
             }
           }
         }
       }
     });
-    
+  }
+
+  // On reaction added
+  client.on('messageReactionAdd', async (reaction, user) => {
+    messageReactionHandler(reaction, user, true);
+  });
+
+  // On reaction removed
+  client.on('messageReactionRemove', async (reaction, user) => {
+    messageReactionHandler(reaction, user, false);
   });
 }
 

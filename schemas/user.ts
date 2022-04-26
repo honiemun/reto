@@ -21,6 +21,13 @@ const userSchema = new mongoose.Schema({
 		type: Number,
 		required: true,
 		default: 0
+	},
+
+	// Whether the user wants their messages to be stored.
+	canStoreMessages: {
+		type: Boolean,
+		required: true,
+		default: true
 	}
 });
 
