@@ -20,6 +20,7 @@ export default class Karma {
 		).exec();
 
 		// Update the message's karma
+		// TO-DO: Check for user's canStoreMessages permission first
 		await messageSchema.findOneAndUpdate(
 			{ messageId: messageId },
 			{
@@ -28,5 +29,9 @@ export default class Karma {
 			},
 			{ upsert: true }
 		).exec();
+	}
+
+	static async sendKarmaNotification (reactionable: Object, guild: Object) {
+		console.log("LMAO")
 	}
 }

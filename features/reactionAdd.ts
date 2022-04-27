@@ -41,6 +41,9 @@ export default (client: Client, instance: WOKCommands) => {
                 
                 Karma.awardKarmaToUser(karmaToAward, user.id, reaction.message.guildId, reaction.message.id);
               }
+
+              // SEND NOTIFICATION
+              Karma.sendKarmaNotification(currentReactionable, guildData);
             }
           }
         }

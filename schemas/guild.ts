@@ -31,6 +31,14 @@ const guildSchema = new mongoose.Schema({
 		required: false
 	},
 
+	// The type of confirmation that is sent after a Reactionable triggers in this guild.
+	// Can be one of three values: Message, Reaction and None.
+	reactionConfirmation: {
+		type: String,
+		required: false,
+		default: "Message"
+	},
+
 	// The guild's Karma scores for each User.
 	// TO-DO: This doesn't show up. Fix please :)
 	members: memberSchema.schema,
