@@ -1,8 +1,9 @@
+import { Guild } from "discord.js";
 import Setup from "../classes/setup"
 
 export const embeds = [
     {
-        id: "setupType",
+        id: "chooseSetupType",
         embed: {
             color: 0,
             title: "Welcome to Reto's setup wizard!",
@@ -22,11 +23,11 @@ export const embeds = [
         },
         components: [
             {
-                "id": "quickSetup",
-                "label": "Quick setup",
-                "style": "PRIMARY",
-                "disabled": false,
-                "function": function() { Setup.testFunction("Hello!"); }
+                id: "quickSetup",
+                label: "Quick setup",
+                style: "PRIMARY",
+                disabled: false,
+                function: function(guild: Guild) { Setup.quickSetup(guild); }
             },
             {
                 id: "advancedSetup",

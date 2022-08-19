@@ -18,9 +18,9 @@ const reactableSchema = new mongoose.Schema({
 		required: true
 	},
 
-	// The ID of the emoji this reactable belongs to, if it's a custom emoji.
-	emojiId: {
-		type: String,
+	// The ID of the emoji this reactable belongs to.
+	emojiIds: {
+		type: Array,
 		required: true,
 	},
 
@@ -48,6 +48,13 @@ const reactableSchema = new mongoose.Schema({
 		type: Boolean,
 		required: false,
 		default: false
+	},
+
+	// The message this reactable sends to the channel it's been reacted on,
+	// if the Guild has messageConfirmation on.
+	messageConfirmation: {
+		type: String,
+		required: false
 	}
 });
 

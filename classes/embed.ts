@@ -75,9 +75,9 @@ export default class Embed {
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
 					// Create the next step
-					this.createEmbed(component.id, msgInt, channel);
+					component.next ? this.createEmbed(component.next, msgInt, channel) : this.createEmbed(component.id, msgInt, channel);
 					// Execute function
-					if (component.function) component.function();
+					if (component.function) component.function(channel.guild);
 				}
 			}
 		})

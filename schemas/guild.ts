@@ -31,19 +31,26 @@ const guildSchema = new mongoose.Schema({
 		required: false
 	},
 
-	// The type of confirmation that is sent after a Reactable triggers in this guild.
-	// Can be one of three values: Message, Reaction and None.
-	reactionConfirmation: {
-		type: String,
+	// Determines if the message confirmation for this guild is enabled.
+	// If this is not set, the guild will use Reaction confirmations.
+	messageConfirmation: {
+		type: Boolean,
 		required: false,
-		default: "Message"
+		default: false
 	},
 
 	// The emoji that is used to react to messages after a successful Reactable execution.
-	// Only used if reactionConfirmation = "Reaction".
+	// Only used if messageConfirmation is False.
 	reactionConfirmationEmoji: {
 		type: String,
 		required: false
+	},
+
+	// Determines if the guild can be seen in public-related commands, such as Global Leaderboards.
+	public: {
+		type: Boolean,
+		required: false,
+		default: false
 	},
 
 	// The guild's Karma scores for each User.

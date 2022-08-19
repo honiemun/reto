@@ -31,6 +31,7 @@ export default (client: Client, instance: WOKCommands) => {
           for (const j in guildData[i].reactables) {
             var currentReactable = guildData[i].reactables[j];
             // If any emoji's ID on this server's reactable list matches the emoji that we reacted with:
+            // TO-DO: Make this work with emojiIds (an array!)
             if (currentReactable.emojiId == reaction.emoji.name || currentReactable.emojiId == reaction.emoji.id) {
               
               // AWARD KARMA
