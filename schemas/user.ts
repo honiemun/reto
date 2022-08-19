@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
 
 	// The user's global karma count.
 	// This is shared across servers, and can be incremented
-	// or decreased by Reactionables with the globalKarma flag set.
+	// or decreased by Reactables with the globalKarma flag set.
 	globalKarma: {
 		type: Number,
 		required: true,

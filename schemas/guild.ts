@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import reactionableSchema from './reactionable';
+import reactableSchema from './reactable';
 import userSchema from './user';
 import memberSchema from './member';
 
@@ -31,7 +31,7 @@ const guildSchema = new mongoose.Schema({
 		required: false
 	},
 
-	// The type of confirmation that is sent after a Reactionable triggers in this guild.
+	// The type of confirmation that is sent after a Reactable triggers in this guild.
 	// Can be one of three values: Message, Reaction and None.
 	reactionConfirmation: {
 		type: String,
@@ -39,12 +39,19 @@ const guildSchema = new mongoose.Schema({
 		default: "Message"
 	},
 
+	// The emoji that is used to react to messages after a successful Reactable execution.
+	// Only used if reactionConfirmation = "Reaction".
+	reactionConfirmationEmoji: {
+		type: String,
+		required: false
+	},
+
 	// The guild's Karma scores for each User.
 	// TO-DO: This doesn't show up. Fix please :)
 	members: memberSchema.schema,
 
-	// An array of every Reactionable object a server has.
-	reactionables: [reactionableSchema.schema],
+	// An array of every Reactable object a server has.
+	reactables: [reactableSchema.schema],
 
 	// An array of every User object a server has.
 	// TO-DO: This doesn't show up, either. Fix please :)
