@@ -1,6 +1,6 @@
 import { CommandInteraction, MessageActionRow, MessageButton, MessageEmbed, MessageButtonStyleResolvable, TextChannel, ButtonInteraction } from 'discord.js';
 import Setup from './setup';
-import embeds from '../json/embeds.json';
+import { embeds } from '../data/embeds';
 
 export default class Embed {
 
@@ -76,6 +76,8 @@ export default class Embed {
 				if (component.id === i.customId) {
 					// Create the next step
 					this.createEmbed(component.id, msgInt, channel);
+					// Execute function
+					if (component.function) component.function();
 				}
 			}
 		})

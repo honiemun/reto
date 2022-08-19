@@ -1,11 +1,13 @@
-[
+import Setup from "../classes/setup"
+
+export const embeds = [
     {
-        "id": "setupType",
-        "embed": {
-            "color": 0,
-            "title": "Welcome to Reto's setup wizard!",
-            "description": "To get started, pick out what kind of setup process you'd like.",
-            "fields": [
+        id: "setupType",
+        embed: {
+            color: 0,
+            title: "Welcome to Reto's setup wizard!",
+            description: "To get started, pick out what kind of setup process you'd like.",
+            fields: [
                 {
                     "name": "Quick setup",
                     "inline": true,
@@ -18,40 +20,41 @@
                 }
             ]
         },
-        "components": [
+        components: [
             {
                 "id": "quickSetup",
                 "label": "Quick setup",
                 "style": "PRIMARY",
-                "disabled": false
+                "disabled": false,
+                "function": function() { Setup.testFunction("Hello!"); }
             },
             {
-                "id": "advancedSetup",
-                "label": "Advanced setup",
-                "style": "SECONDARY",
-                "disabled": true
+                id: "advancedSetup",
+                label: "Advanced setup",
+                style: "SECONDARY",
+                disabled: true
             }
         ]
     },
     {
-        "id": "quickSetup",
-        "embed": {
-            "color": 0,
-            "title": "Quick setup",
-            "description": "Placeholder"
+        id: "quickSetup",
+        embed: {
+            color: 0,
+            title: "Quick setup",
+            description: "Placeholder"
         },
-        "components": [
+        components: [
             {
-                "id": "plus",
-                "label": "Plus",
-                "style": "PRIMARY",
-                "disabled": false
+                id: "plus",
+                label: "Plus",
+                style: "PRIMARY",
+                disabled: false
             },
             {
-                "id": "minus",
-                "label": "Minus",
-                "style": "SECONDARY",
-                "disabled": false
+                id: "minus",
+                label: "Minus",
+                style: "SECONDARY",
+                disabled: false
             }
         ]
     }
