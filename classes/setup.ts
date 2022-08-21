@@ -76,7 +76,12 @@ export default class Setup {
                 for (const emojiId of reactable.emojiIds) {
                     const emoji = guild.emojis.cache.find(emoji => emoji.id === emojiId);
                     if (emoji) {
-                        await emoji.delete();
+                        try {
+                            await emoji.delete();
+                        } catch (error) {
+                            // This sometimes errors out "Unknown Emoji". No idea why that is, but it shouldn't be a problem.
+                            console.log(error);
+                        }
                     }
                 }
 

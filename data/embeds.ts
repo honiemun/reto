@@ -80,6 +80,7 @@ export const embeds = [
             {
                 id: "serverPublic",
                 label: "Set server as Public",
+                next: "done",
                 style: "PRIMARY",
                 disabled: false,
                 function: function(guild: Guild) { Setup.setPublicServer(guild); }
@@ -87,6 +88,7 @@ export const embeds = [
             {
                 id: "serverPrivate",
                 label: "Set server as Private",
+                next: "done",
                 style: "SECONDARY",
                 disabled: false
             }
@@ -97,10 +99,7 @@ export const embeds = [
         embed: {
             color: 0,
             title: "Setup complete!",
-            description: "You're all set up! You can now use Reto in your server!\nTo change any of these settings, you can re-run `/setup` anytime.\n\nA Getting Started guide is available on your designated `#best-of` channel, or by using the `/guide` command. *(currently not implemented)*",
-            footer: {
-                text: "Thanks for using Reto!\n\n[Join the support server](https://discord.gg/reto) for help, or to report bugs or suggest features!"
-            }
+            description: "You're all set up! You can now use Reto in your server!\nTo change any of these settings, you can re-run `/setup` anytime.\n\nA Getting Started guide is available on your designated `#best-of` channel, or by using the `/guide` command. *(currently not implemented)*\n\nThanks for using Reto!\n[Join the support server](https://discord.gg/reto) for help, or to report bugs or suggest features!",
         }
     }
 ]

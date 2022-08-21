@@ -1,10 +1,11 @@
 import userSchema from '../schemas/user';
 import memberSchema from '../schemas/member';
 import messageSchema from '../schemas/message';
-import { User } from 'discord.js';
+import { User, PartialUser, Message, PartialMessage } from 'discord.js';
 
 export default class Karma {
-	static async awardKarmaToUser (karmaToAward: number, userId: User | null, guildId: string | null, messageId: string | null) {
+	static async awardKarmaToUser (karmaToAward: number, userId: User | PartialUser | null, guildId: string | null, messageId: string | null) {
+		if (karmaToAward == 0) return;
 
 		// Update the user's global karma
 		await userSchema.findOneAndUpdate(
@@ -32,20 +33,17 @@ export default class Karma {
 		).exec();
 	}
 
-	static async sendKarmaNotification (reactable: Object, reactionConfirmation: String, customEmoji: String, message: any) {
-		// Get guild's reactionConfirmation
-		switch (reactionConfirmation) {
-			case "Message":
-				console.log("penis");
-			case "Reaction":
-				const reactionEmoji = customEmoji ? customEmoji : "😄" // TODO: Change to Retool Discord emoji
-				message.react(reactionEmoji).then((reaction: any) => {
-					setTimeout(() => {
-						reaction.remove();
-					}, 3 * 1000);
-				})
-			default:
-				return;
+	static async sendKarmaNotification (message: Message | PartialMessage, guildDocument: any) {
+		if (guildDocument.messageConfirmation) {
+			// TO-DO: Implement message confirmation
+			console.log("penis");
+		} else {
+			const reactionEmoji = guildDocument.customEmoji ? guildDocument.customEmoji : "😄" // TODO: Change to Retool Discord emoji
+			message.react(reactionEmoji).then((reaction: any) => {
+				setTimeout(() => {
+					reaction.remove();
+				}, 3 * 1000);
+			})
 		}
 	}
 }
