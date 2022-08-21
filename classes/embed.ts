@@ -1,10 +1,10 @@
-import { CommandInteraction, MessageActionRow, MessageButton, MessageEmbed, MessageButtonStyleResolvable, TextChannel, ButtonInteraction } from 'discord.js';
+import { GuildMember, CommandInteraction, MessageActionRow, MessageButton, MessageButtonStyleResolvable, TextChannel, ButtonInteraction } from 'discord.js';
 import Setup from './setup';
 import { embeds } from '../data/embeds';
 
 export default class Embed {
 
-	static async createEmbed (id: string, msgInt: CommandInteraction, channel: TextChannel) {
+	static async createEmbed (id: string, msgInt: CommandInteraction, channel: TextChannel, member: GuildMember) {
 		if (!embeds) return;
 
 		// Find the setup assigned with the sent ID
@@ -34,8 +34,8 @@ export default class Embed {
 
 		// Send the embed
 		msgInt.replied
-			? msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel); })
-			: msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel); });
+			? msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member); })
+			: msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member); });
 	}
 
 	static async createComponents (components: any[]) {
@@ -44,10 +44,11 @@ export default class Embed {
 		let actionComponents = []
 		for (let component of components) {
 			actionComponents.push(new MessageButton()
-				.setCustomId(component.id)
+				.setCustomId(component.url ? "" : component.id)
 				.setLabel(component.label)
 				.setStyle(component.style as MessageButtonStyleResolvable)
-				.setDisabled(component.disabled)
+				.setDisabled(component.disabled ? component.disabled : false)
+				.setURL(component.url ? component.url : "")
 			);
 		}
 		
@@ -56,13 +57,13 @@ export default class Embed {
 
 	}
 
-	static async createCollector (currentSetup: any, msgInt: CommandInteraction, channel: TextChannel) {
+	static async createCollector (currentSetup: any, msgInt: CommandInteraction, channel: TextChannel, member: GuildMember) {
 		// Create a collector
 		if (!currentSetup.components) return;
 
 		const collector = msgInt.channel?.createMessageComponentCollector({
 			max: 1,
-			time: 1000 * 15,
+			time: 1000 * 60,
 		})
 
 		// Add a listener to the collector
@@ -75,11 +76,16 @@ export default class Embed {
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
 					// Create the next step
-					component.next ? this.createEmbed(component.next, msgInt, channel) : this.createEmbed(component.id, msgInt, channel);
+					component.next ? this.createEmbed(component.next, msgInt, channel, member) : this.createEmbed(component.id, msgInt, channel, member);
 					// Execute function
-					if (component.function) component.function(channel.guild);
+					if (component.function) component.function(channel.guild, member);
 				}
 			}
 		})
+
+		// On collector end, remove all buttons
+		collector?.on('end', (collected, reason) => {
+			msgInt.editReply({ components: [] });
+		});
 	}
 }

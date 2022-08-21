@@ -10,19 +10,19 @@ const messageSchema = new mongoose.Schema({
 
 	// The message's id.
 	messageId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 
 	// The user (author)'s id.
 	userId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 
 	// The guild's id.
 	guildId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 

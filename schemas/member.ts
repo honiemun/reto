@@ -10,13 +10,13 @@ const memberSchema = new mongoose.Schema({
 
 	// The guild's ID.
 	guildId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 
 	// The user's ID.
 	userId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 	

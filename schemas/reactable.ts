@@ -14,7 +14,7 @@ const reactableSchema = new mongoose.Schema({
 
 	// The ID of the guild this reactable is used on.
 	guildId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 
@@ -26,7 +26,7 @@ const reactableSchema = new mongoose.Schema({
 
 	// The ID of the channel this reactable sends a post to.
 	sendsToChannel: {
-		type: Number,
+		type: String,
 		required: false
 	},
 

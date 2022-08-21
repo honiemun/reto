@@ -1,12 +1,43 @@
-import { Guild } from "discord.js";
+import { Guild, GuildMember } from "discord.js";
 import Setup from "../classes/setup"
 
 export const embeds = [
     {
+        id: "setup",
+        embed: {
+            title: "Welcome to Reto's setup wizard!",
+            description: "To get started using Reto, we need to set up some things first.\n\n",
+            fields: [
+                {
+                    "name": "Before we begin...",
+                    "value": "Please, take a moment to read through our Privacy Policy! (Don't worry, it's not written in dense legalese.)\n\n*The short of it:*\n★ Whenever someone reacts to a message you sent, Reto keeps logs of its contents for up to 30 days.\n★ Reto keeps track of the servers both you and it are in.\n★ If the server is set to Public, other people may see the messages you sent that have been reacted to over a vote threshold.\n★ You can delete or export your data at any time!"
+                }
+            ],
+            footer: {
+                text: "By continuing this setup, you agree to our Privacy Policy and Terms of Service."
+            }
+        },
+        components: [
+            {
+                id: "chooseSetupType",
+                label: "Let's get started!",
+                style: "PRIMARY",
+                disabled: false,
+            },
+            {
+                id: "privacyPolicy",
+                label: "Privacy policy",
+                style: "LINK",
+                url: "https://reto.gg/privacy-policy",
+                disabled: false
+            }
+        ]
+    },
+    {
         id: "chooseSetupType",
         embed: {
             color: 0,
-            title: "Welcome to Reto's setup wizard!",
+            title: "Choose your setup type:",
             description: "To get started, pick out what kind of setup process you'd like.",
             fields: [
                 {
@@ -26,8 +57,9 @@ export const embeds = [
                 id: "quickSetup",
                 label: "Quick setup",
                 style: "PRIMARY",
+                next: "publicServer",
                 disabled: false,
-                function: function(guild: Guild) { Setup.quickSetup(guild); }
+                function: function(guild: Guild, member: GuildMember) { Setup.quickSetup(guild, member); }
             },
             {
                 id: "advancedSetup",
@@ -38,25 +70,37 @@ export const embeds = [
         ]
     },
     {
-        id: "quickSetup",
+        id: "publicServer",
         embed: {
             color: 0,
-            title: "Quick setup",
-            description: "Placeholder"
+            title: "Do you want your server to be Public?",
+            description: "With Reto, you can find the top-voted messages in every Public server the bot is in using `/explore` - and check out the Global Post Leaderboards to see the best messages throughout all Discord!\n\nIf you'd like the best posts from this server to be featured for anyone to find, you can set it as **Public**. If this is a private server, you might want to opt-out and set it as **Private**.",
         },
         components: [
             {
-                id: "plus",
-                label: "Plus",
+                id: "serverPublic",
+                label: "Set server as Public",
                 style: "PRIMARY",
-                disabled: false
+                disabled: false,
+                function: function(guild: Guild) { Setup.setPublicServer(guild); }
             },
             {
-                id: "minus",
-                label: "Minus",
+                id: "serverPrivate",
+                label: "Set server as Private",
                 style: "SECONDARY",
                 disabled: false
             }
         ]
+    },
+    {
+        id: "done",
+        embed: {
+            color: 0,
+            title: "Setup complete!",
+            description: "You're all set up! You can now use Reto in your server!\nTo change any of these settings, you can re-run `/setup` anytime.\n\nA Getting Started guide is available on your designated `#best-of` channel, or by using the `/guide` command. *(currently not implemented)*",
+            footer: {
+                text: "Thanks for using Reto!\n\n[Join the support server](https://discord.gg/reto) for help, or to report bugs or suggest features!"
+            }
+        }
     }
 ]

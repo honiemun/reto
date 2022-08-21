@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
 
 	// The user's id.
 	userId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 

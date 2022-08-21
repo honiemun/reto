@@ -12,8 +12,9 @@ Acts as a hub for other schemas, currently.
 const guildSchema = new mongoose.Schema({
 
 	// The guild's id.
+	// This number gets truncated if stored as an int, so we're storing it as a string instead.
 	guildId: {
-		type: Number,
+		type: String,
 		required: true
 	},
 
@@ -51,18 +52,7 @@ const guildSchema = new mongoose.Schema({
 		type: Boolean,
 		required: false,
 		default: false
-	},
-
-	// The guild's Karma scores for each User.
-	// TO-DO: This doesn't show up. Fix please :)
-	members: memberSchema.schema,
-
-	// An array of every Reactable object a server has.
-	reactables: [reactableSchema.schema],
-
-	// An array of every User object a server has.
-	// TO-DO: This doesn't show up, either. Fix please :)
-	users: userSchema.schema
+	}
 });
 
 export default mongoose.model("guild", guildSchema);
