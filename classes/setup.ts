@@ -8,7 +8,6 @@ import guild from '../schemas/guild';
 export default class Setup {
 
     static async quickSetup (guild: Guild, member: GuildMember) {
-        console.log(guild.id);
         // Delete all reactables (emoji, channels, roles) before starting
         await this.startSetupFromScratch(guild);
 
@@ -137,9 +136,7 @@ export default class Setup {
         const update = await guildSchema.updateOne({ guildId: guild.id }, {
             public: true
         });
-
-        console.log(guild.id);
-        console.log(update);
+        
         return update;
     }
 }

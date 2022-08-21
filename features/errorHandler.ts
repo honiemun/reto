@@ -12,12 +12,14 @@ export default (client: Client, instance: WOKCommands) => {
         console.log("❗" + reason + " (" + parameter + ")\n🧘: " + guruMeditation);
     }
 
-    function sendErrorToChannel (reason: any, parameter: any, guruMeditation: string) {
+    function sendErrorToChannel (reason: any, parameter: any, guruMeditation: string, channel?: TextChannel) {
         if (!process.env.ERROR_CHANNEL) return;
-        const channel = client.channels.cache.get(process.env.ERROR_CHANNEL);
-        if (!channel) return;
 
-        (channel as TextChannel).send({embeds: [createErrorEmbed(reason, parameter, guruMeditation)]});
+        let newChannel;
+        !channel ? newChannel = client.channels.cache.get(process.env.ERROR_CHANNEL) : newChannel = channel;
+        if (!newChannel) return;
+
+        (newChannel as TextChannel).send({embeds: [createErrorEmbed(reason, parameter, guruMeditation)]});
     }
 
     function createErrorEmbed(reason: any, parameter: any, guruMeditation: string) {
@@ -35,10 +37,19 @@ export default (client: Client, instance: WOKCommands) => {
         sendErrorToChannel(reason, parameter, guru);
     }
 
+    // WOKCommands errors. Not really sure if this works?
+	instance.on('commandException', (command, message, error) => {
+        const reason = "Error found while running command " + command;
+        const guru = generateGuruMeditation("COMEXC");
+        sendErrorToConsole(reason, error, guru);
+        sendErrorToChannel(reason, error, guru); // Dev channel
+        sendErrorToChannel(reason, error, guru, message.channel); // Channel where the command was run
+	});
+
+    // Regular errors
     process.on("uncaughtException", (reason, parameter) => {
         handleError(reason, parameter, "UNCEXC");
     });
-
     process.on("unhandledRejection", (reason, parameter) => {
         handleError(reason, parameter, "UNHREJ");
     });
@@ -48,7 +59,6 @@ export default (client: Client, instance: WOKCommands) => {
     process.on("multipleResolves", (reason, parameter) => {
         handleError(reason, parameter, "MULRES");
     });
-
 }
 
 const config = {

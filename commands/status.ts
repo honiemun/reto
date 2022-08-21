@@ -20,5 +20,7 @@ export default {
 				}
 			]
 		});
+
+		return '✨ Status set to `' + text + '`!';
 	}
 } as ICommand;
