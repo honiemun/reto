@@ -49,18 +49,18 @@ export default (client: Client, instance: WOKCommands) => {
 
   // On reaction added
   client.on('messageReactionAdd', async (reaction, user) => {
-    messageReactionHandler(reaction, user, true);
+    await messageReactionHandler(reaction, user, true);
   });
 
   // On reaction removed
   client.on('messageReactionRemove', async (reaction, user) => {
-    messageReactionHandler(reaction, user, false);
+    await messageReactionHandler(reaction, user, false);
   });
 }
 
 const config = {
-  displayName: 'Reaction Add',
-  dbName: 'REACTION ADD'
+  displayName: 'Reaction Handler',
+  dbName: 'REACTION HANDLER'
 }
 
 export { config }
