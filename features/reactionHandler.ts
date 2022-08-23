@@ -1,5 +1,6 @@
 import { Client, Emoji, Guild, MessageReaction, PartialMessageReaction, PartialUser, TextChannel, User } from 'discord.js'
 import Karma from '../classes/karma';
+import Pin from '../classes/pin';
 import WOKCommands from 'wokcommands'
 
 // Schemas
@@ -34,15 +35,24 @@ export default (client: Client, instance: WOKCommands) => {
         ? reactable.karmaAwarded
         : reactable.karmaAwarded * -1;
 
-      console.log('Give ' + karmaToAward + ' to ' + user.username);
+      console.log('💕 ' + user.username + "'s message has been reacted to (" + karmaToAward + ")");
 
+      // Award the karma total to user
       await Karma.awardKarmaToUser(
         karmaToAward,
         user,
         reaction.message.guildId,
         reaction.message.id
       );
+      
+      // Send message to channel
+      if (reactable.sendsToChannel) await Pin.pinMessageToChannel(
+        reaction.message,
+        reactable,
+        client
+      )
 
+      // Send notification
       await Karma.sendKarmaNotification(reaction.message, guildDocument);
     }
   }

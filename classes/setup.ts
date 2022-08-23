@@ -9,6 +9,9 @@ export default class Setup {
 
     static async quickSetup (guild: Guild, member: GuildMember) {
         // Delete all reactables (emoji, channels, roles) before starting
+        // TO-DO: IMPORTANT!!
+        // This is fine for testing but don't actually do this later.
+        // Deleting the best-of channel is gonna cause so many people to lose it
         await this.startSetupFromScratch(guild);
 
         // Create #best-of channel
