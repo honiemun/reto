@@ -28,7 +28,7 @@ const guildSchema = new mongoose.Schema({
 	// The guild's custom emoji for Karma.
 	// If this is not set, the karma icon will default to a custom-made emoji.
 	karmaEmoji: {
-		type: Boolean,
+		type: String,
 		required: false
 	},
 

@@ -43,10 +43,10 @@ export default (client: Client, instance: WOKCommands) => {
         user,
         reaction.message.guildId,
         reaction.message.id
-      );
+      )
       
       // Send message to channel
-      if (reactable.sendsToChannel) await Pin.pinMessageToChannel(
+      if (reactable.sendsToChannel && isPositive) await Pin.pinMessageToChannel(
         reaction.message,
         reactable,
         client
