@@ -57,12 +57,12 @@ export default class Pin {
                 // Send or edit message.
                 // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
                 if (!iterableChannel.edit) {
-                    (channel as TextChannel).send({ content: karmaString, embeds: [embed], components: [row] }).then((sentEmbed: any) => {
+                    (channel as TextChannel).send({ content: karmaString, embeds: embed, components: [row] }).then((sentEmbed: any) => {
                         this.storePinnedEmbed(sentEmbed, message);
                     })
                 } else {
                     (channel as TextChannel).messages.fetch(iterableChannel.embed).then((pinnedMessage: any) => {
-                        pinnedMessage.edit({ content: karmaString, embeds: [embed], components: [row] })
+                        pinnedMessage.edit({ content: karmaString, embeds: embed, components: [row] })
                     })
                 }
             });
@@ -70,10 +70,10 @@ export default class Pin {
     }
 
     static async generateMessageEmbed (message: Message | PartialMessage) {
-
-
+        
         // Generate default message embed
         let messageEmbed : Embed = {
+            url: "https://github.com/honiemun/reto", // Necessary for multiple image support
             description: message.content ? message.content : undefined,
             timestamp: new Date().toISOString(),
             fields: []
@@ -81,7 +81,6 @@ export default class Pin {
 
         // Optional fields
         messageEmbed.author = await this.setEmbedAuthor(message);
-        messageEmbed.image  = await this.setEmbedImage(message);
         messageEmbed.footer = await this.setEmbedFooter(message);
         messageEmbed.color  = await this.setEmbedColor(message);
 
@@ -89,7 +88,10 @@ export default class Pin {
         const embedReply = await this.setEmbedReply(message); // I pray to the Typescript gods above to forgive me for such ingenuity
         if (message.reference && embedReply) messageEmbed.fields.push(embedReply);
         
-        return messageEmbed;
+        let embedArray = await this.setEmbedImages(message, "https://github.com/honiemun/reto");
+        embedArray.unshift(messageEmbed)
+
+        return embedArray;
     }
 
     static async storePinnedEmbed (sentEmbed: Message | PartialMessage, message: Message | PartialMessage) {
@@ -161,26 +163,44 @@ export default class Pin {
 
     static async setEmbedReply (message: Message | PartialMessage) {
         if (!message.reference || !message.reference.messageId) return;
-        console.log("Maybe this part")
         const reply = await message.channel.messages.fetch(message.reference.messageId);
-        console.log("Maybe this part")
         return {
             name: 'Replying to ' + reply.author.username,
             value: reply.content,
         }
     }
 
-    static async setEmbedImage (message: Message | PartialMessage) {
-        if (message.attachments.size == 0 && message.embeds.length == 0) return;
-        const [firstAttachment] = message.attachments.values();
-        
-        let imageUrl = '';
-        if (firstAttachment) imageUrl = firstAttachment.url;
-        else if (message.embeds[0].image) imageUrl = message.embeds[0].image.url
+    static async setEmbedImages (message: Message | PartialMessage, url: String) {
+        let embedArray: Array<any> = []
 
-        return {
-            url: imageUrl
+        // Attachments
+        if (message.attachments.values())
+        for (const attachment of message.attachments.values()) {
+            if (attachment.url) {
+                embedArray.push({
+                    url: url,
+                    image: {
+                        url: attachment.url
+                    }
+                });
+            }
         }
+        
+        // Embeds
+        if (message.embeds.length > 0) {
+            for (const embed of message.embeds) {
+                if (embed.image) {
+                    embedArray.push({
+                        url: url,
+                        image: {
+                            url: embed.image.url,
+                        }
+                    });
+                }
+            }
+        }
+
+        return embedArray;
     }
 
     static async setEmbedFooter (message: Message | PartialMessage) {
@@ -240,7 +260,7 @@ export default class Pin {
         }
 
         // Determine if there's more than one attachment / embed
-        if (message.attachments.size >= 2 && !includesMessage) {
+        if (message.attachments.size >= 5 && !includesMessage) {
             includesMessage = 'more than one attachment'
         } else if (message.embeds.length >= 2) {
             includesMessage = 'more than one embed'
@@ -255,6 +275,7 @@ export default class Pin {
 
         for (const embed of message.embeds) {
             const name = embed.title ? embed.title : embed.author?.name;
+            if (!name) continue;
 
             fields.push({
                 name: name ? name : '',
@@ -269,7 +290,7 @@ export default class Pin {
                 })                
             }
         }
-        
+
         return fields;
     }
 }

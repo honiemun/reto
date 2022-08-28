@@ -1,4 +1,5 @@
 export default interface MessageEmbed {
+    url?: string,
     color?: number,
     description: string | undefined,
     timestamp: string,
