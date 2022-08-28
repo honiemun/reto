@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
+import Schema from "mongoose";
 
 /*
-USER:
-Keeps track of users, their current Karma scores,
-and other miscellaneous per-user settings.
+MESSAGE:
+Keeps track of the messages an User sends
+that a Reactable has been used on.
 */
 
 const messageSchema = new mongoose.Schema({
@@ -20,6 +21,12 @@ const messageSchema = new mongoose.Schema({
 		required: true
 	},
 
+	// The channel on which this message was sent on.
+	channelId: {
+		type: String,
+		required: true
+	},
+	
 	// The guild's id.
 	guildId: {
 		type: String,
@@ -31,7 +38,13 @@ const messageSchema = new mongoose.Schema({
 		type: Number,
 		required: true,
 		default: 0
-	}
+	},
+
+	// The pinned embeds this message is featured on.
+	pinnedEmbeds: [{
+		type: Schema.Types.ObjectId,
+		ref: "pinnedEmbed"
+	}]
 });
 
 export default mongoose.model("message", messageSchema);

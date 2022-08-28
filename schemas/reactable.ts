@@ -24,6 +24,13 @@ const reactableSchema = new mongoose.Schema({
 		required: true,
 	},
 
+	// The name the reactable will be referred to in text, since one Reactable can have many Emoji.
+	// Used only for communication purposes.
+	name: {
+		type: String,
+		required: false
+	},
+
 	// The ID of the channel this reactable sends a post to.
 	sendsToChannel: {
 		type: String,
