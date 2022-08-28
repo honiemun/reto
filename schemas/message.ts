@@ -21,6 +21,12 @@ const messageSchema = new mongoose.Schema({
 		required: true
 	},
 
+	// The channel on which this message was sent on.
+	channelId: {
+		type: String,
+		required: true
+	},
+	
 	// The guild's id.
 	guildId: {
 		type: String,

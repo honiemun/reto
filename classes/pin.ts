@@ -13,10 +13,11 @@ export default class Pin {
         if (!message) return;
 
         const embed          = await this.generateMessageEmbed(message);
-        const karma          = await this.getKarmaTotalString(message);
+        const karmaString    = await this.getKarmaTotalString(message);
         const pinnedMessages = await this.getAttachedPinnedMessages(message, client);
         
         // Get the channel to send/edit the message into
+        // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
         interface IterableChannels {
             id: string,
             embed: string,
@@ -56,12 +57,12 @@ export default class Pin {
                 // Send or edit message.
                 // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
                 if (!iterableChannel.edit) {
-                    (channel as TextChannel).send({ content: karma, embeds: [embed], components: [row] }).then((sentEmbed: any) => {
+                    (channel as TextChannel).send({ content: karmaString, embeds: [embed], components: [row] }).then((sentEmbed: any) => {
                         this.storePinnedEmbed(sentEmbed, message);
                     })
                 } else {
                     (channel as TextChannel).messages.fetch(iterableChannel.embed).then((pinnedMessage: any) => {
-                        pinnedMessage.edit({ content: karma, embeds: [embed], components: [row] })
+                        pinnedMessage.edit({ content: karmaString, embeds: [embed], components: [row] })
                     })
                 }
             });

@@ -22,8 +22,7 @@ export default (client: Client, instance: WOKCommands) => {
         return new MessageEmbed()
             .setColor("RED")
             .setTitle("⚠️ Error")
-            .setDescription("Looks like something went wrong!\nFeel free to try again - and if that doesn't help, ask in our [support server](" + process.env.SUPPORT_SERVER + ").\n\n```js\n" + reason + "\n\n" + parameter + "```")
-            .setFooter({text: "date.toISOString()" });
+            .setFooter({text: date.toISOString() });
     }
 
     function handleError(reason: any, parameter: any) {

@@ -4,13 +4,13 @@ import messageSchema from '../schemas/message';
 import { User, PartialUser, Message, PartialMessage } from 'discord.js';
 
 export default class Karma {
-	static async awardKarmaToUser (karmaToAward: number, userId: User | PartialUser | null, guildId: string | null, messageId: string | null) {
+	static async awardKarmaToUser (karmaToAward: number, user: User | PartialUser, message: Message | PartialMessage) {
 		// Update the message's karma
 		// TO-DO: Check for user's canStoreMessages permission first
 		await messageSchema.findOneAndUpdate(
-			{ messageId: messageId },
+			{ messageId: message.id },
 			{
-				$set: { 'userId': userId, 'guildId': guildId },
+				$set: { 'userId': user.id, 'guildId': message.guildId, 'channelId': message.channel.id },
 				$inc : { 'karma' : karmaToAward }
 			},
 			{ upsert: true }
@@ -21,14 +21,14 @@ export default class Karma {
 
 		// Update the user's global karma
 		await userSchema.findOneAndUpdate(
-			{ userId: userId },
+			{ userId: user.id },
 			{ $inc : { 'globalKarma' : karmaToAward } },
 			{ upsert: true }
 		).exec();
 	
 		// Update the member's karma on the specified guild
 		await memberSchema.findOneAndUpdate(
-			{ userId: userId, guildId: guildId },
+			{ userId: user.id, guildId: message.guildId },
 			{ $inc : { 'karma' : karmaToAward } },
 			{ upsert: true }
 		).exec();

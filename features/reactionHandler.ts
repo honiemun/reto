@@ -38,23 +38,25 @@ export default (client: Client, instance: WOKCommands) => {
       console.log('💕 ' + user.username + "'s message has been reacted to (" + karmaToAward + ")");
 
       // Replace message with pinned message, if it exists
-      const messageId = await Pin.getStoredPinnedMessage(reaction.message, client).then((pinnedMessage) => {
-        return !pinnedMessage ? reaction.message.id : pinnedMessage.messageId;
+      const message = await Pin.getStoredPinnedMessage(reaction.message, client).then((pinnedMessage) => {
+        if (pinnedMessage) {
+          // TO-DO: Can this be simplified?
+          return client.channels.fetch(pinnedMessage.channelId).then((channel) => {
+            return (channel as TextChannel).messages.fetch(pinnedMessage.messageId);
+          })
+        } else return reaction.message;
       })
-      
-      console.log(messageId)
 
       // Award the karma total to user
       await Karma.awardKarmaToUser(
         karmaToAward,
         user,
-        reaction.message.guildId,
-        messageId
+        message
       )
 
       // Send message to channel
       await Pin.pinMessageToChannel(
-        reaction.message,
+        message,
         reactable,
         client
       )
