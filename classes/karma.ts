@@ -5,6 +5,18 @@ import { User, PartialUser, Message, PartialMessage } from 'discord.js';
 
 export default class Karma {
 	static async awardKarmaToUser (karmaToAward: number, userId: User | PartialUser | null, guildId: string | null, messageId: string | null) {
+		// Update the message's karma
+		// TO-DO: Check for user's canStoreMessages permission first
+		await messageSchema.findOneAndUpdate(
+			{ messageId: messageId },
+			{
+				$set: { 'userId': userId, 'guildId': guildId },
+				$inc : { 'karma' : karmaToAward }
+			},
+			{ upsert: true }
+		).exec();
+		
+		// Don't execute the following if the karma equals zero
 		if (karmaToAward == 0) return;
 
 		// Update the user's global karma
@@ -18,17 +30,6 @@ export default class Karma {
 		await memberSchema.findOneAndUpdate(
 			{ userId: userId, guildId: guildId },
 			{ $inc : { 'karma' : karmaToAward } },
-			{ upsert: true }
-		).exec();
-
-		// Update the message's karma
-		// TO-DO: Check for user's canStoreMessages permission first
-		await messageSchema.findOneAndUpdate(
-			{ messageId: messageId },
-			{
-				$set: { 'userId': userId, 'guildId': guildId },
-				$inc : { 'karma' : karmaToAward }
-			},
 			{ upsert: true }
 		).exec();
 	}

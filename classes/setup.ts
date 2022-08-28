@@ -37,7 +37,8 @@ export default class Setup {
                 this.createReactable({
                     guildId: guild.id,
                     globalKarma: true,
-        
+                    
+                    name: emoji.name,
                     emojiIds: emoji.emojiIds,
                     karmaAwarded: emoji.karmaAwarded,
                     messageConfirmation: emoji.messageConfirmation,

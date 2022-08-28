@@ -13,7 +13,7 @@ export default (client: Client, instance: WOKCommands) => {
     if (reaction.partial) await reaction.fetch();
     if (user.bot) return;
     // TO-DO: Ignore oneself.
-    
+
     const guildDocument = await guildSchema.findOne({
       guildId: reaction.message.guildId
     }).exec();
@@ -37,21 +37,28 @@ export default (client: Client, instance: WOKCommands) => {
 
       console.log('💕 ' + user.username + "'s message has been reacted to (" + karmaToAward + ")");
 
+      // Replace message with pinned message, if it exists
+      const messageId = await Pin.getStoredPinnedMessage(reaction.message, client).then((pinnedMessage) => {
+        return !pinnedMessage ? reaction.message.id : pinnedMessage.messageId;
+      })
+      
+      console.log(messageId)
+
       // Award the karma total to user
       await Karma.awardKarmaToUser(
         karmaToAward,
         user,
         reaction.message.guildId,
-        reaction.message.id
+        messageId
       )
-      
+
       // Send message to channel
-      if (reactable.sendsToChannel && isPositive) await Pin.pinMessageToChannel(
+      await Pin.pinMessageToChannel(
         reaction.message,
         reactable,
         client
       )
-
+      
       // Send notification
       await Karma.sendKarmaNotification(reaction.message, guildDocument);
     }
