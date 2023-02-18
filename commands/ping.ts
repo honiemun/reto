@@ -1,3 +1,4 @@
+import I18n from '../classes/i18n';
 import { ICommand } from "wokcommands";
 
 export default {
@@ -8,7 +9,7 @@ export default {
 	testOnly: true, // This only works for test servers!
 	guildOnly: false,
 
-	callback: ({}) => {
-		return '🏓 **Pong!**';
+	callback: ({ message, instance, interaction }) => {
+        return I18n.translate("PING", instance, message, interaction);
 	},
 } as ICommand

@@ -1,7 +1,7 @@
 import { Guild, GuildMember, Role, User } from 'discord.js';
 import guildSchema from '../schemas/guild';
 import reactableSchema from '../schemas/reactable';
-import { defaultEmojis } from '../data/defaultEmojis';
+import { defaultReactables } from '../data/defaultReactables';
 import dotenv from 'dotenv';
 import guild from '../schemas/guild';
 
@@ -23,7 +23,7 @@ export default class Setup {
 
         // Create default emoji
         // TO-DO: Throw error if something goes horribly wrong
-        for (const emoji of defaultEmojis) {
+        for (const emoji of defaultReactables) {
             await Setup.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
                 // Save new emoji into list
                 emoji.emojiIds.push(createdEmoji.id);

@@ -1,6 +1,7 @@
 import userSchema from '../schemas/user';
 import memberSchema from '../schemas/member';
 import messageSchema from '../schemas/message';
+import { retoEmojis } from '../data/retoEmojis';
 import { User, PartialUser, Message, PartialMessage } from 'discord.js';
 
 export default class Karma {
@@ -36,14 +37,25 @@ export default class Karma {
 
 	static async sendKarmaNotification (message: Message | PartialMessage, guildDocument: any) {
 		if (guildDocument.messageConfirmation) {
-			// TO-DO: Implement message confirmation
+			message.reply({
+				embeds: [
+					{
+						title: guildDocument.reactionConfirmationTitle ? guildDocument.reactionConfirmationTitle : "Title",
+						description: guildDocument.reactionConfirmationDescription ? guildDocument.reactionConfirmationDescription : "Description"
+					}
+				],
+			}).then((reply: any) => {
+				setTimeout(() => {
+					reply.delete();
+				}, 5 * 1000);
+			});
 			console.log("penis");
 		} else {
-			const reactionEmoji = guildDocument.customEmoji ? guildDocument.customEmoji : "😄" // TODO: Change to Retool Discord emoji
+			const reactionEmoji = guildDocument.reactionConfirmationEmoji ? guildDocument.reactionConfirmationEmoji : retoEmojis.confirmationEmoji;
 			message.react(reactionEmoji).then((reaction: any) => {
 				setTimeout(() => {
 					reaction.remove();
-				}, 3 * 1000);
+				}, 2 * 1000);
 			})
 		}
 	}

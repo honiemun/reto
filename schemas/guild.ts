@@ -47,6 +47,20 @@ const guildSchema = new mongoose.Schema({
 		required: false
 	},
 
+	// The header of the embed that's sent after a successful Reactable execution.
+	// Only used if messageConfirmation is True.
+	reactionConfirmationTitle: {
+		type: String,
+		required: false
+	},
+
+	// The description of the embed that's sent after a successful Reactable execution.
+	// Only used if messageConfirmation is True.
+	reactionConfirmationDescription: {
+		type: String,
+		required: false
+	},
+
 	// Determines if the guild can be seen in public-related commands, such as Global Leaderboards.
 	public: {
 		type: Boolean,

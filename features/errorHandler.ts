@@ -22,6 +22,7 @@ export default (client: Client, instance: WOKCommands) => {
         return new MessageEmbed()
             .setColor("RED")
             .setTitle("⚠️ Error")
+            .setDescription(parameter)
             .setFooter({text: date.toISOString() });
     }
 

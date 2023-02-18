@@ -1,6 +1,7 @@
 export default interface MessageEmbed {
     url?: string,
     color?: number,
+    title?: string | null,
     description: string | undefined,
     timestamp: string,
     footer?: {

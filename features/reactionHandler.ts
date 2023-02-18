@@ -6,13 +6,14 @@ import WOKCommands from 'wokcommands'
 // Schemas
 import guildSchema from '../schemas/guild';
 import reactableSchema from '../schemas/reactable';
+import Reaction from '../classes/reaction';
 
 export default (client: Client, instance: WOKCommands) => {
 
   async function messageReactionHandler (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser, isPositive: boolean) {
     if (reaction.partial) await reaction.fetch();
     if (user.bot) return;
-    // TO-DO: Ignore oneself.
+    // TO-DO: Return if the reactor is the same as the author.
 
     const guildDocument = await guildSchema.findOne({
       guildId: reaction.message.guildId
@@ -35,8 +36,6 @@ export default (client: Client, instance: WOKCommands) => {
         ? reactable.karmaAwarded
         : reactable.karmaAwarded * -1;
 
-      console.log('💕 ' + user.username + "'s message has been reacted to (" + karmaToAward + ")");
-
       // Replace message with pinned message, if it exists
       const message = await Pin.getStoredPinnedMessage(reaction.message, client).then((pinnedMessage) => {
         if (pinnedMessage) {
@@ -47,10 +46,18 @@ export default (client: Client, instance: WOKCommands) => {
         } else return reaction.message;
       })
 
+      if (!message.author) return;
+      
+      console.log('💕 ' + message.author.username + "'s message has been reacted to (" + karmaToAward + ")");
+
+      // Store reaction
+      const savedReaction = await Reaction.saveOrDeleteReaction(message, user, reactable, isPositive);
+      if (!savedReaction) return;
+
       // Award the karma total to user
       await Karma.awardKarmaToUser(
         karmaToAward,
-        user,
+        message.author,
         message
       )
 
@@ -60,7 +67,7 @@ export default (client: Client, instance: WOKCommands) => {
         reactable,
         client
       )
-      
+
       // Send notification
       await Karma.sendKarmaNotification(reaction.message, guildDocument);
     }

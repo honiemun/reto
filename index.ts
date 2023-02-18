@@ -23,6 +23,7 @@ client.on('ready', async () => {
 	new WOKCommands(client, {
 		commandsDir: path.join(__dirname, 'commands'),
 		featuresDir: path.join(__dirname, 'features'),
+		messagesPath: path.join(__dirname, 'i18n/messages.json'),
 		typeScript: true,
 		testServers: [
 			'952707420700934195', // Retool Development
