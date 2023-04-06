@@ -28,7 +28,14 @@ const userSchema = new mongoose.Schema({
 		type: Boolean,
 		required: true,
 		default: true
-	}
+	},
+
+	// Whether this user was part of Reto Legacy (2018-2023).
+	earlySupporter: {
+		type: Boolean,
+		required: false,
+		default: false
+	},
 });
 
 module.exports = mongoose.model("user", userSchema);

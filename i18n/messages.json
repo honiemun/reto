@@ -19,6 +19,58 @@
       "english": "Global Rank",
       "spanish": "Ranking Global"
     },
+    "BADGES": {
+      "english": "Badges",
+      "spanish": "Medallas"
+    },
+    "PROGRAMMER": {
+      "english": "Programmer",
+      "spanish": "Programador"
+    },
+    "PROGRAMMER_DESCRIPTION": {
+      "english": "One of the developers of Reto!",
+      "spanish": "Uno de los desarrolladores de Reto!"
+    },
+    "MEDALLIST": {
+      "english": "Medallist",
+      "spanish": "Medallista"
+    },
+    "THIRD_PLACE_MEDALLIST": {
+      "english": "Third Place Medallist",
+      "spanish": "Medallista de Tercer Lugar"
+    },
+    "SECOND_PLACE_MEDALLIST": {
+      "english": "Second Place Medallist",
+      "spanish": "Medallista de Segundo Lugar"
+    },
+    "FIRST_PLACE_MEDALLIST": {
+      "english": "First Place Medallist",
+      "spanish": "Medallista de Primer Lugar"
+    },
+    "MEDALLIST_DESCRIPTION": {
+      "english": "For being in the top-ten of the leaderboard.",
+      "spanish": "Por estar en el top-diez de la leaderboard."
+    },
+    "THIRD_PLACE_MEDALLIST_DESCRIPTION": {
+      "english": "For being in the ranking's top-three.",
+      "spanish": "Por estar en el top tres del ranking."
+    },
+    "SECOND_PLACE_MEDALLIST_DESCRIPTION": {
+      "english": "For being the second-best rank-wise.",
+      "spanish": "Por llegar al segundo lugar del ranking."
+    },
+    "FIRST_PLACE_MEDALLIST_DESCRIPTION": {
+      "english": "For being in the top of the leaderboard.",
+      "spanish": "Por ser el número uno de la leaderboard."
+    },
+    "EARLY_SUPPORTER": {
+      "english": "Early Supporter",
+      "spanish": "Primer Embajador"
+    },
+    "EARLY_SUPPORTER_DESCRIPTION": {
+      "english": "Thank you for being a part of Reto Legacy!",
+      "spanish": "Gracias por ser parte de Reto Legacy!"
+    },
     "LANGUAGE_NOT_SUPPORTED": {
       "english": "This bot does not have support for {LANGUAGE} at this time.",
       "spanish": "Este bot no es compatible con {LANGUAGE} en este momento."
