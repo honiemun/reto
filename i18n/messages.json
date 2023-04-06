@@ -1,7 +1,11 @@
 {
     "PING": {
-        "english": "**🏓 Pong!**",
-        "spanish": "**🏓 Pong!**"
+      "english": "**🏓 Pong!**",
+      "spanish": "**🏓 Pong!**"
+    },
+    "GLOBAL_KARMA": {
+      "english": "Global Karma",
+      "spanish": "Karma Global"
     },
     "LANGUAGE_NOT_SUPPORTED": {
       "english": "This bot does not have support for {LANGUAGE} at this time.",

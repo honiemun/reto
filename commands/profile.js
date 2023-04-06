@@ -1,9 +1,7 @@
-import Profile from '../classes/profile';
-import { ICommand } from "wokcommands";
-import { ApplicationCommandOptionTypes } from 'discord.js/typings/enums';
-import { MessageEmbed } from 'discord.js';
+const Profile = require("../classes/profile");
+const ApplicationCommandOptionTypes = require("discord.js");
 
-export default {
+module.exports = {
 	category: 'Profiles',
 	description: 'Shows you (or another user\'s) Reto Profile.',
 
@@ -20,14 +18,14 @@ export default {
 	testOnly: true, // This only works for test servers!
 	guildOnly: false,
 
-	callback: ({ message, interaction, args, member }) => {
+	callback: ({ instance, interaction, member }) => {
 		const user = interaction.options.getUser("user") ? interaction.options.getUser("user") : member
 		if (user == null) return
-
+		
 		// TO-DO: Turn this into a return-based thing.
-		Profile.fetchProfileEmbed(user).then((embed) => {
+		Profile.fetchProfileEmbed(user, member, instance, interaction).then((embed) => {
 			if (!embed) return;
-			interaction.channel?.send({embeds: [ embed ]})
+			return interaction.channel?.send({embeds: [ embed ]})
 		});
 	},
-} as ICommand
+}

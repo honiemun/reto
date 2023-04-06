@@ -1,8 +1,8 @@
-import { CommandInteraction, Message } from 'discord.js';
+const { CommandInteraction, Message } = require('discord.js');
 
-export default class I18n {
+module.exports = class I18n {
 
-    static async translate (translationKey: string, instance: any, message?: Message, interaction?: CommandInteraction) {
+    static async translate (translationKey, instance, message = null, interaction = null) {
         if ((!message && !interaction)) return translationKey;
         
         const guild = message ? message.guild : interaction?.guild;

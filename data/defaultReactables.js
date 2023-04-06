@@ -1,4 +1,4 @@
-export const defaultReactables = [
+module.exports = [
     {
         name: 'plus',
         emojiUrl: 'https://cdn.discordapp.com/attachments/591468984528797697/1010940218108543087/plus.png',
@@ -21,6 +21,6 @@ export const defaultReactables = [
         messageConfirmation: 'Banger tweet, bestie!',
         isBestOf: true,
         sendsToChannel: '',
-        lockedBehindRoles: [] as string[],
+        lockedBehindRoles: [],
     }
 ]

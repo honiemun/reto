@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-import Schema from "mongoose";
+const { mongoose, Schema } = require("mongoose");
 
 /*
 REACTION:
@@ -29,4 +28,4 @@ const reactionSchema = new mongoose.Schema({
 	}
 });
 
-export default mongoose.model("reaction", reactionSchema);
+module.exports = mongoose.model("reaction", reactionSchema);

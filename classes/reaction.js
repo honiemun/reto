@@ -1,8 +1,8 @@
-import { Message, PartialMessage, User, PartialUser } from 'discord.js';
-import reactionSchema from '../schemas/reaction';
+const { Message, PartialMessage, User, PartialUser } = require('discord.js');
+const reactionSchema = require('../schemas/reaction');
 
-export default class Reaction {
-    static async saveOrDeleteReaction (message: Message | PartialMessage, reactingUser: User | PartialUser, reactable: any, toSave: Boolean) {
+module.exports = class Reaction {
+    static async saveOrDeleteReaction (message, reactingUser, reactable, toSave) {
         if (await this.checkIfPreviouslyReacted(message, reactingUser, reactable) && toSave) return false;
 
         if (toSave) await this.saveReaction(message, reactingUser, reactable);
@@ -10,7 +10,7 @@ export default class Reaction {
         return true;
     }
 
-    static async saveReaction (message: Message | PartialMessage, reactingUser: User | PartialUser, reactable: any) {
+    static async saveReaction (message, reactingUser, reactable) {
         return new reactionSchema({
             messageId: message.id,
             userId: reactingUser.id,
@@ -18,7 +18,7 @@ export default class Reaction {
         }).save();
     }
 
-    static async deleteReaction (message: Message | PartialMessage, reactingUser: User | PartialUser, reactable: any) {
+    static async deleteReaction (message, reactingUser, reactable) {
         return reactionSchema.deleteMany({
             messageId: message.id,
             userId: reactingUser.id,
@@ -26,7 +26,7 @@ export default class Reaction {
         }).exec();
     }
 
-    static async checkIfPreviouslyReacted (message: Message | PartialMessage, reactingUser: User | PartialUser, reactable: any) {
+    static async checkIfPreviouslyReacted (message, reactingUser, reactable) {
         return reactionSchema.find({
             messageId: message.id,
             userId: reactingUser.id,
