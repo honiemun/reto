@@ -10,6 +10,9 @@ const I18n = require("../classes/i18n");
 module.exports = class Profile {
 
     static async fetchProfileEmbed(author, member, instance, interaction) {
+        // Debugging
+        const startUp = new Date();
+
         if (author == null) return;
 
         const user = author instanceof GuildMember ? author.user : author
@@ -18,6 +21,7 @@ module.exports = class Profile {
 		const userDatabase = await userSchema.findOne(
 			{ userId: user.id },
 		).exec()
+        let memberDatabase;
 
         const globalKarma = userDatabase && userDatabase.globalKarma != undefined ? userDatabase.globalKarma : "0"
 
@@ -29,6 +33,11 @@ module.exports = class Profile {
             },
             "fields": [
                 {
+                    "name": "__" + await I18n.translate("KARMA", instance, null, interaction) + "__",
+                    "value": "** **",
+                    "inline": false
+                },
+                {
                     "name": retoEmojis.karmaEmoji + " " + await I18n.translate("GLOBAL_KARMA", instance, null, interaction),
                     "value": '```' + globalKarma + '```',
                     "inline": true
@@ -39,7 +48,7 @@ module.exports = class Profile {
         if (member.guild) {
             // Get info from guild
 
-            const memberDatabase = await memberSchema.findOne(
+            memberDatabase = await memberSchema.findOne(
                 { userId: user.id, guildId: member.guild.id },
             ).exec()
 
@@ -53,10 +62,41 @@ module.exports = class Profile {
             })
         }
 
+        // Rankings
+
+        const globalRank = await userSchema.findOne({
+            globalKarma: { $gt: userDatabase.globalKarma }
+        }).count();
+        
+        embed.fields.push({
+            "name": "__" + await I18n.translate("RANK", instance, null, interaction) + "__",
+            "value": "** **",
+            "inline": false
+        },
+        {
+            "name": '🌐 ' + await I18n.translate("GLOBAL_RANK", instance, null, interaction),
+            "value": "```" + globalRank + "```",
+            "inline": true
+        })
+        
+        if (member.guild) {
+            const localRank = await memberSchema.findOne({
+                karma: { $gt: memberDatabase.karma }
+            }).count();
+
+            embed.fields.push({
+                "name": '✨ ' + member.guild.name + " " + await I18n.translate("RANK", instance, null, interaction),
+                "value": "```" + localRank + "```",
+                "inline": true
+            })
+        }
+
+        // Badges
+        
         // TO-DO: Add
         // - badges
-        // - local rank
-        // - global rank
+        
+        console.log(new Date().getTime() / 1000 - startUp.getTime() / 1000 + "ms.")
 
         return embed
     }

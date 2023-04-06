@@ -3,9 +3,21 @@
       "english": "**🏓 Pong!**",
       "spanish": "**🏓 Pong!**"
     },
+    "KARMA": {
+      "english": "Karma",
+      "spanish": "Karma"
+    },
     "GLOBAL_KARMA": {
       "english": "Global Karma",
       "spanish": "Karma Global"
+    },
+    "RANK": {
+      "english": "Rank",
+      "spanish": "Ranking"
+    },
+    "GLOBAL_RANK": {
+      "english": "Global Rank",
+      "spanish": "Ranking Global"
     },
     "LANGUAGE_NOT_SUPPORTED": {
       "english": "This bot does not have support for {LANGUAGE} at this time.",
@@ -13,7 +25,7 @@
     },
     "CURRENT_LANGUAGE": {
       "english": "The current language is set to {LANGUAGE}.",
-      "spanish": "El idioma actual está establecido en {LANGUAGE}."
+      "spanish": "El idioma actual está establecido como {LANGUAGE}."
     },
     "NEW_LANGUAGE": {
       "english": "Language set to {LANGUAGE}.",

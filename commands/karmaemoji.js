@@ -1,6 +1,8 @@
+const { MessageEmbed } = require("discord.js");
 const I18n = require("../classes/i18n");
 const ApplicationCommandOptionTypes = require("discord.js");
 const Personalisation = require("../classes/personalisation");
+const Embed = require("../classes/embed");
 
 module.exports = {
 	category: 'Personalisation',
@@ -11,7 +13,7 @@ module.exports = {
 			name: "emoji",
 			description: "The emoji to set this server's local karma to.",
 			required: true,
-			type: ApplicationCommandOptionTypes.EMOJI
+			type: "STRING"
 		}
 	],
 
@@ -20,7 +22,20 @@ module.exports = {
 	guildOnly: true,
 
 	callback: ({ member, instance, interaction }) => {
-		Personalisation.changeGuildKarmaEmoji(member.guild.id, interaction.options.getString("emoji"))
-		return 'Karma emoji changed.'
+		const isEmoji = (str) => str.match(/((?<!\\)<:[^:]+:(\d+)>)|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gmu);
+
+		if (!isEmoji(interaction.options.getString("emoji"))) {
+			Embed.createErrorEmbed("`" + interaction.options.getString("emoji") + "` is not an emoji!").then(function (errorEmbed) {
+				interaction.channel.send({
+					embeds: [ errorEmbed ]
+				});
+			})
+			return;
+		}
+		
+        return new MessageEmbed()
+            .setColor("GREEN")
+            .setTitle("✔️ Server Karma changed!")
+            .setDescription("The new emoji for this server's karma is " + interaction.options.getString("emoji") + ".")
 	},
 }

@@ -1,4 +1,4 @@
-const { GuildMember, CommandInteraction, MessageActionRow, MessageButton, MessageButtonStyleResolvable, TextChannel, ButtonInteraction } = require('discord.js');
+const { GuildMember, CommandInteraction, MessageActionRow, MessageButton, MessageEmbed, MessageButtonStyleResolvable, TextChannel, ButtonInteraction } = require('discord.js');
 const Setup = require('./setup');
 const embeds = require('../data/embeds');
 
@@ -83,4 +83,23 @@ module.exports = class Embed {
 			msgInt.editReply({ components: [] });
 		});
 	}
+
+    static async createErrorEmbed(reason) {
+        const date = new Date();
+		const randomErrorMessage = [
+			"Something went wrong!",
+			"We've found an error...",
+			"There's been a problem!",
+			"Sorry, an error has ocurred...",
+			"Dead Reto, oops!",
+			"Try plugging it off then on again?",
+			"Guru Meditation"
+		];
+
+        return new MessageEmbed()
+            .setColor("RED")
+            .setTitle("⚠️ " + randomErrorMessage[Math.floor(Math.random()*randomErrorMessage.length)])
+            .setDescription(reason)
+            .setFooter({text: date.toString() });
+    }
 }

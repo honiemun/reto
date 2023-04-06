@@ -1,5 +1,6 @@
 const { Client, MessageEmbed, TextChannel } = require("discord.js");
 const WOK = require("wokcommands");
+const Embed = require("../classes/embed");
 
 module.exports = (client, instance) => {
     function sendErrorToConsole (reason, parameter) {
@@ -14,16 +15,7 @@ module.exports = (client, instance) => {
         !channel ? newChannel = client.channels.cache.get(process.env.ERROR_CHANNEL) : newChannel = channel;
         if (!newChannel) return;
 
-        newChannel.send({embeds: [createErrorEmbed(reason, parameter)]});
-    }
-
-    function createErrorEmbed(reason, parameter) {
-        const date = new Date();
-        return new MessageEmbed()
-            .setColor("RED")
-            .setTitle("⚠️ Error")
-            .setDescription(parameter)
-            .setFooter({text: date.toISOString() });
+        newChannel.send({embeds: [Embed.createErrorEmbed(reason)]});
     }
 
     function handleError(reason, parameter) {

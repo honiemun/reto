@@ -19,13 +19,13 @@ module.exports = {
 	guildOnly: false,
 
 	callback: ({ instance, interaction, member }) => {
+		interaction.deferReply();
 		const user = interaction.options.getUser("user") ? interaction.options.getUser("user") : member
 		if (user == null) return
 		
-		// TO-DO: Turn this into a return-based thing.
 		Profile.fetchProfileEmbed(user, member, instance, interaction).then((embed) => {
 			if (!embed) return;
-			return interaction.channel?.send({embeds: [ embed ]})
+			return interaction.editReply({embeds: [ embed ]})
 		});
 	},
 }
