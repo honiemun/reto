@@ -21,21 +21,30 @@ module.exports = {
 	testOnly: true, // This only works for test servers!
 	guildOnly: true,
 
-	callback: ({ member, instance, interaction }) => {
+	callback: async ({ member, instance, interaction }) => {
+		await interaction.deferReply();
 		const isEmoji = (str) => str.match(/((?<!\\)<:[^:]+:(\d+)>)|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gmu);
 
 		if (!isEmoji(interaction.options.getString("emoji"))) {
-			Embed.createErrorEmbed("`" + interaction.options.getString("emoji") + "` is not an emoji!").then(function (errorEmbed) {
-				interaction.channel.send({
-					embeds: [ errorEmbed ]
-				});
+			Embed.createErrorEmbed("`" + interaction.options.getString("emoji") + "` is not an emoji!").then(async function (errorEmbed) {
+				await interaction.followUp({ embeds: [ errorEmbed ], ephemeral: true })
 			})
 			return;
 		}
+
+		if (isEmoji(interaction.options.getString("emoji")).length > 1) {
+			Embed.createErrorEmbed("You can only set one emoji at a time!").then(async function (errorEmbed) {
+				await interaction.followUp({ embeds: [ errorEmbed ], ephemeral: true })
+			})
+			return;
+		}
+
+		Personalisation.changeGuildKarmaEmoji(member.guild.id, interaction.options.getString("emoji"))
 		
-        return new MessageEmbed()
+        await interaction.editReply({ embeds: [ new MessageEmbed()
             .setColor("GREEN")
             .setTitle("✔️ Server Karma changed!")
             .setDescription("The new emoji for this server's karma is " + interaction.options.getString("emoji") + ".")
+		] });
 	},
 }
