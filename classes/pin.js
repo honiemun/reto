@@ -6,6 +6,8 @@ const Personalisation = require('./personalisation');
 // Schemas
 const messageSchema = require('../schemas/message');
 const pinnedEmbedSchema = require('../schemas/pinnedEmbed');
+const userSchema = require('../schemas/user');
+const memberSchema = require('../schemas/member');
 
 module.exports = class Pin {
     static async pinMessageToChannel(message, reactable, client) {
@@ -13,28 +15,10 @@ module.exports = class Pin {
 
         const embed          = await this.generateMessageEmbed(message);
         const karmaString    = await this.getKarmaTotalString(message);
-        const pinnedMessages = await this.getAttachedPinnedMessages(message, client);
         
         // Get the channel to send/edit the message into
-        // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
-
-        let iterableChannels = [];
-
-         if (pinnedMessages.length > 0) {
-            for (const pinnedMessage of pinnedMessages) iterableChannels.push({
-                id: pinnedMessage.channelId,
-                embed: pinnedMessage.pinnedEmbedId,
-                edit: true
-            });
-        } if (reactable.sendsToChannel) {
-            iterableChannels.push({
-                id: reactable.sendsToChannel,
-                embed: "",
-                edit: false
-            });
-        }
-        
-        if (iterableChannels.length == 0) return;
+        const iterableChannels = await this.getIterableChannels(message, client, reactable);
+        if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
             client.channels.fetch(iterableChannel.id).then((channel) => {
@@ -63,6 +47,68 @@ module.exports = class Pin {
         }
     }
 
+    static async deleteMessage(message, client) {
+        // Remove the user's karma from that message
+        const databaseMessage = await messageSchema.findOne({ messageId: message.id }).exec();
+        if (!databaseMessage) return; // Ignore all messages not on the DB.
+        
+        if (databaseMessage.karma != 0) {
+            await userSchema.findOneAndUpdate(
+                { userId: message.author.id },
+                { $inc : { 'globalKarma' : -databaseMessage.karma } },
+                { upsert: true }
+            ).exec();
+    
+            await memberSchema.findOneAndUpdate(
+                { userId: message.author.id, guildId: message.guildId },
+                { $inc : { 'karma' : -databaseMessage.karma } },
+                { upsert: true }
+            ).exec();
+        }
+
+
+        // Delete all pinned messages (database and Discord)
+        const iterableChannels = await this.getIterableChannels(message, client, false);
+        if (!iterableChannels) return;
+
+        for (const iterableChannel of iterableChannels) {
+            client.channels.fetch(iterableChannel.id).then(channel => {
+                channel.messages.delete(iterableChannel.embed);
+
+                pinnedEmbedSchema.findOneAndRemove({
+                    pinnedEmbedId: message.id
+                }).exec();
+            });
+        }
+
+        // Delete the message from the database
+        await messageSchema.findOneAndRemove(
+            { messageId: message.id }
+        ).exec();
+    }
+
+    static async getIterableChannels(message, client, reactable) {
+        const pinnedMessages = await this.getAttachedPinnedMessages(message, client);
+        let iterableChannels = [];
+
+         if (pinnedMessages.length > 0) {
+            for (const pinnedMessage of pinnedMessages) iterableChannels.push({
+                id: pinnedMessage.channelId,
+                embed: pinnedMessage.pinnedEmbedId,
+                edit: true
+            });
+        } if (reactable.sendsToChannel) {
+            iterableChannels.push({
+                id: reactable.sendsToChannel,
+                embed: "",
+                edit: false
+            });
+        }
+        
+        if (iterableChannels.length == 0) return;
+
+        return iterableChannels;
+    }
     static async generateMessageEmbed (message) {
         
         // Generate default message embed

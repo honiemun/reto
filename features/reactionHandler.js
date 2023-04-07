@@ -51,6 +51,10 @@ module.exports = (client, instance) => {
       
       console.log('💕 ' + message.author.username + "'s message has been reacted to (" + karmaToAward + ")");
 
+      // Check if the reaction isn't duplicated
+      if (await Reaction.checkIfPreviouslyReacted(message, user, reactable) && isPositive) return; // Exit if the message has been reacted (positive)
+      else if (await Reaction.checkIfPreviouslyReacted(message, user, reactable) < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
+
       // Store reaction
       const savedReaction = await Reaction.saveOrDeleteReaction(message, user, reactable, isPositive);
       if (!savedReaction) return;
@@ -82,6 +86,23 @@ module.exports = (client, instance) => {
   // On reaction removed
   client.on('messageReactionRemove', async (reaction, user) => {
     await messageReactionHandler(reaction, user, false);
+  });
+
+  // On message edited
+  client.on('messageUpdate', async (oldMessage, newMessage) => {
+    await Pin.pinMessageToChannel(
+      newMessage,
+      false,
+      client
+    )
+  });
+
+  // On message deleted
+  client.on('messageDelete', async (message) => {
+    await Pin.deleteMessage(
+      message,
+      client
+    )
   });
 }
 

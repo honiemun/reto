@@ -14,17 +14,17 @@ const pinnedEmbedSchema = new mongoose.Schema({
 		required: true
 	},
 
-    // The pinned embed's channel ID.
-    channelId: {
-		type: String,
-		required: true
-    },
+  // The pinned embed's channel ID.
+  channelId: {
+  type: String,
+  required: true
+  },
 
-    // The message this pinned embed references.
-    message: {
-        type: Schema.Types.ObjectId,
-        ref: "message"
-    }
+  // The message this pinned embed references.
+  message: {
+      type: Schema.Types.ObjectId,
+      ref: "message"
+  }
 });
 
 module.exports = mongoose.model("pinnedEmbed", pinnedEmbedSchema);

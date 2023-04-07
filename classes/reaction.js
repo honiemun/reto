@@ -3,7 +3,7 @@ const reactionSchema = require('../schemas/reaction');
 
 module.exports = class Reaction {
     static async saveOrDeleteReaction (message, reactingUser, reactable, toSave) {
-        if (await this.checkIfPreviouslyReacted(message, reactingUser, reactable) && toSave) return false;
+        //if (await this.checkIfPreviouslyReacted(message, reactingUser, reactable)) return false;
 
         if (toSave) await this.saveReaction(message, reactingUser, reactable);
         else await this.deleteReaction(message, reactingUser, reactable);
@@ -27,13 +27,13 @@ module.exports = class Reaction {
     }
 
     static async checkIfPreviouslyReacted (message, reactingUser, reactable) {
-        return reactionSchema.find({
+        const reactions = await reactionSchema.find({
             messageId: message.id,
             userId: reactingUser.id,
             reactableId: reactable._id
-        }).then((reactions) => {
-            return Boolean(reactions.length)
-        })
+        }).exec();
+
+        return reactions.length;
     }
 
     // Currently goes un-used - the reactionHandler recursively deletes
