@@ -123,6 +123,7 @@ module.exports = class Pin {
         messageEmbed.author = await this.setEmbedAuthor(message);
         messageEmbed.footer = await this.setEmbedFooter(message);
         messageEmbed.color  = await this.setEmbedColor(message);
+        messageEmbed.image  = await this.setEmbedSingleImage(message);
 
         messageEmbed.fields = await this.parseEmbedIntoFields(message);
         const embedReply = await this.setEmbedReply(message); // I pray to the Typescript gods above to forgive me for such ingenuity
@@ -210,30 +211,50 @@ module.exports = class Pin {
         }
     }
 
+    static async setEmbedSingleImage (message) {
+        if (!message.attachments) return;
+        if (message.attachments.size > 1) return;
+
+        for (const attachment of message.attachments.values()) {
+            if (attachment.url) {
+                return {
+                    url: attachment.url
+                };
+            }
+        }
+    }
+
     static async setEmbedImages (message, url) {
         let embedArray = []
 
         // Attachments
-        if (message.attachments.values())
-        for (const attachment of message.attachments.values()) {
-            if (attachment.url) {
-                embedArray.push({
-                    url: url,
-                    image: {
-                        url: attachment.url
-                    }
-                });
+        if (message.attachments.values() && message.attachments.size > 1) {
+            for (const attachment of message.attachments.values()) {
+                if (attachment.url) {
+                    embedArray.push({
+                        url: url,
+                        image: {
+                            url: attachment.url
+                        }
+                    });
+                }
             }
         }
         
         // Embeds
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
-                if (embed.image) {
+                console.log(embed);
+                let imageUrl = false;
+                
+                if (embed.image && embed.image.url) imageUrl = embed.image.url;
+                if (embed.thumbnail && embed.thumbnail.url) imageUrl = embed.thumbnail.url;
+
+                if (imageUrl) {
                     embedArray.push({
                         url: url,
                         image: {
-                            url: embed.image.url,
+                            url: imageUrl,
                         }
                     });
                 }
