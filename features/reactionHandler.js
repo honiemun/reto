@@ -52,8 +52,9 @@ module.exports = (client, instance) => {
       console.log('💕 ' + message.author.username + "'s message has been reacted to (" + karmaToAward + ")");
 
       // Check if the reaction isn't duplicated
-      if (await Reaction.checkIfPreviouslyReacted(message, user, reactable) && isPositive) return; // Exit if the message has been reacted (positive)
-      else if (await Reaction.checkIfPreviouslyReacted(message, user, reactable) < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
+      const amountReacted = await Reaction.checkIfPreviouslyReacted(message, user, reactable)
+      if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
+      else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
 
       // Store reaction
       const savedReaction = await Reaction.saveOrDeleteReaction(message, user, reactable, isPositive);
@@ -70,7 +71,8 @@ module.exports = (client, instance) => {
       await Pin.pinMessageToChannel(
         message,
         reactable,
-        client
+        client,
+        user
       )
 
       // Send notification

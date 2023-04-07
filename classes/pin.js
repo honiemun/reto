@@ -1,6 +1,7 @@
 const { Message, PartialMessage, Client, TextChannel, MessageEmbed, User, MessageActionRow, MessageButton } = require("discord.js");
 
 const Personalisation = require('./personalisation');
+const Reaction = require('./reaction');
 //const Embed = require('../interfaces/messageEmbed');
 
 // Schemas
@@ -10,8 +11,18 @@ const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
 
 module.exports = class Pin {
-    static async pinMessageToChannel(message, reactable, client) {
+    static async pinMessageToChannel(message, reactable, client, user = false) {
         if (!message) return;
+
+        // Check if previously reacted
+        if (user) {
+            const hasReacted = await Reaction.checkIfPreviouslyReacted(message, user, reactable);
+            if (!hasReacted) {
+                // TO-DO: Remove this user's pinned post if this is the last star.
+                // Would require checking for the reactions of the post
+                return;
+            }
+        }
 
         const embed          = await this.generateMessageEmbed(message);
         const karmaString    = await this.getKarmaTotalString(message);
