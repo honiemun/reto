@@ -11,6 +11,10 @@
       "english": "Global Karma",
       "spanish": "Karma Global"
     },
+    "SOMEONE_REACTED": {
+      "english": "{kr} gave your message a **{re} {rn}**! You now have {ke} `{k}`.",
+      "spanish": "{kr} le dió **{re} {rn}** a tu mensaje! Ahora tienes {ke} `{k}`."
+    },
     "RANK": {
       "english": "Rank",
       "spanish": "Ranking"

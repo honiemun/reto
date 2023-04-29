@@ -40,8 +40,8 @@ module.exports = class Karma {
 			message.reply({
 				embeds: [
 					{
-						title: guildDocument.reactionConfirmationTitle ? guildDocument.reactionConfirmationTitle : "Title",
-						description: guildDocument.reactionConfirmationDescription ? guildDocument.reactionConfirmationDescription : "Description"
+						title: guildDocument.reactionConfirmationTitle ?? "Title",
+						description: guildDocument.reactionConfirmationDescription ?? "Description"
 					}
 				],
 			}).then((reply) => {

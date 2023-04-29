@@ -46,6 +46,7 @@ const guildSchema = new mongoose.Schema({
 
 	// The header of the embed that's sent after a successful Reactable execution.
 	// Only used if messageConfirmation is True.
+	// This overrides the default that's localised depending on the user's language!
 	reactionConfirmationTitle: {
 		type: String,
 		required: false
@@ -53,6 +54,7 @@ const guildSchema = new mongoose.Schema({
 
 	// The description of the embed that's sent after a successful Reactable execution.
 	// Only used if messageConfirmation is True.
+	// This overrides the default that's localised depending on the user's language!
 	reactionConfirmationDescription: {
 		type: String,
 		required: false

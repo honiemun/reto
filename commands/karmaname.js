@@ -1,5 +1,4 @@
 const { MessageEmbed } = require("discord.js");
-const I18n = require("../classes/i18n");
 const ApplicationCommandOptionTypes = require("discord.js");
 const Personalisation = require("../classes/personalisation");
 
