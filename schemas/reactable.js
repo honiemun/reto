@@ -57,9 +57,18 @@ const reactableSchema = new mongoose.Schema({
 		default: false
 	},
 
-	// The message this reactable sends to the channel it's been reacted on,
-	// if the Guild has messageConfirmation on.
-	messageConfirmation: {
+	// The header of the embed that's sent after a successful Reactable execution.
+	// Only used if messageConfirmation is True.
+	// This overrides the default that's localised depending on the user's language!
+	reactionConfirmationTitle: {
+		type: String,
+		required: false
+	},
+
+	// The description of the embed that's sent after a successful Reactable execution.
+	// Only used if messageConfirmation is True.
+	// This overrides the default that's localised depending on the user's language!
+	reactionConfirmationDescription: {
 		type: String,
 		required: false
 	}

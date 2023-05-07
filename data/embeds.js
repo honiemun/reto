@@ -1,4 +1,4 @@
-const { Guild, GuildMember } = require("discord.js");
+const { Guild, GuildMember, ButtonStyle } = require("discord.js");
 const Setup = require("../classes/setup")
 
 module.exports = [
@@ -21,7 +21,7 @@ module.exports = [
             {
                 id: "chooseSetupType",
                 label: "Let's get started!",
-                style: "PRIMARY",
+                style: ButtonStyle.Primary,
                 disabled: false,
             },
             {
@@ -56,7 +56,7 @@ module.exports = [
             {
                 id: "quickSetup",
                 label: "Quick setup",
-                style: "PRIMARY",
+                style: ButtonStyle.Primary,
                 next: "publicServer",
                 disabled: false,
                 function: function(guild, member) { Setup.quickSetup(guild, member); }
@@ -81,7 +81,7 @@ module.exports = [
                 id: "serverPublic",
                 label: "Set server as Public",
                 next: "done",
-                style: "PRIMARY",
+                style: ButtonStyle.Primary,
                 disabled: false,
                 function: function(guild) { Setup.setPublicServer(guild); }
             },

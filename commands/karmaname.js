@@ -1,5 +1,5 @@
-const { MessageEmbed } = require("discord.js");
-const ApplicationCommandOptionTypes = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const ApplicationCommandOptionType = require("discord.js");
 const Personalisation = require("../classes/personalisation");
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
 			name: "karma-name",
 			description: "The name to rename this server's local karma to.",
 			required: true,
-			type: "STRING"
+			type: ApplicationCommandOptionType.String
 		}
 	],
 
@@ -22,7 +22,7 @@ module.exports = {
 	callback: ({ member, instance, interaction }) => {
 		Personalisation.changeGuildKarmaName(member.guild.id, interaction.options.getString("karma-name"))
 
-        return new MessageEmbed()
+        return new EmbedBuilder()
             .setColor("GREEN")
             .setTitle("✔️ Server Karma changed!")
             .setDescription("The new name for this server's karma is *" + interaction.options.getString("karma-name") + "*.")

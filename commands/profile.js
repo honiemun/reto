@@ -1,5 +1,5 @@
 const Profile = require("../classes/profile");
-const ApplicationCommandOptionTypes = require("discord.js");
+const ApplicationCommandOptionType = require("discord.js");
 
 module.exports = {
 	category: 'Profiles',
@@ -10,7 +10,7 @@ module.exports = {
 			name: "user",
 			description: "The user to check the profile of.",
 			required: false,
-			type: ApplicationCommandOptionTypes.USER
+			type: ApplicationCommandOptionType.User
 		}
 	],
 

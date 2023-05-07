@@ -3,6 +3,7 @@ const memberSchema = require('../schemas/member');
 const messageSchema = require('../schemas/message');
 const retoEmojis = require('../data/retoEmojis');
 const { User, PartialUser, Message, PartialMessage } = require('discord.js');
+const Formatting = require('./formatting');
 
 module.exports = class Karma {
 	static async awardKarmaToUser (karmaToAward, user, message) {
@@ -35,13 +36,15 @@ module.exports = class Karma {
 		).exec();
 	}
 
-	static async sendKarmaNotification (message, guildDocument) {
+	static async sendKarmaNotification (message, guildDocument, reactable) {
 		if (guildDocument.messageConfirmation) {
 			message.reply({
 				embeds: [
 					{
-						title: guildDocument.reactionConfirmationTitle ?? "Title",
-						description: guildDocument.reactionConfirmationDescription ?? "Description"
+						title: await Formatting.format(reactable.reactionConfirmationTitle, message, message.guild, reactable) ??
+							   await Formatting.format("{rl} gave {al} message a {rn} {re}", message, message.guild, reactable),
+						description: await Formatting.format(reactable.reactionConfirmationDescription, message, message.guild, reactable) ??
+							   await Formatting.format("{am} now has {ke} {kn} `{k}`.", message, message.guild, reactable)
 					}
 				],
 			}).then((reply) => {
@@ -49,7 +52,6 @@ module.exports = class Karma {
 					reply.delete();
 				}, 5 * 1000);
 			});
-			console.log("penis");
 		} else {
 			const reactionEmoji = guildDocument.reactionConfirmationEmoji ? guildDocument.reactionConfirmationEmoji : retoEmojis.confirmationEmoji;
 			message.react(reactionEmoji).then((reaction) => {

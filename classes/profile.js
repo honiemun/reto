@@ -1,4 +1,4 @@
-const { GuildMember, User, MessageEmbed } = require("discord.js");
+const { GuildMember, User, EmbedBuilder } = require("discord.js");
 
 const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');

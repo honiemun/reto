@@ -1,25 +1,34 @@
-const { Client, Intents, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const WOK = require("wokcommands");
 const path = require("path");
+const mongoose = require("mongoose");
 require("dotenv/config");
 
 const client = new Client({
 	intents: [
-		Intents.FLAGS.GUILDS,
-		Intents.FLAGS.GUILD_MESSAGES,
-		Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.GuildMessageReactions
 	],
 	partials: [
-		'MESSAGE',
-		'CHANNEL',
-		'REACTION'
+		Partials.Message,
+		Partials.Channel,
+		Partials.Reaction
 	]
 });
 
+
+
+mongoose.set('strictQuery', true);
+
 client.on("ready", () => {
-  new WOK(client, {
+  new WOK({
+		client,
 		commandsDir: path.join(__dirname, 'commands'),
-		featuresDir: path.join(__dirname, 'features'),
+		featuresDIr: path.join(__dirname, "features"),
+		events: {
+			dir: path.join(__dirname, 'events')
+		},
 		messagesPath: path.join(__dirname, 'i18n/messages.json'),
 		testServers: [
 			'952707420700934195', // Retool Development

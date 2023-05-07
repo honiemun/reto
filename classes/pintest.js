@@ -1,14 +1,11 @@
-const { Message, PartialMessage, Client, TextChannel, EmbedBuilder, User, ActionRowBuilder, ButtonBuilder } = require("discord.js");
-
-const Personalisation = require('./personalisation');
-const Reaction = require('./reaction');
-//const Embed = require('../interfaces/EmbedBuilder');
-
 // Schemas
 const messageSchema = require('../schemas/message');
 const pinnedEmbedSchema = require('../schemas/pinnedEmbed');
 const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
+
+// Classes
+const Reaction = require("./reaction")
 
 module.exports = {
     pinMessageToChannel: async function (message, reactable, client, user = false) {

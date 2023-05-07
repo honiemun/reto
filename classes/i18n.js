@@ -6,6 +6,8 @@ module.exports = class I18n {
         if ((!message && !interaction)) return translationKey;
         
         const guild = message ? message.guild : interaction?.guild;
-        return instance.messageHandler.get(guild, translationKey);
+        // instance.messageHandler.get(guild, translationKey);
+        // TO-DO: REIMPLEMENT
+        return translationKey;
     }
 }

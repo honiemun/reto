@@ -1,4 +1,4 @@
-const { MessageActionRow, MessageButton } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 const Formatting = require("../classes/formatting");
 const { forEach } = require("../data/defaultReactables");
@@ -35,17 +35,17 @@ module.exports = {
 		}
 
 		const getRow = (id) => {
-			const row = new MessageActionRow()
+			const row = new ActionRowBuilder()
 
 			row.addComponents(
-				new MessageButton()
+				new ButtonBuilder()
 					.setCustomId('prev_embed')
 					.setStyle('SECONDARY')
 					.setEmoji('⬅️')
 					.setDisabled(pages[id] === 0)
 			);
 			row.addComponents(
-				new MessageButton()
+				new ButtonBuilder()
 					.setCustomId('next_embed')
 					.setStyle('SECONDARY')
 					.setEmoji('➡️')

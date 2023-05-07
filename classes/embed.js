@@ -1,4 +1,4 @@
-const { GuildMember, CommandInteraction, MessageActionRow, MessageButton, MessageEmbed, MessageButtonStyleResolvable, TextChannel, ButtonInteraction } = require('discord.js');
+const { GuildMember, CommandInteraction, ActionRowBuilder, ButtonBuilder, EmbedBuilder, TextChannel, ButtonInteraction } = require('discord.js');
 const Setup = require('./setup');
 const embeds = require('../data/embeds');
 
@@ -38,7 +38,7 @@ module.exports = class Embed {
 		// Create action components
 		let actionComponents = []
 		for (let component of components) {
-			actionComponents.push(new MessageButton()
+			actionComponents.push(new ButtonBuilder()
 				.setCustomId(component.url ? "" : component.id)
 				.setLabel(component.label)
 				.setStyle(component.style)
@@ -48,7 +48,7 @@ module.exports = class Embed {
 		}
 		
 		// TO-DO: Support multiple rows
-		return new MessageActionRow().addComponents(actionComponents)
+		return new ActionRowBuilder().addComponents(actionComponents)
 
 	}
 
@@ -96,7 +96,7 @@ module.exports = class Embed {
 			"Guru Meditation"
 		];
 
-        return new MessageEmbed()
+        return new EmbedBuilder()
             .setColor("RED")
             .setTitle("⚠️ " + randomErrorMessage[Math.floor(Math.random()*randomErrorMessage.length)])
             .setDescription(reason)

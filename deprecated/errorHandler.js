@@ -1,4 +1,4 @@
-const { Client, MessageEmbed, TextChannel } = require("discord.js");
+const { Client, EmbedBuilder, TextChannel } = require("discord.js");
 const WOK = require("wokcommands");
 const Embed = require("../classes/embed");
 

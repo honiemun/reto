@@ -20,18 +20,38 @@ module.exports = class Personalisation {
     }
 
     static async changeGuildKarmaName(guild, karmaName) {
-		await guildSchema.findOneAndUpdate(
-			{ guildId: guild },
-			{ $set : { 'karmaName' : karmaName } },
-			{ upsert: true }
-		).exec();
+      await guildSchema.findOneAndUpdate(
+        { guildId: guild },
+        { $set : { 'karmaName' : karmaName } },
+        { upsert: true }
+      ).exec();
     }
 
     static async changeGuildKarmaEmoji(guild, karmaEmoji) {
-		await guildSchema.findOneAndUpdate(
-			{ guildId: guild },
-			{ $set : { 'karmaEmoji' : karmaEmoji } },
-			{ upsert: true }
-		).exec();
+      await guildSchema.findOneAndUpdate(
+        { guildId: guild },
+        { $set : { 'karmaEmoji' : karmaEmoji } },
+        { upsert: true }
+      ).exec();
+    }
+
+    static async changeMessageReplyMode(guild, isEmbed) {
+      await guildSchema.findOneAndUpdate(
+        { guildId: guild },
+        { $set : { 'messageConfirmation' : isEmbed } },
+        { upsert: true }
+      ).exec();
+    }
+    
+    static async changeReactionEmbed(guild, title, description) {
+      await guildSchema.findOneAndUpdate(
+        { guildId: guild },
+        { $set : {
+          'reactionConfirmationTitle' : title,
+          'reactionConfirmationDescription' : description
+          }
+        },
+        { upsert: true }
+      ).exec();
     }
 }

@@ -3,11 +3,12 @@
 module.exports = class Formatting {
 
 
-    static async format (message, reactable = null) {
-        const rules = this.getFormattingRules(message);
+    static async format (textToFormat, message = null, guild = null, reactable = null) {
+        // const rules = this.getFormattingRules(message);
+        return textToFormat;
     }
 
-    static async getFormattingRules (message, reactable) {
+    static async getFormattingRules (message, guild, reactable) {
         // TO-DO: I18n
 
         // Changes from Reto Legacy:
@@ -24,7 +25,7 @@ module.exports = class Formatting {
                 "al": {
                     "name": "Author (local)",
                     "description": "The local username (the alias they have on this server) of said author.",
-                    "format": null
+                    "format": message && guild ? guild.member(message.author) : null
                 },
                 "am": {
                     "name": "Author (mention)",
@@ -86,6 +87,11 @@ module.exports = class Formatting {
                     "name": "Reactable Name",
                     "description": "The name of the reactable.",
                     "format": reactable ? reactable.name : null
+                },
+                "rn": {
+                    "name": "Reactable Emoji",
+                    "description": "The emoji of the reactable.",
+                    "format": reactable ? reactable.emojiIds[0] : null
                 },
                 "rk": {
                     "name": "Reactable's Karma Awarded",

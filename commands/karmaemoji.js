@@ -1,6 +1,6 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const I18n = require("../classes/i18n");
-const ApplicationCommandOptionTypes = require("discord.js");
+const ApplicationCommandOptionType = require("discord.js");
 const Personalisation = require("../classes/personalisation");
 const Embed = require("../classes/embed");
 
@@ -13,7 +13,7 @@ module.exports = {
 			name: "emoji",
 			description: "The emoji to set this server's local karma to.",
 			required: true,
-			type: "STRING"
+			type: ApplicationCommandOptionType.String
 		}
 	],
 
@@ -41,7 +41,7 @@ module.exports = {
 
 		Personalisation.changeGuildKarmaEmoji(member.guild.id, interaction.options.getString("emoji"))
 		
-        await interaction.editReply({ embeds: [ new MessageEmbed()
+        await interaction.editReply({ embeds: [ new EmbedBuilder()
             .setColor("GREEN")
             .setTitle("✔️ Server Karma changed!")
             .setDescription("The new emoji for this server's karma is " + interaction.options.getString("emoji") + ".")
