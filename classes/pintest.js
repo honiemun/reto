@@ -5,7 +5,8 @@ const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
 
 // Classes
-const Reaction = require("./reaction")
+const Reaction = require("./reactiontest");
+const Personalisation = require("./personalisation");
 
 module.exports = {
     pinMessageToChannel: async function (message, reactable, client, user = false) {

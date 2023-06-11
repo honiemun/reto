@@ -10,9 +10,9 @@ const Test = require("./pintest")
 const Pin = require("./pin")
 const Karma = require("./karma")
 
-module.exports = class Reaction {
+module.exports = {
     
-    static async messageReactionHandler (reaction, user, isPositive) {
+    messageReactionHandler: async function (reaction, user, isPositive) {
         if (reaction.partial) await reaction.fetch();
         if (user.bot) return;
         // TO-DO: Return if the reactor is the same as the author.
@@ -39,8 +39,6 @@ module.exports = class Reaction {
             : reactable.karmaAwarded * -1;
 
         // Replace message with pinned message, if it exists
-        //console.log(Object.getOwnPropertyNames(Test.prototype));
-        await Test.test();
         const message = await Test.getStoredPinnedMessage(reaction.message).then((pinnedMessage) => {
             if (pinnedMessage) {
             // TO-DO: Can this be simplified?
@@ -55,12 +53,12 @@ module.exports = class Reaction {
         console.log('💕 ' + message.author.username + "'s message has been reacted to (" + karmaToAward + ")");
 
         // Check if the reaction isn't duplicated
-        const amountReacted = await Reaction.checkIfPreviouslyReacted(message, user, reactable)
+        const amountReacted = await this.checkIfPreviouslyReacted(message, user, reactable)
         if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
         else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
 
         // Store reaction
-        const savedReaction = await Reaction.saveOrDeleteReaction(message, user, reactable, isPositive);
+        const savedReaction = await this.saveOrDeleteReaction(message, user, reactable, isPositive);
         if (!savedReaction) return;
 
         // Award the karma total to user
@@ -81,33 +79,33 @@ module.exports = class Reaction {
         // Send notification
         await Karma.sendKarmaNotification(reaction.message, guildDocument, reactable);
         }
-    }
+    },
 
-    static async saveOrDeleteReaction (message, reactingUser, reactable, toSave) {
+    saveOrDeleteReaction: async function (message, reactingUser, reactable, toSave) {
         //if (await this.checkIfPreviouslyReacted(message, reactingUser, reactable)) return false;
 
         if (toSave) await this.saveReaction(message, reactingUser, reactable);
         else await this.deleteReaction(message, reactingUser, reactable);
         return true;
-    }
+    },
 
-    static async saveReaction (message, reactingUser, reactable) {
+    saveReaction: async function (message, reactingUser, reactable) {
         return new reactionSchema({
             messageId: message.id,
             userId: reactingUser.id,
             reactableId: reactable._id
         }).save();
-    }
+    },
 
-    static async deleteReaction (message, reactingUser, reactable) {
+    deleteReaction: async function (message, reactingUser, reactable) {
         return reactionSchema.deleteMany({
             messageId: message.id,
             userId: reactingUser.id,
             reactableId: reactable._id
         }).exec();
-    }
+    },
 
-    static async checkIfPreviouslyReacted (message, reactingUser, reactable) {
+    checkIfPreviouslyReacted: async function (message, reactingUser, reactable) {
         const reactions = await reactionSchema.find({
             messageId: message.id,
             userId: reactingUser.id,
@@ -120,7 +118,7 @@ module.exports = class Reaction {
     // Currently goes un-used - the reactionHandler recursively deletes
     // every reaction if this is implemented.
     /*
-    static async undoReaction (message: Message | PartialMessage, reactingUser: User | PartialUser) {
+    undoReaction: async function (message: Message | PartialMessage, reactingUser: User | PartialUser) {
         const userReactions = message.reactions.cache.filter(reaction => reaction.users.cache.has(reactingUser.id));
 
         try {

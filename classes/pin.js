@@ -1,7 +1,7 @@
 const { Message, PartialMessage, Client, TextChannel, EmbedBuilder, User, ActionRowBuilder, ButtonBuilder } = require("discord.js");
 
 const Personalisation = require('./personalisation');
-const Reaction = require('./reaction');
+const Reaction = require('./reactiontest');
 //const Embed = require('../interfaces/EmbedBuilder');
 
 // Schemas
