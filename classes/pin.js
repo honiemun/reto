@@ -1,22 +1,30 @@
-const { Message, PartialMessage, Client, TextChannel, EmbedBuilder, User, ActionRowBuilder, ButtonBuilder } = require("discord.js");
-
-const Personalisation = require('./personalisation');
-const Reaction = require('./reactiontest');
-//const Embed = require('../interfaces/EmbedBuilder');
-
 // Schemas
 const messageSchema = require('../schemas/message');
 const pinnedEmbedSchema = require('../schemas/pinnedEmbed');
 const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
 
-module.exports = {
-    pinMessageToChannel: async function (message, reactable, client, user = false) {
+// Classes
+const Reaction = require("./reaction");
+const Personalisation = require("./personalisation");
+console.log('Reaction', Reaction, typeof Reaction)
+
+
+class Pin {
+    
+    constructor() {
+        if (Pin._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Pin._instance = this;
+    }
+
+    async pinMessageToChannel(message, reactable, client, user = false) {
         if (!message) return;
 
         // Check if previously reacted
         if (user) {
-            const hasReacted = await Reaction.checkIfPreviouslyReacted(message, user, reactable);
+            const hasReacted = false //await reaction.checkIfPreviouslyReacted(message, user, reactable);
             if (!hasReacted) {
                 // TO-DO: Remove this user's pinned post if this is the last star.
                 // Would require checking for the reactions of the post
@@ -56,9 +64,9 @@ module.exports = {
                 }
             });
         }
-    },
+    }
 
-    deleteMessage: async function (message, client) {
+    async deleteMessage(message, client) {
         // Remove the user's karma from that message
         const databaseMessage = await messageSchema.findOne({ messageId: message.id }).exec();
         if (!databaseMessage) return; // Ignore all messages not on the DB.
@@ -96,9 +104,9 @@ module.exports = {
         await messageSchema.findOneAndRemove(
             { messageId: message.id }
         ).exec();
-    },
+    }
 
-    getIterableChannels: async function (message, reactable) {
+    async getIterableChannels(message, reactable) {
         const pinnedMessages = await this.getAttachedPinnedMessages(message);
         let iterableChannels = [];
 
@@ -119,9 +127,9 @@ module.exports = {
         if (iterableChannels.length == 0) return;
 
         return iterableChannels;
-    },
+    }
     
-    generateMessageEmbed: async function (message) {
+    async generateMessageEmbed(message) {
         
         // Generate default message embed
         let messageEmbed = {
@@ -145,9 +153,9 @@ module.exports = {
         embedArray.unshift(messageEmbed)
 
         return embedArray;
-    },
+    }
 
-    storePinnedEmbed: async function (sentEmbed, message) {
+    async storePinnedEmbed(sentEmbed, message) {
         // TO-DO: Probably can be refactored to remove the first part (saving message in pinnedEmbedSchema) entirely.
         // Unfortunately, I'm too tired. Skill Issue.
         messageSchema.findOne({ messageId: message.id }).exec().then((storedMessage) => {
@@ -166,11 +174,11 @@ module.exports = {
             });
         })
 
-    },
+    }
 
     // Fetches the message attached to a pinnedEmbed object on the database.
     // TO-DO: Necessary??
-    getStoredPinnedMessage: async function (message) {
+    async getStoredPinnedMessage(message) {
         const pinnedEmbed = await pinnedEmbedSchema.findOne({
             pinnedEmbedId: message.id
         }).populate("message").exec();
@@ -180,19 +188,19 @@ module.exports = {
         // Populate deserves a special place in hell for this, and so do I
         if (!pinnedEmbed) return null;
         return JSON.parse(JSON.stringify(pinnedEmbed.message));
-    },
+    }
 
     // Fetches the array of pinnedEmbeds attached to a message object.
-    getAttachedPinnedMessages: async function (message) {
+    async getAttachedPinnedMessages(message) {
         const storedMessage = await messageSchema.findOne({
             messageId: message.id
         }).populate("pinnedEmbeds").exec();
         
         if (!storedMessage) return [];
         return JSON.parse(JSON.stringify(storedMessage.pinnedEmbeds));
-    },
+    }
 
-    getKarmaTotalString: async function (message) {
+    async getKarmaTotalString(message) {
         if (!message.guild) return;
         
         const messageDocument = await messageSchema.findOne({
@@ -203,27 +211,27 @@ module.exports = {
         const karmaTotal = messageDocument?.karma ? messageDocument.karma : "0"
         const guildKarmaData = await Personalisation.getGuildKarmaData(message.guild)
         return guildKarmaData?.emoji + ' **' + karmaTotal + '**'
-    },
+    }
 
-    setEmbedAuthor: async function (message) {
+    async setEmbedAuthor(message) {
         if (!message.author) return;
         const avatarURL = message.author.avatarURL()
         return {
             name: message.author.username,
             icon_url: avatarURL ? avatarURL : undefined
         }
-    },
+    }
 
-    setEmbedReply: async function (message) {
+    async setEmbedReply(message) {
         if (!message.reference || !message.reference.messageId) return;
         const reply = await message.channel.messages.fetch(message.reference.messageId);
         return {
             name: 'Replying to ' + reply.author.username,
             value: reply.content,
         }
-    },
+    }
 
-    setEmbedSingleImage: async function (message) {
+    async setEmbedSingleImage(message) {
         if (!message.attachments) return;
         if (message.attachments.size > 1) return;
 
@@ -234,9 +242,9 @@ module.exports = {
                 };
             }
         }
-    },
+    }
 
-    setEmbedImages: async function (message, url) {
+    async setEmbedImages(message, url) {
         let embedArray = []
 
         // Attachments
@@ -274,9 +282,9 @@ module.exports = {
         }
 
         return embedArray;
-    },
+    }
 
-    setEmbedFooter: async function (message) {
+    async setEmbedFooter(message) {
         const embedFooter = await this.generateEmbedFooter(message);
         const includesMessage = await this.generateIncludesString(message);
 
@@ -296,13 +304,13 @@ module.exports = {
             text: separatedText ? separatedText : '',
             iconURL: embedFooter?.iconURL ? embedFooter.iconURL : null
         }
-    },
+    }
 
-    setEmbedColor: async function (message) {
+    async setEmbedColor(message) {
         return message.embeds[0]?.color ? message.embeds[0]?.color : 0x202225
-    },
+    }
 
-    generateEmbedFooter: async function (message) {
+    async generateEmbedFooter(message) {
         if (message.embeds.length == 0) return;
         const embed = message.embeds[0]
         if (!embed.footer) return;
@@ -311,9 +319,9 @@ module.exports = {
             text: embed.footer.text ? embed.footer.text : null,
             iconURL: embed.footer.iconURL ? embed.footer.iconURL : null,
         }
-    },
+    }
 
-    generateIncludesString: async function (message) {
+    async generateIncludesString(message) {
         if (!message.attachments) return;
         const [firstAttachment] = message.attachments.values();
         if (!firstAttachment) return;
@@ -341,9 +349,9 @@ module.exports = {
 
         if (!includesMessage) return;
         return 'This message includes ' + includesMessage + '.'
-    },
+    }
     
-    parseEmbedIntoFields: async function (message) {
+    async parseEmbedIntoFields(message) {
         let fields = []
 
         for (const embed of message.embeds) {
@@ -367,3 +375,5 @@ module.exports = {
         return fields;
     }
 }
+
+module.exports = new Pin()

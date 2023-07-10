@@ -22,7 +22,8 @@ const client = new Client({
 mongoose.set('strictQuery', true);
 
 client.on("ready", () => {
-  new WOK({
+	console.log('ready');
+	new WOK({
 		client,
 		commandsDir: path.join(__dirname, 'commands'),
 		featuresDIr: path.join(__dirname, "features"),

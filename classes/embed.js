@@ -1,4 +1,4 @@
-const { GuildMember, CommandInteraction, ActionRowBuilder, ButtonBuilder, EmbedBuilder, TextChannel, ButtonInteraction } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder } = require('discord.js');
 const Setup = require('./setup');
 const embeds = require('../data/embeds');
 
