@@ -5,8 +5,16 @@ const retoEmojis = require('../data/retoEmojis');
 const { User, PartialUser, Message, PartialMessage } = require('discord.js');
 const Formatting = require('./formatting');
 
-module.exports = class Karma {
-	static async awardKarmaToUser (karmaToAward, user, message) {
+class Karma {
+	
+    constructor() {
+        if (Karma._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Karma._instance = this;
+    }
+
+	async awardKarmaToUser (karmaToAward, user, message) {
 		// Update the message's karma
 		// TO-DO: Check for user's canStoreMessages permission first
 		await messageSchema.findOneAndUpdate(
@@ -36,7 +44,7 @@ module.exports = class Karma {
 		).exec();
 	}
 
-	static async sendKarmaNotification (message, guildDocument, reactable) {
+	async sendKarmaNotification (message, guildDocument, reactable) {
 		if (guildDocument.messageConfirmation) {
 			message.reply({
 				embeds: [
@@ -62,3 +70,5 @@ module.exports = class Karma {
 		}
 	}
 }
+
+module.exports = new Karma();

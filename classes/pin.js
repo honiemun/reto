@@ -7,8 +7,6 @@ const memberSchema = require('../schemas/member');
 // Classes
 const Reaction = require("./reaction");
 const Personalisation = require("./personalisation");
-console.log('Reaction', Reaction, typeof Reaction)
-
 
 class Pin {
     
@@ -376,4 +374,4 @@ class Pin {
     }
 }
 
-module.exports = new Pin()
+module.exports = new Pin();

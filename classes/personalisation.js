@@ -4,8 +4,16 @@ const retoEmojis = require('../data/retoEmojis');
 // Schemas
 const guildSchema = require('../schemas/guild');
 
-module.exports = class Personalisation {
-    static async getGuildKarmaData(guild) {
+class Personalisation {
+
+    constructor() {
+        if (Personalisation._instance) {
+            throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Personalisation._instance = this;
+    }
+
+    async getGuildKarmaData(guild) {
         const guildDocument = await guildSchema.findOne({
             guildId: guild.id
         }).exec();
@@ -19,7 +27,7 @@ module.exports = class Personalisation {
         }
     }
 
-    static async changeGuildKarmaName(guild, karmaName) {
+    async changeGuildKarmaName(guild, karmaName) {
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : { 'karmaName' : karmaName } },
@@ -27,7 +35,7 @@ module.exports = class Personalisation {
       ).exec();
     }
 
-    static async changeGuildKarmaEmoji(guild, karmaEmoji) {
+    async changeGuildKarmaEmoji(guild, karmaEmoji) {
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : { 'karmaEmoji' : karmaEmoji } },
@@ -35,7 +43,7 @@ module.exports = class Personalisation {
       ).exec();
     }
 
-    static async changeMessageReplyMode(guild, isEmbed) {
+    async changeMessageReplyMode(guild, isEmbed) {
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : { 'messageConfirmation' : isEmbed } },
@@ -43,7 +51,7 @@ module.exports = class Personalisation {
       ).exec();
     }
     
-    static async changeReactionEmbed(guild, title, description) {
+    async changeReactionEmbed(guild, title, description) {
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : {
@@ -55,3 +63,5 @@ module.exports = class Personalisation {
       ).exec();
     }
 }
+
+module.exports = new Personalisation();

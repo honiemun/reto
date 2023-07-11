@@ -10,12 +10,13 @@ const Pin = require("./pin")
 const Karma = require("./karma")
 
 class Reaction {
+    
     constructor() {
         if (Reaction._instance) {
           throw new Error("Singleton classes can't be instantiated more than once.")
         }
         Reaction._instance = this;
-      }
+    }
 
     async messageReactionHandler(reaction, user, isPositive) {
         if (reaction.partial) await reaction.fetch();

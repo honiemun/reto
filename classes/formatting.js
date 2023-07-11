@@ -1,14 +1,20 @@
 //const { CommandInteraction, Message } = require('discord.js');
 
-module.exports = class Formatting {
+class Formatting {
 
+    constructor() {
+        if (Formatting._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Formatting._instance = this;
+    }
 
-    static async format (textToFormat, message = null, guild = null, reactable = null) {
+    async format (textToFormat, message = null, guild = null, reactable = null) {
         // const rules = this.getFormattingRules(message);
         return textToFormat;
     }
 
-    static async getFormattingRules (message, guild, reactable) {
+    async getFormattingRules (message, guild, reactable) {
         // TO-DO: I18n
 
         // Changes from Reto Legacy:
@@ -129,3 +135,5 @@ module.exports = class Formatting {
         }
     }
 }
+
+module.exports = new Formatting();

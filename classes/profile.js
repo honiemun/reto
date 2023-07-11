@@ -7,9 +7,16 @@ const retoEmojis = require('../data/retoEmojis');
 const Personalisation = require('./personalisation');
 const I18n = require("../classes/i18n");
 
-module.exports = class Profile {
+class Profile {
 
-    static async fetchProfileEmbed(author, member, instance, interaction) {
+    constructor() {
+        if (Profile._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Profile._instance = this;
+    }
+
+    async fetchProfileEmbed(author, member, instance, interaction) {
         // Debugging
         const startUp = new Date();
 
@@ -107,14 +114,14 @@ module.exports = class Profile {
         return embed
     }
 
-    static async getRank (schema, database, karma) {
+    async getRank (schema, database, karma) {
         let toFind = {}
         toFind[karma] = { $gt: database[karma] }
         const ranking = await schema.findOne(toFind).count();
         return ranking + 1; // Arrays start at 0
     }
 
-    static async getProgrammerBadge (instance, interaction) {
+    async getProgrammerBadge (instance, interaction) {
         return {
             "name": "🧑‍💻 " + await I18n.translate("PROGRAMMER", instance, null, interaction),
             "value": "> " + await I18n.translate("PROGRAMMER_DESCRIPTION", instance, null, interaction),
@@ -122,7 +129,7 @@ module.exports = class Profile {
         }
     }
 
-    static async getMedalBadge (rank, instance, interaction, serverName = "") {
+    async getMedalBadge (rank, instance, interaction, serverName = "") {
         let badge;
         let name;
         let description;
@@ -159,7 +166,7 @@ module.exports = class Profile {
         }
     }
 
-    static async getEarlySupporterBadge (instance, interaction) {
+    async getEarlySupporterBadge (instance, interaction) {
         return {
             "name": "<:retoclassic:1093680765637775371> " + await I18n.translate("EARLY_SUPPORTER", instance, null, interaction),
             "value": "> " +  await I18n.translate("EARLY_SUPPORTER_DESCRIPTION", instance, null, interaction),
@@ -167,3 +174,5 @@ module.exports = class Profile {
         }
     }
 }
+
+module.exports = new Profile();

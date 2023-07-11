@@ -5,9 +5,16 @@ const defaultReactables = require('../data/defaultReactables');
 const dotenv = require('dotenv');
 const guild = require('../schemas/guild');
 
-module.exports = class Setup {
+class Setup {
 
-    static async quickSetup (guild, member) {
+    constructor() {
+        if (Setup._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Setup._instance = this;
+    }
+    
+    async quickSetup (guild, member) {
         // Delete all reactables (emoji, channels, roles) before starting
         // TO-DO: IMPORTANT!!
         // This is fine for testing but don't actually do this later.
@@ -54,7 +61,7 @@ module.exports = class Setup {
 		});
     }
 
-    static async startSetupFromScratch(guild) {
+    async startSetupFromScratch(guild) {
         // Delete pre-existing guild data
         await guildSchema.deleteMany({ guildId: guild.id });
 
@@ -94,21 +101,21 @@ module.exports = class Setup {
         
     }
 
-    static async createGuild (guild) {
+    async createGuild (guild) {
         const newGuild = new guildSchema(guild);
         return newGuild.save();
     }
 
-    static async createReactable (reactable) {
+    async createReactable (reactable) {
         const newReactables = new reactableSchema(reactable);
         return newReactables.save();
     }
 
-    static async createDiscordEmoji (emoji, name, guild) {
+    async createDiscordEmoji (emoji, name, guild) {
         return guild.emojis.create(emoji, name);
     }
 
-    static async createBestOfChannel (guild) {
+    async createBestOfChannel (guild) {
         return guild.channels.create('best-of', {
             type: "GUILD_TEXT",
             permissionOverwrites: [
@@ -125,18 +132,18 @@ module.exports = class Setup {
         });
     }
 
-    static async createCuratorRole (guild) {
+    async createCuratorRole (guild) {
         return guild.roles.create({
             name: 'Curator',
             reason: 'This role allows people who have it to pin (using the :pin:, 📌 or ⭐ emoji) to send messages to the #best-of channel.',
         });
     }
 
-    static async asignRoleToUser (role) {
+    async asignRoleToUser (role) {
         return member.roles.add(role);
     }
 
-    static async setPublicServer (guild) {
+    async setPublicServer (guild) {
         const update = await guildSchema.updateOne({ guildId: guild.id }, {
             public: true
         });
@@ -144,3 +151,5 @@ module.exports = class Setup {
         return update;
     }
 }
+
+module.exports = new Setup()

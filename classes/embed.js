@@ -2,9 +2,16 @@ const { ActionRowBuilder, ButtonBuilder, EmbedBuilder } = require('discord.js');
 const Setup = require('./setup');
 const embeds = require('../data/embeds');
 
-module.exports = class Embed {
+class Embed {
 
-	static async createEmbed (id, msgInt, channel, member) {
+    constructor() {
+        if (Embed._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Embed._instance = this;
+    }
+
+	async createEmbed (id, msgInt, channel, member) {
 		if (!embeds) return;
 
 		// Find the setup assigned with the sent ID
@@ -33,7 +40,7 @@ module.exports = class Embed {
 			: msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member); });
 	}
 
-	static async createComponents (components) {
+	async createComponents (components) {
 
 		// Create action components
 		let actionComponents = []
@@ -43,7 +50,7 @@ module.exports = class Embed {
 				.setLabel(component.label)
 				.setStyle(component.style)
 				.setDisabled(component.disabled ? component.disabled : false)
-				.setURL(component.url ? component.url : "")
+				.setURL(component.url ? component.url : false)
 			);
 		}
 		
@@ -52,7 +59,7 @@ module.exports = class Embed {
 
 	}
 
-	static async createCollector (currentSetup, msgInt, channel, member) {
+	async createCollector (currentSetup, msgInt, channel, member) {
 		// Create a collector
 		if (!currentSetup.components) return;
 
@@ -84,7 +91,7 @@ module.exports = class Embed {
 		});
 	}
 
-    static async createErrorEmbed(reason) {
+    async createErrorEmbed(reason) {
         const date = new Date();
 		const randomErrorMessage = [
 			"Something went wrong!",
@@ -103,3 +110,5 @@ module.exports = class Embed {
             .setFooter({text: date.toString() });
     }
 }
+
+module.exports = new Embed();
