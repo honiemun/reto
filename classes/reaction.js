@@ -84,7 +84,7 @@ class Reaction {
             )
 
             // Send notification
-            await Karma.sendKarmaNotification(reaction.message, guildDocument, reactable);
+            if (isPositive) await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable);
         }
     }
 

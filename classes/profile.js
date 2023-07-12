@@ -17,9 +17,6 @@ class Profile {
     }
 
     async fetchProfileEmbed(author, member, instance, interaction) {
-        // Debugging
-        const startUp = new Date();
-
         if (author == null) return;
 
         const user = author instanceof GuildMember ? author.user : author
@@ -108,8 +105,6 @@ class Profile {
         if (userRank <= 10) { embed.fields.push(await this.getMedalBadge(userRank, instance, interaction)); }
         if (memberRank <= 10) { embed.fields.push(await this.getMedalBadge(memberRank, instance, interaction, member.guild.name)); }
         if (userDatabase.earlySupporter) { embed.fields.push(await this.getEarlySupporterBadge(instance, interaction)); }
-        
-        console.log(new Date().getTime() / 1000 - startUp.getTime() / 1000 + "ms.")
 
         return embed
     }

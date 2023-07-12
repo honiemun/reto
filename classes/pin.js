@@ -130,8 +130,6 @@ class Pin {
     }
     
     async generateMessageEmbed(message) {
-        console.log(message.content);
-        
         // Generate default message embed
         let messageEmbed = {
             url: "https://github.com/honiemun/reto", // Necessary for multiple image support

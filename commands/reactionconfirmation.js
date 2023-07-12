@@ -33,7 +33,7 @@ module.exports = {
 		Personalisation.changeMessageReplyMode(member.guild.id, interaction.options.getString("mode") == "embed" ? true : false);
 
         return new EmbedBuilder()
-            .setColor("GREEN")
+            .setColor("Green")
             .setTitle("✔️ Reaction confirmations are updated!")
             .setDescription("This server will now use " + interaction.options.getString("mode") + "s to reply to reacted messages.")
 			.setFooter({ text: "You can change how the embeds look with /reactionconfirmationembed!" })

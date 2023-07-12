@@ -104,7 +104,7 @@ class Embed {
 		];
 
         return new EmbedBuilder()
-            .setColor("RED")
+            .setColor("Red")
             .setTitle("⚠️ " + randomErrorMessage[Math.floor(Math.random()*randomErrorMessage.length)])
             .setDescription(reason)
             .setFooter({text: date.toString() });

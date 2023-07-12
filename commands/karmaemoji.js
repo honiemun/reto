@@ -42,7 +42,7 @@ module.exports = {
 		Personalisation.changeGuildKarmaEmoji(member.guild.id, interaction.options.getString("emoji"))
 		
         await interaction.editReply({ embeds: [ new EmbedBuilder()
-            .setColor("GREEN")
+            .setColor("Green")
             .setTitle("✔️ Server Karma changed!")
             .setDescription("The new emoji for this server's karma is " + interaction.options.getString("emoji") + ".")
 		] });

@@ -51,7 +51,7 @@ module.exports = {
 
         const reactableSelect = await interaction.editReply({ embeds: [
 			new EmbedBuilder()
-				.setColor("YELLOW")
+				.setColor("Yellow")
 				.setTitle("❓ Which reactable should we apply this embed to?")
 				.setDescription("")
 		], components: [ select ] })
@@ -60,7 +60,7 @@ module.exports = {
 		/*Personalisation.changeReactionEmbed(member.guild.id, interaction.options.getString("title"), interaction.options.getString("description"));
 
         return new EmbedBuilder()
-            .setColor("GREEN")
+            .setColor("Green")
             .setTitle("✔️ Reaction confirmations are updated!")
             .setDescription("This server will now use " + interaction.options.getString("mode") + "s to reply to reacted messages.")
 			.setFooter({ text: "Want some more control over your embed? Add modifiers! Read all about them with /modifierlist." })

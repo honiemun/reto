@@ -44,17 +44,22 @@ class Karma {
 		).exec();
 	}
 
-	async sendKarmaNotification (message, guildDocument, reactable) {
+	async sendKarmaNotification (message, user, guildDocument, reactable) {
 		if (guildDocument.messageConfirmation) {
 			message.reply({
 				embeds: [
 					{
-						title: await Formatting.format(reactable.reactionConfirmationTitle, message, message.guild, reactable) ??
-							   await Formatting.format("{rl} gave {al} message a {rn} {re}", message, message.guild, reactable),
-						description: await Formatting.format(reactable.reactionConfirmationDescription, message, message.guild, reactable) ??
-							   await Formatting.format("{am} now has {ke} {kn} `{k}`.", message, message.guild, reactable)
-					}
+						title: reactable.reactionConfirmationTitle ?
+							    await Formatting.format(reactable.reactionConfirmationTitle, message, user, null, reactable) :
+							    await Formatting.format("{rl} gave {al}'s message a {re} {rn}", message, user, null, reactable),
+						description: reactable.reactionConfirmationDescription ?
+								await Formatting.format(reactable.reactionConfirmationDescription, message, null, message.guild, null) :
+							    await Formatting.format("**{al}** now has {ke} `{k}` **{kn}**.", message, null, message.guild, null)
+					},
 				],
+				allowedMentions: {
+					users: [] // Disable pinging the original author
+				}
 			}).then((reply) => {
 				setTimeout(() => {
 					reply.delete();

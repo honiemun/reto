@@ -23,7 +23,7 @@ module.exports = {
 		Personalisation.changeGuildKarmaName(member.guild.id, interaction.options.getString("karma-name"))
 
         return new EmbedBuilder()
-            .setColor("GREEN")
+            .setColor("Green")
             .setTitle("✔️ Server Karma changed!")
             .setDescription("The new name for this server's karma is *" + interaction.options.getString("karma-name") + "*.")
 	},
