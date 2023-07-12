@@ -6,8 +6,9 @@ const reactableSchema = require("../schemas/reactable");
 const reactionSchema = require('../schemas/reaction');
 
 // Classes
-const Pin = require("./pin")
-const Karma = require("./karma")
+const Pin = require("./pin");
+const Karma = require("./karma");
+const ReactionCheck = require("./reactionCheck");
 
 class Reaction {
     
@@ -21,7 +22,6 @@ class Reaction {
     async messageReactionHandler(reaction, user, isPositive) {
         if (reaction.partial) await reaction.fetch();
         if (user.bot) return;
-        // TO-DO: Return if the reactor is the same as the author.
 
         const guildDocument = await guildSchema.findOne({
             guildId: reaction.message.guildId
@@ -36,7 +36,6 @@ class Reaction {
         for (const reactable of guildReactables) {
             const reactableIsValid = reactable.emojiIds.includes(reaction.emoji.name)
                 || reactable.emojiIds.includes(reaction.emoji.id);
-                console.log('reactableIsValid', reactableIsValid)
 
             if (!reactableIsValid) continue;
 
@@ -53,15 +52,17 @@ class Reaction {
                 })
                 } else return reaction.message;
             })
-
+            
+            if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
             if (!message.author) return;
             
-            console.log('💕 ' + message.author.username + "'s message has been reacted to (" + karmaToAward + ")");
-
+            // Send to console
+            await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
+            
             // Check if the reaction isn't duplicated
-            // const amountReacted = await this.checkIfPreviouslyReacted(message, user, reactable)
-            // if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
-            // else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
+            const amountReacted = await ReactionCheck.checkIfPreviouslyReacted(message, user, reactable)
+            if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
+            else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
 
             // Store reaction
             const savedReaction = await this.saveOrDeleteReaction(message, user, reactable, isPositive);
@@ -88,7 +89,7 @@ class Reaction {
     }
 
     async saveOrDeleteReaction(message, reactingUser, reactable, toSave) {
-        //if (await this.checkIfPreviouslyReacted(message, reactingUser, reactable)) return false;
+        //if (await ReactionCheck.checkIfPreviouslyReacted(message, reactingUser, reactable)) return false;
 
         if (toSave) await this.saveReaction(message, reactingUser, reactable);
         else await this.deleteReaction(message, reactingUser, reactable);
@@ -111,14 +112,11 @@ class Reaction {
         }).exec();
     }
 
-    async checkIfPreviouslyReacted(message, reactingUser, reactable) {
-        const reactions = await reactionSchema.find({
-            messageId: message.id,
-            userId: reactingUser.id,
-            reactableId: reactable._id
-        }).exec();
-
-        return reactions.length;
+    async sendReactionToConsole(message, reactingUser, reactable, karmaToAward, isPositive) {
+        const reactableName = reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1);
+        const reactableAmount = " (" + (karmaToAward<0?"":"+") + karmaToAward + ")"
+        const reactPrefix = isPositive ? "" : "un"
+        console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray);
     }
 
     // Currently goes un-used - the reactionHandler recursively deletes

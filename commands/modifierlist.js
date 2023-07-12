@@ -40,14 +40,14 @@ module.exports = {
 			row.addComponents(
 				new ButtonBuilder()
 					.setCustomId('prev_embed')
-					.setStyle('SECONDARY')
+					.setStyle('Secondary')
 					.setEmoji('⬅️')
 					.setDisabled(pages[id] === 0)
 			);
 			row.addComponents(
 				new ButtonBuilder()
 					.setCustomId('next_embed')
-					.setStyle('SECONDARY')
+					.setStyle('Secondary')
 					.setEmoji('➡️')
 					.setDisabled(pages[id] === embeds.length - 1)
 			);

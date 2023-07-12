@@ -1,3 +1,5 @@
+const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
+
 // Schemas
 const messageSchema = require('../schemas/message');
 const pinnedEmbedSchema = require('../schemas/pinnedEmbed');
@@ -5,7 +7,7 @@ const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
 
 // Classes
-const Reaction = require("./reaction");
+const ReactionCheck = require("./reactionCheck")
 const Personalisation = require("./personalisation");
 
 class Pin {
@@ -22,7 +24,7 @@ class Pin {
 
         // Check if previously reacted
         if (user) {
-            const hasReacted = false //await reaction.checkIfPreviouslyReacted(message, user, reactable);
+            const hasReacted = await ReactionCheck.checkIfPreviouslyReacted(message, user, reactable);
             if (!hasReacted) {
                 // TO-DO: Remove this user's pinned post if this is the last star.
                 // Would require checking for the reactions of the post
@@ -45,7 +47,7 @@ class Pin {
                 .addComponents(
                     new ButtonBuilder()
                         .setLabel('Jump to message')
-                        .setStyle("LINK")
+                        .setStyle("Link")
                         .setURL(message.url)
                 );
                 
@@ -128,6 +130,7 @@ class Pin {
     }
     
     async generateMessageEmbed(message) {
+        console.log(message.content);
         
         // Generate default message embed
         let messageEmbed = {
@@ -262,7 +265,6 @@ class Pin {
         // Embeds
         if (message.embeds.length > 0) {
             for (const embed of message.embeds) {
-                console.log(embed);
                 let imageUrl = false;
                 
                 if (embed.image && embed.image.url) imageUrl = embed.image.url;
