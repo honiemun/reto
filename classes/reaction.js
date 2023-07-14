@@ -20,16 +20,21 @@ class Reaction {
     }
 
     async messageReactionHandler(reaction, user, isPositive) {
+        console.time("Reaction-"+reaction.message.id)
         if (reaction.partial) await reaction.fetch();
         if (user.bot) return;
 
         const guildDocument = await guildSchema.findOne({
             guildId: reaction.message.guildId
-        }).exec();
+        })
+        .cache(86400, reaction.message.guildId + "-guild")
+        .exec();
         
         const guildReactables = await reactableSchema.find({
             guildId: reaction.message.guildId
-        }).exec();
+        })
+        .cache(86400, reaction.message.guildId + "-reactables")
+        .exec();
 
         if (!guildReactables) return;
 
@@ -55,6 +60,7 @@ class Reaction {
             
             if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
             if (!message.author) return;
+            console.timeEnd("Reaction-"+reaction.message.id)
             
             // Send to console
             await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
@@ -84,6 +90,7 @@ class Reaction {
             )
 
             // Send notification
+            // 0.208s for Reaction, 0.385 for Embed
             if (isPositive) await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable);
         }
     }

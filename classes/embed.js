@@ -45,13 +45,18 @@ class Embed {
 		// Create action components
 		let actionComponents = []
 		for (let component of components) {
-			actionComponents.push(new ButtonBuilder()
-				.setCustomId(component.url ? "" : component.id)
+			let buttonBuilder = new ButtonBuilder()
 				.setLabel(component.label)
 				.setStyle(component.style)
-				.setDisabled(component.disabled ? component.disabled : false)
-				.setURL(component.url ? component.url : false)
-			);
+				.setDisabled(component.disabled ? component.disabled : false);
+			
+			if (component.url) {
+				buttonBuilder.setURL(component.url)
+			} else {
+				buttonBuilder.setCustomId(component.id)
+			}
+
+			actionComponents.push(buttonBuilder);
 		}
 		
 		// TO-DO: Support multiple rows

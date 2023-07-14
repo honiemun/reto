@@ -1,9 +1,10 @@
-const { Guild, GuildMember, Role, User } = require('discord.js');
+const { ChannelType, PermissionsBitField } = require('discord.js');
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
 const defaultReactables = require('../data/defaultReactables');
-const dotenv = require('dotenv');
-const guild = require('../schemas/guild');
+const cachegoose = require("recachegoose");
+const fs = require("fs");
+const path = require("path");
 
 class Setup {
 
@@ -31,7 +32,7 @@ class Setup {
         // Create default emoji
         // TO-DO: Throw error if something goes horribly wrong
         for (const emoji of defaultReactables) {
-            await Setup.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
+            await this.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
                 // Save new emoji into list
                 emoji.emojiIds.push(createdEmoji.id);
 
@@ -64,6 +65,7 @@ class Setup {
     async startSetupFromScratch(guild) {
         // Delete pre-existing guild data
         await guildSchema.deleteMany({ guildId: guild.id });
+        cachegoose.clearCache(guild.id + '-guild');
 
         // Find existing reactables in database
         await reactableSchema.find({ guildId: guild.id}).then(async (reactables) => {
@@ -112,21 +114,34 @@ class Setup {
     }
 
     async createDiscordEmoji (emoji, name, guild) {
-        return guild.emojis.create(emoji, name);
+        return guild.emojis.create({
+            name: `${name}`,
+            attachment: `${emoji}`
+        });
     }
 
     async createBestOfChannel (guild) {
-        return guild.channels.create('best-of', {
-            type: "GUILD_TEXT",
+        return guild.channels.create({
+            name: 'best-of',
+            type: ChannelType.GuildText,
             permissionOverwrites: [
                 {
                     id: guild.roles.everyone,
-                    allow: ['VIEW_CHANNEL', 'READ_MESSAGE_HISTORY'],
-                    deny: ['SEND_MESSAGES']
+                    allow: [
+                        PermissionsBitField.Flags.ViewChannel,
+                        PermissionsBitField.Flags.ReadMessageHistory
+                    ],
+                    deny: [
+                        PermissionsBitField.Flags.SendMessages
+                    ]
                 },
                 {
                     id: process.env.CLIENT_ID, // TO-DO: Replace with client.user.id
-                    allow: ['VIEW_CHANNEL', 'READ_MESSAGE_HISTORY', 'SEND_MESSAGES']
+                    allow: [
+                        PermissionsBitField.Flags.ViewChannel,
+                        PermissionsBitField.Flags.ReadMessageHistory,
+                        PermissionsBitField.Flags.SendMessages
+                    ]
                 }
             ]
         });
@@ -139,7 +154,7 @@ class Setup {
         });
     }
 
-    async asignRoleToUser (role) {
+    async asignRoleToUser (role, member) {
         return member.roles.add(role);
     }
 
@@ -147,6 +162,7 @@ class Setup {
         const update = await guildSchema.updateOne({ guildId: guild.id }, {
             public: true
         });
+        cachegoose.clearCache(guild + '-guild');
         
         return update;
     }

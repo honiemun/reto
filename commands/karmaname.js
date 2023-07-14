@@ -20,11 +20,13 @@ module.exports = {
 	guildOnly: true,
 
 	callback: ({ member, instance, interaction }) => {
+		
 		Personalisation.changeGuildKarmaName(member.guild.id, interaction.options.getString("karma-name"))
-
-        return new EmbedBuilder()
+		
+        return interaction.reply({embeds: [ new EmbedBuilder()
             .setColor("Green")
             .setTitle("✔️ Server Karma changed!")
             .setDescription("The new name for this server's karma is *" + interaction.options.getString("karma-name") + "*.")
+		]});
 	},
 }

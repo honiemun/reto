@@ -27,8 +27,8 @@ module.exports = [
             {
                 id: "privacyPolicy",
                 label: "Privacy policy",
-                style: "LINK",
-                url: "https://reto.gg/privacy-policy",
+                style: "Link",
+                url: "https://retobot.gg/privacy-policy",
                 disabled: false
             }
         ]
@@ -64,7 +64,7 @@ module.exports = [
             {
                 id: "advancedSetup",
                 label: "Advanced setup",
-                style: "SECONDARY",
+                style: "Secondary",
                 disabled: true
             }
         ]
@@ -89,7 +89,7 @@ module.exports = [
                 id: "serverPrivate",
                 label: "Set server as Private",
                 next: "done",
-                style: "SECONDARY",
+                style: "Secondary",
                 disabled: false
             }
         ]
@@ -99,7 +99,7 @@ module.exports = [
         embed: {
             color: 0,
             title: "Setup complete!",
-            description: "You're all set up! You can now use Reto in your server!\nTo change any of these settings, you can re-run `/setup` anytime.\n\nA Getting Started guide is available on your designated `#best-of` channel, or by using the `/guide` command. *(currently not implemented)*\n\nThanks for using Reto!\n[Join the support server](https://discord.gg/reto) for help, or to report bugs or suggest features!",
+            description: "You're all set up! You can now use Reto in your server!\nTo change any of these settings, you can re-run `/setup` anytime.\n\nA Getting Started guide is available on your designated `#best-of` channel, or by using the `/guide` command. *(currently not implemented)*\n\nThanks for using Reto!\n[Join the support server](" + process.env.SUPPORT_SERVER + ") for help, or to report bugs or suggest features!",
         }
     }
 ]
