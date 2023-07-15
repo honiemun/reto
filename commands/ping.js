@@ -1,5 +1,3 @@
-const I18n = require("../classes/i18n");
-
 module.exports = {
 	category: 'Testing',
 	description: 'Replies with Pong!',
@@ -9,6 +7,6 @@ module.exports = {
 	guildOnly: false,
 
 	callback: ({ message, instance, interaction }) => {
-        return I18n.translate("PING", instance, message, interaction);
+        return "**🏓 Pong!**";
 	},
 }

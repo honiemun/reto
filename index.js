@@ -22,8 +22,6 @@ const client = new Client({
 	]
 });
 
-
-
 mongoose.set('strictQuery', true);
 
 client.on("ready", () => {

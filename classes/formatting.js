@@ -80,8 +80,6 @@ class Formatting {
         return rules
     }
     async getFormattingDescriptions () {
-        // TO-DO: I18n
-
         // Changes from Reto Legacy:
         // - u and um are now a and am, for the sake of clarity (Username is now Author).
         // - Since there can be many "pinnable" channels, b and bm are now p and pm (Best Of -> Pinnable).

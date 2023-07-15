@@ -1,5 +1,4 @@
 const { EmbedBuilder } = require("discord.js");
-const I18n = require("../classes/i18n");
 const ApplicationCommandOptionType = require("discord.js");
 const Personalisation = require("../classes/personalisation");
 const Embed = require("../classes/embed");

@@ -5,7 +5,6 @@ const memberSchema = require('../schemas/member');
 const retoEmojis = require('../data/retoEmojis');
 
 const Personalisation = require('./personalisation');
-const I18n = require("../classes/i18n");
 
 class Profile {
 
@@ -33,18 +32,18 @@ class Profile {
         
         let embed = {
             "title": username,
-            "description": '`' + user.username + '#' + user.discriminator + '`',
+            "description": '`' + user.username + '`',
             "thumbnail": {
                 "url":  user.avatarURL({ format: "png" })
             },
             "fields": [
                 {
-                    "name": "__" + await I18n.translate("KARMA", instance, null, interaction) + "__",
+                    "name": "*Karma*",
                     "value": "** **",
                     "inline": false
                 },
                 {
-                    "name": retoEmojis.karmaEmoji + " " + await I18n.translate("GLOBAL_KARMA", instance, null, interaction),
+                    "name": retoEmojis.karmaEmoji + " Global Karma",
                     "value": '```' + globalKarma + '```',
                     "inline": true
                 }
@@ -71,12 +70,12 @@ class Profile {
         // Rankings
         const userRank = await this.getRank(userSchema, userDatabase, "globalKarma");
         embed.fields.push({
-            "name": "__" + await I18n.translate("RANK", instance, null, interaction) + "__",
+            "name": "*Rank*",
             "value": "** **",
             "inline": false
         },
         {
-            "name": '🌐 ' + await I18n.translate("GLOBAL_RANK", instance, null, interaction),
+            "name": '🌐 Global Rank',
             "value": "```" + userRank + "```",
             "inline": true
         })
@@ -86,7 +85,7 @@ class Profile {
             memberRank =  await this.getRank(memberSchema, memberDatabase, "karma");
 
             embed.fields.push({
-                "name": '✨ ' + member.guild.name + " " + await I18n.translate("RANK", instance, null, interaction),
+                "name": '✨ ' + member.guild.name + " Rank",
                 "value": "```" + memberRank + "```",
                 "inline": true
             })
@@ -95,7 +94,7 @@ class Profile {
         // Badges
 
         embed.fields.push({
-            "name": "__" + await I18n.translate("BADGES", instance, null, interaction) + "__",
+            "name": "*Badges*",
             "value": "** **",
             "inline": false
         })
@@ -118,8 +117,8 @@ class Profile {
 
     async getProgrammerBadge (instance, interaction) {
         return {
-            "name": "🧑‍💻 " + await I18n.translate("PROGRAMMER", instance, null, interaction),
-            "value": "> " + await I18n.translate("PROGRAMMER_DESCRIPTION", instance, null, interaction),
+            "name": "🧑‍💻 Programmer",
+            "value": "> One of the developers of Reto!",
             "inline": false
         }
     }
@@ -132,27 +131,24 @@ class Profile {
         switch (rank) {
             case 3:
                 badge = "🥉";
-                name = await I18n.translate("THIRD_PLACE_MEDALLIST", instance, null, interaction),
-                description = await I18n.translate("THIRD_PLACE_MEDALLIST_DESCRIPTION", instance, null, interaction)
+                name = "Third Place Medallist";
                 break;
             case 2:
                 badge = "🥈";
-                name = await I18n.translate("SECOND_PLACE_MEDALLIST", instance, null, interaction),
-                description = await I18n.translate("SECOND_PLACE_MEDALLIST_DESCRIPTION", instance, null, interaction)
+                name = "Second Place Medallist";
                 break;
             case 1:
                 badge = "🥇";
-                name = await I18n.translate("FIRST_PLACE_MEDALLIST", instance, null, interaction),
-                description = await I18n.translate("FIRST_PLACE_MEDALLIST_DESCRIPTION", instance, null, interaction)
+                name = "First Place Medallist";
                 break;
             default:
                 badge = "🏅";
-                name = await I18n.translate("MEDALLIST", instance, null, interaction),
-                description = await I18n.translate("MEDALLIST_DESCRIPTION", instance, null, interaction)
+                name = "Medallist";
                 break;
         }
 
         serverName = serverName + " "
+        description = "For ranking no. " + rank + " on the " + serverName != " " ? serverName : "global " + "leaderboard!"
 
         return {
             "name": badge + " " + serverName + name,
@@ -163,8 +159,8 @@ class Profile {
 
     async getEarlySupporterBadge (instance, interaction) {
         return {
-            "name": "<:retoclassic:1093680765637775371> " + await I18n.translate("EARLY_SUPPORTER", instance, null, interaction),
-            "value": "> " +  await I18n.translate("EARLY_SUPPORTER_DESCRIPTION", instance, null, interaction),
+            "name": "<:retoclassic:1093680765637775371> Early Supporter",
+            "value": "> Thank you for being a part of Reto Legacy!",
             "inline": false
         }
     }
