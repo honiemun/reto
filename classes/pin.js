@@ -73,13 +73,13 @@ class Pin {
         
         if (databaseMessage.karma != 0) {
             await userSchema.findOneAndUpdate(
-                { userId: message.author.id },
+                { userId: databaseMessage.userId },
                 { $inc : { 'globalKarma' : -databaseMessage.karma } },
                 { upsert: true }
             ).exec();
     
             await memberSchema.findOneAndUpdate(
-                { userId: message.author.id, guildId: message.guildId },
+                { userId: databaseMessage.userId, guildId: message.guildId },
                 { $inc : { 'karma' : -databaseMessage.karma } },
                 { upsert: true }
             ).exec();
