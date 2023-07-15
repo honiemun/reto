@@ -1,5 +1,8 @@
 const { Message, PartialMessage, User, PartialUser } = require('discord.js');
 
+// Dependencies
+const cachegoose = require("recachegoose");
+
 // Schemas
 const guildSchema = require("../schemas/guild");
 const reactableSchema = require("../schemas/reactable");
@@ -27,13 +30,13 @@ class Reaction {
         const guildDocument = await guildSchema.findOne({
             guildId: reaction.message.guildId
         })
-        .cache(86400, reaction.message.guildId + "-guild")
+        .cache(process.env.CACHE_TIME, reaction.message.guildId + "-guild")
         .exec();
         
         const guildReactables = await reactableSchema.find({
             guildId: reaction.message.guildId
         })
-        .cache(86400, reaction.message.guildId + "-reactables")
+        .cache(process.env.CACHE_TIME, reaction.message.guildId + "-reactables")
         .exec();
 
         if (!guildReactables) return;
@@ -104,19 +107,25 @@ class Reaction {
     }
 
     async saveReaction(message, reactingUser, reactable) {
-        return new reactionSchema({
+        const newReaction = new reactionSchema({
             messageId: message.id,
             userId: reactingUser.id,
             reactableId: reactable._id
         }).save();
+
+        cachegoose.clearCache(message.id + "-" + reactingUser.id + "-" + reactable._id + "-reaction");
+        return newReaction;
     }
 
     async deleteReaction(message, reactingUser, reactable) {
-        return reactionSchema.deleteMany({
+        const deletedReaction = reactionSchema.deleteMany({
             messageId: message.id,
             userId: reactingUser.id,
             reactableId: reactable._id
         }).exec();
+
+        cachegoose.clearCache(message.id + "-" + reactingUser.id + "-" + reactable._id + "-reaction");
+        return deletedReaction;
     }
 
     async sendReactionToConsole(message, reactingUser, reactable, karmaToAward, isPositive) {

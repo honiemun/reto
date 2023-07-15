@@ -1,8 +1,10 @@
+const { User, PartialUser, Message, PartialMessage } = require('discord.js');
+
 const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
 const messageSchema = require('../schemas/message');
 const retoEmojis = require('../data/retoEmojis');
-const { User, PartialUser, Message, PartialMessage } = require('discord.js');
+const cachegoose = require("recachegoose");
 const Formatting = require('./formatting');
 
 class Karma {
@@ -24,7 +26,11 @@ class Karma {
 				$inc : { 'karma' : karmaToAward }
 			},
 			{ upsert: true }
-		).exec();
+		)
+        .cache(process.env.CACHE_TIME, message.id + "-message")
+		.exec();
+		
+        cachegoose.clearCache(message.id + "-message");
 		
 		// Don't execute the following if the karma equals zero
 		if (karmaToAward == 0) return;
@@ -34,14 +40,20 @@ class Karma {
 			{ userId: user.id },
 			{ $inc : { 'globalKarma' : karmaToAward } },
 			{ upsert: true }
-		).exec();
+		)
+		.cache(process.env.CACHE_TIME, user.id + "-user")
+		.exec();
 	
 		// Update the member's karma on the specified guild
 		await memberSchema.findOneAndUpdate(
 			{ userId: user.id, guildId: message.guildId },
 			{ $inc : { 'karma' : karmaToAward } },
 			{ upsert: true }
-		).exec();
+		)
+		.cache(process.env.CACHE_TIME, user.id + "-" + message.guildId + "-member")
+		.exec();
+		
+		cachegoose.clearCache(user.id + "-" + message.guildId + '-member');
 	}
 
 	async sendKarmaNotification (message, user, guildDocument, reactable) {

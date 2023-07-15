@@ -63,7 +63,9 @@ class Formatting {
         if (message && guild) {
             const memberDatabase = await memberSchema.findOne(
                 { userId: message.author.id, guildId: guild.id },
-            ).exec()
+            )
+            .cache(process.env.CACHE_TIME, message.author.id + "-" + guild.id + "-member")
+            .exec()
 
             const localKarma = memberDatabase && memberDatabase.karma != undefined ? memberDatabase.karma : "0"
             rules.k  = localKarma;

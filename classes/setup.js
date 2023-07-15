@@ -63,12 +63,15 @@ class Setup {
     }
 
     async startSetupFromScratch(guild) {
+        console.log("Restarting setup")
         // Delete pre-existing guild data
         await guildSchema.deleteMany({ guildId: guild.id });
         cachegoose.clearCache(guild.id + '-guild');
 
         // Find existing reactables in database
-        await reactableSchema.find({ guildId: guild.id}).then(async (reactables) => {
+        await reactableSchema.find({ guildId: guild.id})
+        .cache(process.env.CACHE_TIME, guild.id + "-reactables")
+        .then(async (reactables) => {
             // Delete all channels associated with reactables
             for (const reactable of reactables) {
                 if (reactable.sendsToChannel) {
@@ -104,13 +107,15 @@ class Setup {
     }
 
     async createGuild (guild) {
-        const newGuild = new guildSchema(guild);
-        return newGuild.save();
+        const newGuild = new guildSchema(guild).save();
+        cachegoose.clearCache(guild.guildId + '-guild');
+        return newGuild;
     }
 
     async createReactable (reactable) {
-        const newReactables = new reactableSchema(reactable);
-        return newReactables.save();
+        const newReactables = new reactableSchema(reactable).save();
+        cachegoose.clearCache(reactable.guildId + '-reactables');
+        return newReactables;
     }
 
     async createDiscordEmoji (emoji, name, guild) {
@@ -159,12 +164,15 @@ class Setup {
     }
 
     async setPublicServer (guild) {
-        const update = await guildSchema.updateOne({ guildId: guild.id }, {
-            public: true
-        });
-        cachegoose.clearCache(guild + '-guild');
-        
-        return update;
+        await guildSchema.findOneAndUpdate(
+            { guildId: guild.id },
+            { $set : { 'public' : true } },
+            { upsert: false }
+        )
+        .cache(process.env.CACHE_TIME, guild.id + "-guild")
+        .exec();
+
+        cachegoose.clearCache(guildId + '-guild');
     }
 }
 

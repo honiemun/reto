@@ -24,7 +24,10 @@ class Profile {
         
 		const userDatabase = await userSchema.findOne(
 			{ userId: user.id },
-		).exec()
+		)
+		.cache(process.env.CACHE_TIME, user.id + "-user")
+        .exec();
+        
         let memberDatabase;
 
         const globalKarma = userDatabase && userDatabase.globalKarma != undefined ? userDatabase.globalKarma : "0"
@@ -56,7 +59,9 @@ class Profile {
 
             memberDatabase = await memberSchema.findOne(
                 { userId: user.id, guildId: member.guild.id },
-            ).exec()
+            )
+            .cache(process.env.CACHE_TIME, user.id + "-" + member.guild.id + "-member")
+            .exec()
 
             const guildKarmaData = await Personalisation.getGuildKarmaData(member.guild)
             const localKarma = memberDatabase && memberDatabase.karma != undefined ? memberDatabase.karma : "0"
@@ -110,6 +115,8 @@ class Profile {
     }
 
     async getRank (schema, database, karma) {
+        // TO-DO: Non-cached!
+        
         let toFind = {}
         toFind[karma] = { $gt: database[karma] }
         const ranking = await schema.findOne(toFind).count();
