@@ -157,9 +157,11 @@ class Setup {
     }
 
     async setPublicServer (guild) {
-        const update = await guildSchema.updateOne({ guildId: guild.id }, {
-            public: true
-        });
+        const update = await guildSchema.findOneAndUpdate(
+            { guildId: guild.id },
+            { $set : { 'public' : true } },
+            { upsert: false }
+        ).exec();
         
         return update;
     }
