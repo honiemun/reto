@@ -18,6 +18,7 @@ class Personalisation {
         const guildDocument = await guildSchema.findOne({
             guildId: guild.id
         })
+        .cache(process.env.CACHE_TIME, guild.id + "-guild")
         .exec();
         if (!guildDocument) return;
 
@@ -29,47 +30,45 @@ class Personalisation {
         }
     }
 
-    async changeGuildKarmaName(guild, karmaName) {
-      cachegoose.clearCache(guild + '-guild');
-
+    async changeGuildKarmaName(guildId, karmaName) {
       await guildSchema.findOneAndUpdate(
-        { guildId: guild },
+        { guildId: guildId },
         { $set : { 'karmaName' : karmaName } },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
+      .cache(process.env.CACHE_TIME, guildId + "-guild")
       .exec();
+      
+      cachegoose.clearCache(guildId + '-guild');
     }
 
-    async changeGuildKarmaEmoji(guild, karmaEmoji) {
-      cachegoose.clearCache(guild + '-guild');
-
+    async changeGuildKarmaEmoji(guildId, karmaEmoji) {
       await guildSchema.findOneAndUpdate(
-        { guildId: guild },
+        { guildId: guildId },
         { $set : { 'karmaEmoji' : karmaEmoji } },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
+      .cache(process.env.CACHE_TIME, guildId + "-guild")
       .exec();
+
+      cachegoose.clearCache(guildId + '-guild');
     }
 
-    async changeMessageReplyMode(guild, isEmbed) {
-      cachegoose.clearCache(guild + '-guild');
-
+    async changeMessageReplyMode(guildId, isEmbed) {
       await guildSchema.findOneAndUpdate(
-        { guildId: guild },
+        { guildId: guildId },
         { $set : { 'messageConfirmation' : isEmbed } },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
+      .cache(process.env.CACHE_TIME, guildId + "-guild")
       .exec();
+      
+      cachegoose.clearCache(guildId + '-guild');
     }
     
-    async changeReactionEmbed(guild, title, description) {
-      cachegoose.clearCache(guild + '-guild');
-
+    async changeReactionEmbed(guildId, title, description) {
       await guildSchema.findOneAndUpdate(
-        { guildId: guild },
+        { guildId: guildId },
         { $set : {
           'reactionConfirmationTitle' : title,
           'reactionConfirmationDescription' : description
@@ -77,8 +76,10 @@ class Personalisation {
         },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
+      .cache(process.env.CACHE_TIME, guildId + "-guild")
       .exec();
+
+      cachegoose.clearCache(guildId + '-guild');
     }
 }
 

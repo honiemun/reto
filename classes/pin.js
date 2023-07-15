@@ -1,5 +1,8 @@
 const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
+// Dependencies
+const cachegoose = require("recachegoose");
+
 // Schemas
 const messageSchema = require('../schemas/message');
 const pinnedEmbedSchema = require('../schemas/pinnedEmbed');
@@ -68,7 +71,10 @@ class Pin {
 
     async deleteMessage(message, client) {
         // Remove the user's karma from that message
-        const databaseMessage = await messageSchema.findOne({ messageId: message.id }).exec();
+        const databaseMessage = await messageSchema.findOne({ messageId: message.id })
+            .cache(process.env.CACHE_TIME, message.id + "-message")
+            .exec();
+        
         if (!databaseMessage) return; // Ignore all messages not on the DB.
         
         if (databaseMessage.karma != 0) {
@@ -76,13 +82,20 @@ class Pin {
                 { userId: databaseMessage.userId },
                 { $inc : { 'globalKarma' : -databaseMessage.karma } },
                 { upsert: true }
-            ).exec();
+            )
+            .cache(process.env.CACHE_TIME, databaseMessage.userId + "-user")
+            .exec();
     
             await memberSchema.findOneAndUpdate(
                 { userId: databaseMessage.userId, guildId: message.guildId },
                 { $inc : { 'karma' : -databaseMessage.karma } },
                 { upsert: true }
-            ).exec();
+            )
+            .cache(process.env.CACHE_TIME, databaseMessage.userId + "-" + message.guildId + "-member")
+            .exec();
+
+            cachegoose.clearCache(databaseMessage.userId + '-user');
+            cachegoose.clearCache(databaseMessage.userId + "-" + message.guildId + '-member');
         }
 
 
@@ -96,14 +109,22 @@ class Pin {
 
                 pinnedEmbedSchema.findOneAndRemove({
                     pinnedEmbedId: message.id
-                }).exec();
+                })
+                .cache(process.env.CACHE_TIME, message.id + "-pinned-embed")
+                .exec();
+                
+                cachegoose.clearCache(message.id + "-pinned-embed");
             });
         }
 
         // Delete the message from the database
         await messageSchema.findOneAndRemove(
             { messageId: message.id }
-        ).exec();
+        )
+        .cache(process.env.CACHE_TIME, message.id + "-message")
+        .exec();
+        
+        cachegoose.clearCache(message.id + "-message");
     }
 
     async getIterableChannels(message, reactable) {
@@ -157,19 +178,29 @@ class Pin {
     async storePinnedEmbed(sentEmbed, message) {
         // TO-DO: Probably can be refactored to remove the first part (saving message in pinnedEmbedSchema) entirely.
         // Unfortunately, I'm too tired. Skill Issue.
-        messageSchema.findOne({ messageId: message.id }).exec().then((storedMessage) => {
-            if (!storedMessage) return;
+        messageSchema.findOne({ messageId: message.id })
+            .cache(process.env.CACHE_TIME, message.id + "-message")
+            .exec()
+            .then((storedMessage) => 
+            {
+                if (!storedMessage) return;
 
-            new pinnedEmbedSchema({
-                pinnedEmbedId: sentEmbed.id,
-                channelId: sentEmbed.channel.id,
-                message: storedMessage._id
-            }).save().then((pinnedEmbed) => {
-                messageSchema.findOneAndUpdate(
-                    { messageId: message.id },
-                    { $push: { 'pinnedEmbeds': pinnedEmbed._id } },
-                    { upsert: true, new: true }
-                ).exec();
+                new pinnedEmbedSchema({
+                    pinnedEmbedId: sentEmbed.id,
+                    channelId: sentEmbed.channel.id,
+                    message: storedMessage._id
+                }).save().then((pinnedEmbed) => {
+                    cachegoose.clearCache(message.id + "-pinned-embed");
+
+                    messageSchema.findOneAndUpdate(
+                        { messageId: message.id },
+                        { $push: { 'pinnedEmbeds': pinnedEmbed._id } },
+                        { upsert: true, new: true }
+                    )
+                    .cache(process.env.CACHE_TIME, message.id + "-message")
+                    .exec();
+                    
+                    cachegoose.clearCache(message.id + "-message");
             });
         })
 
@@ -180,7 +211,10 @@ class Pin {
     async getStoredPinnedMessage(message) {
         const pinnedEmbed = await pinnedEmbedSchema.findOne({
             pinnedEmbedId: message.id
-        }).populate("message").exec();
+        })
+        .cache(process.env.CACHE_TIME, message.id + "-pinned-embed")
+        .populate("message")
+        .exec();
         
         // This is disgusting. You know what else is disgusting?
         // Message is a promise (prototype?!) and for the life of me I can't resolve it.
@@ -193,7 +227,10 @@ class Pin {
     async getAttachedPinnedMessages(message) {
         const storedMessage = await messageSchema.findOne({
             messageId: message.id
-        }).populate("pinnedEmbeds").exec();
+        })
+        .cache(process.env.CACHE_TIME, message.id + "-message")
+        .populate("pinnedEmbeds")
+        .exec();
         
         if (!storedMessage) return [];
         return JSON.parse(JSON.stringify(storedMessage.pinnedEmbeds));
@@ -204,7 +241,9 @@ class Pin {
         
         const messageDocument = await messageSchema.findOne({
             messageId: message.id
-        }).exec();
+        })
+        .cache(process.env.CACHE_TIME, message.id + "-message")
+        .exec();
 
         // If the message doc. or karma total don't exist, then the karma should be equal to 0
         const karmaTotal = messageDocument?.karma ? messageDocument.karma : "0"
