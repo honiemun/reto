@@ -37,9 +37,7 @@ module.exports = {
 			.setCustomId('selectedReactable')
 			.setPlaceholder('Select a reactable');
 
-		await reactableSchema.find({ guildId: member.guild.id })
-        .cache(process.env.CACHE_TIME, member.guild.id + "-reactables")
-		.then(async (reactables) => {
+		await reactableSchema.find({ guildId: member.guild.id }).then(async (reactables) => {
 		// Delete all channels associated with reactables
 			for (const reactable of reactables) {
 				select.addOptions(

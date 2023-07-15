@@ -18,9 +18,7 @@ class ReactionCheck {
             messageId: message.id,
             userId: reactingUser.id,
             reactableId: reactable._id
-        })
-        .cache(process.env.CACHE_TIME, message.id + "-" + reactingUser.id + "-" + reactable._id + "-reaction")
-        .exec();
+        }).exec();
 
         return reactions.length;
     }
