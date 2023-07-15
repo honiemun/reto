@@ -39,6 +39,9 @@ class Reaction {
         .cache(process.env.CACHE_TIME, reaction.message.guildId + "-reactables")
         .exec();
 
+        console.log(guildDocument);
+        console.log(guildReactables);
+
         if (!guildReactables) return;
 
         for (const reactable of guildReactables) {
@@ -93,7 +96,6 @@ class Reaction {
             )
 
             // Send notification
-            // 0.208s for Reaction, 0.385 for Embed
             if (isPositive) await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable);
         }
     }
