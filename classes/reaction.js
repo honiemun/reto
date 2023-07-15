@@ -27,13 +27,11 @@ class Reaction {
         const guildDocument = await guildSchema.findOne({
             guildId: reaction.message.guildId
         })
-        .cache(86400, reaction.message.guildId + "-guild")
         .exec();
         
         const guildReactables = await reactableSchema.find({
             guildId: reaction.message.guildId
         })
-        .cache(86400, reaction.message.guildId + "-reactables")
         .exec();
 
         if (!guildReactables) return;

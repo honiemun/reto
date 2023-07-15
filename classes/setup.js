@@ -2,7 +2,6 @@ const { ChannelType, PermissionsBitField } = require('discord.js');
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
 const defaultReactables = require('../data/defaultReactables');
-const cachegoose = require("recachegoose");
 const fs = require("fs");
 const path = require("path");
 
@@ -65,7 +64,6 @@ class Setup {
     async startSetupFromScratch(guild) {
         // Delete pre-existing guild data
         await guildSchema.deleteMany({ guildId: guild.id });
-        cachegoose.clearCache(guild.id + '-guild');
 
         // Find existing reactables in database
         await reactableSchema.find({ guildId: guild.id}).then(async (reactables) => {
@@ -162,7 +160,6 @@ class Setup {
         const update = await guildSchema.updateOne({ guildId: guild.id }, {
             public: true
         });
-        cachegoose.clearCache(guild + '-guild');
         
         return update;
     }

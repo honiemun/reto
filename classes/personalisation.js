@@ -1,6 +1,5 @@
 const { Guild, Message, PartialMessage } = require("discord.js");
 const retoEmojis = require('../data/retoEmojis');
-const cachegoose = require("recachegoose");
 
 // Schemas
 const guildSchema = require('../schemas/guild');
@@ -30,44 +29,33 @@ class Personalisation {
     }
 
     async changeGuildKarmaName(guild, karmaName) {
-      cachegoose.clearCache(guild + '-guild');
-
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : { 'karmaName' : karmaName } },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
       .exec();
     }
 
     async changeGuildKarmaEmoji(guild, karmaEmoji) {
-      cachegoose.clearCache(guild + '-guild');
-
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : { 'karmaEmoji' : karmaEmoji } },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
       .exec();
     }
 
     async changeMessageReplyMode(guild, isEmbed) {
-      cachegoose.clearCache(guild + '-guild');
-
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : { 'messageConfirmation' : isEmbed } },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
       .exec();
     }
     
     async changeReactionEmbed(guild, title, description) {
-      cachegoose.clearCache(guild + '-guild');
-
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
         { $set : {
@@ -77,7 +65,6 @@ class Personalisation {
         },
         { upsert: true }
       )
-      .cache(86400, guild + "-guild")
       .exec();
     }
 }

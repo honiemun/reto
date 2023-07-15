@@ -2,7 +2,6 @@ const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const WOK = require("wokcommands");
 const path = require("path");
 const mongoose = require("mongoose");
-const cachegoose = require("recachegoose");
 const figlet = require("figlet");
 const colors = require("colors");
 var pack = require('./package.json');
@@ -26,9 +25,6 @@ const client = new Client({
 
 
 mongoose.set('strictQuery', true);
-cachegoose(mongoose, {
-	engine: 'memory'
-});
 
 client.on("ready", () => {
 	// Generate boot-up code
