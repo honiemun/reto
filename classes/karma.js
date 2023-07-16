@@ -44,8 +44,8 @@ class Karma {
 		).exec();
 	}
 
-	async sendKarmaNotification (message, user, guildDocument, reactable) {
-		if (guildDocument.messageConfirmation) {
+	async sendKarmaNotification (message, user, guildDocument, reactable, isPositive) {
+		if (guildDocument.messageConfirmation && isPositive) {
 			message.reply({
 				embeds: [
 					{

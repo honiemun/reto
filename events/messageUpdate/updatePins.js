@@ -4,6 +4,7 @@ module.exports = async (oldMessage, newMessage) => {
     await Pin.pinMessageToChannel(
       newMessage,
       false,
-      newMessage.client
+      newMessage.client,
+      true
     )
 };

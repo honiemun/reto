@@ -60,13 +60,13 @@ class Reaction {
             if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
             if (!message.author) return;
             
-            // Send to console
-            await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
-            
             // Check if the reaction isn't duplicated
             const amountReacted = await ReactionCheck.checkIfPreviouslyReacted(message, user, reactable)
             if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
             else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
+            
+            // Send to console
+            await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
 
             // Store reaction
             const savedReaction = await this.saveOrDeleteReaction(message, user, reactable, isPositive);
@@ -84,11 +84,12 @@ class Reaction {
                 message,
                 reactable,
                 message.client,
+                isPositive,
                 user
             )
 
             // Send notification
-            if (isPositive) await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable);
+            await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable, isPositive);
         }
     }
 

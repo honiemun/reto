@@ -19,13 +19,13 @@ class Pin {
         Pin._instance = this;
     }
 
-    async pinMessageToChannel(message, reactable, client, user = false) {
+    async pinMessageToChannel(message, reactable, client, isPositive, user = false) {
         if (!message) return;
 
         // Check if previously reacted
         if (user) {
             const hasReacted = await ReactionCheck.checkIfPreviouslyReacted(message, user, reactable);
-            if (!hasReacted) {
+            if (!hasReacted && isPositive) {
                 // TO-DO: Remove this user's pinned post if this is the last star.
                 // Would require checking for the reactions of the post
                 return;

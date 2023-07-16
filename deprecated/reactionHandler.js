@@ -27,7 +27,8 @@ module.exports = (client, instance) => {
     await Pin.pinMessageToChannel(
       newMessage,
       false,
-      client
+      client,
+      true
     )
   });
 
