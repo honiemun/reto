@@ -147,11 +147,11 @@ class Profile {
                 break;
         }
 
-        serverName = serverName + " "
-        description = "For ranking no. " + rank + " on the " + serverName != " " ? serverName : "global " + "leaderboard!"
+        const serverNameDescription = serverName ? serverName + "'s " : "the global ";
+        description = "For ranking no. " + rank + " on " + serverNameDescription + "leaderboard!"
 
         return {
-            "name": badge + " " + serverName + name,
+            "name": badge + " " + serverName + " " + name,
             "value": "> " + description,
             "inline": false
         }

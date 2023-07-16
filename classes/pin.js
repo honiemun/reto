@@ -32,11 +32,16 @@ class Pin {
             }
         }
 
+        // We use this multiple times, better call it at the beginning
+        const messageDocument = await messageSchema.findOne({
+            messageId: message.id
+        }).exec();
+
         const embed          = await this.generateMessageEmbed(message);
-        const karmaString    = await this.getKarmaTotalString(message);
+        const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
-        const iterableChannels = await this.getIterableChannels(message, reactable);
+        const iterableChannels = await this.getIterableChannels(messageDocument, reactable);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
@@ -85,14 +90,20 @@ class Pin {
             ).exec();
         }
 
+        // Delete the message from the database
+        await databaseMessage.deleteOne();
 
         // Delete all pinned messages (database and Discord)
-        const iterableChannels = await this.getIterableChannels(message, false);
+        const iterableChannels = await this.getIterableChannels(databaseMessage, false);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
             client.channels.fetch(iterableChannel.id).then(channel => {
-                channel.messages.delete(iterableChannel.embed);
+                try {
+                    channel.messages.delete(iterableChannel.embed);
+                } catch (e) {
+                    console.log("❌ Couldn't delete pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
+                }
 
                 pinnedEmbedSchema.findOneAndRemove({
                     pinnedEmbedId: message.id
@@ -100,14 +111,10 @@ class Pin {
             });
         }
 
-        // Delete the message from the database
-        await messageSchema.findOneAndRemove(
-            { messageId: message.id }
-        ).exec();
     }
 
-    async getIterableChannels(message, reactable) {
-        const pinnedMessages = await this.getAttachedPinnedMessages(message);
+    async getIterableChannels(dbMessage, reactable) {
+        const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
         let iterableChannels = [];
 
          if (pinnedMessages.length > 0) {
@@ -132,7 +139,7 @@ class Pin {
     async generateMessageEmbed(message) {
         // Generate default message embed
         let messageEmbed = {
-            url: "https://github.com/honiemun/reto", // Necessary for multiple image support
+            url: "https://retobot.com", // Necessary for multiple image support
             description: message.content ? message.content : undefined,
             timestamp: new Date().toISOString(),
             fields: []
@@ -148,31 +155,24 @@ class Pin {
         const embedReply = await this.setEmbedReply(message); // I pray to the Typescript gods above to forgive me for such ingenuity
         if (message.reference && embedReply) messageEmbed.fields.push(embedReply);
         
-        let embedArray = await this.setEmbedImages(message, "https://github.com/honiemun/reto");
+        let embedArray = await this.setEmbedImages(message, messageEmbed.url);
         embedArray.unshift(messageEmbed)
 
         return embedArray;
     }
 
-    async storePinnedEmbed(sentEmbed, message) {
-        // TO-DO: Probably can be refactored to remove the first part (saving message in pinnedEmbedSchema) entirely.
-        // Unfortunately, I'm too tired. Skill Issue.
-        messageSchema.findOne({ messageId: message.id }).exec().then((storedMessage) => {
-            if (!storedMessage) return;
-
-            new pinnedEmbedSchema({
-                pinnedEmbedId: sentEmbed.id,
-                channelId: sentEmbed.channel.id,
-                message: storedMessage._id
-            }).save().then((pinnedEmbed) => {
-                messageSchema.findOneAndUpdate(
-                    { messageId: message.id },
-                    { $push: { 'pinnedEmbeds': pinnedEmbed._id } },
-                    { upsert: true, new: true }
-                ).exec();
-            });
-        })
-
+    async storePinnedEmbed(sentEmbed, messageDb) {
+        new pinnedEmbedSchema({
+            pinnedEmbedId: sentEmbed.id,
+            channelId: sentEmbed.channel.id,
+            message: storedMessage._id
+        }).save().then((pinnedEmbed) => {
+            messageSchema.findOneAndUpdate(
+                { messageId: messageDb.id },
+                { $push: { 'pinnedEmbeds': pinnedEmbed._id } },
+                { upsert: true, new: true }
+            ).exec();
+        });
     }
 
     // Fetches the message attached to a pinnedEmbed object on the database.
@@ -190,21 +190,18 @@ class Pin {
     }
 
     // Fetches the array of pinnedEmbeds attached to a message object.
-    async getAttachedPinnedMessages(message) {
-        const storedMessage = await messageSchema.findOne({
-            messageId: message.id
-        }).populate("pinnedEmbeds").exec();
+    async getAttachedPinnedMessages(dbMessage) {
+        if (!dbMessage) return [];
+
+        const pinnedMessages = await pinnedEmbedSchema.find({
+            message: dbMessage._id
+        });
         
-        if (!storedMessage) return [];
-        return JSON.parse(JSON.stringify(storedMessage.pinnedEmbeds));
+        return pinnedMessages;
     }
 
-    async getKarmaTotalString(message) {
+    async getKarmaTotalString(message, messageDocument) {
         if (!message.guild) return;
-        
-        const messageDocument = await messageSchema.findOne({
-            messageId: message.id
-        }).exec();
 
         // If the message doc. or karma total don't exist, then the karma should be equal to 0
         const karmaTotal = messageDocument?.karma ? messageDocument.karma : "0"
