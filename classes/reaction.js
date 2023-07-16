@@ -20,7 +20,6 @@ class Reaction {
     }
 
     async messageReactionHandler(reaction, user, isPositive) {
-        console.time("Reaction-"+reaction.message.id)
         if (reaction.partial) await reaction.fetch();
         if (user.bot) return;
 
@@ -46,19 +45,20 @@ class Reaction {
                 ? reactable.karmaAwarded
                 : reactable.karmaAwarded * -1;
 
-            // Replace message with pinned message, if it exists
+            // If you're reacting to a Pinned Message,
+            // we redirect all points accrued to the original message.
             const message = await Pin.getStoredPinnedMessage(reaction.message).then((pinnedMessage) => {
+                console.log(pinnedMessage);
                 if (pinnedMessage) {
-                // TO-DO: Can this be simplified?
-                return reaction.message.client.channels.fetch(pinnedMessage.channelId).then((channel) => {
-                    return channel.messages.fetch(pinnedMessage.messageId);
+                    // TO-DO: Can this be simplified?
+                    return reaction.message.client.channels.fetch(pinnedMessage.channelId).then((channel) => {
+                        return channel.messages.fetch(pinnedMessage.messageId);
                 })
                 } else return reaction.message;
             })
             
             if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
             if (!message.author) return;
-            console.timeEnd("Reaction-"+reaction.message.id)
             
             // Send to console
             await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
@@ -88,7 +88,6 @@ class Reaction {
             )
 
             // Send notification
-            // 0.208s for Reaction, 0.385 for Embed
             if (isPositive) await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable);
         }
     }

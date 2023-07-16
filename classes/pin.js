@@ -60,7 +60,7 @@ class Pin {
                 // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
                 if (!iterableChannel.edit) {
                     channel.send({ content: karmaString, embeds: embed, components: [row] }).then((sentEmbed) => {
-                        this.storePinnedEmbed(sentEmbed, message);
+                        this.storePinnedEmbed(sentEmbed, messageDocument);
                     })
                 } else {
                     channel.messages.fetch(iterableChannel.embed).then((pinnedMessage) => {
@@ -165,10 +165,10 @@ class Pin {
         new pinnedEmbedSchema({
             pinnedEmbedId: sentEmbed.id,
             channelId: sentEmbed.channel.id,
-            message: storedMessage._id
+            message: messageDb._id
         }).save().then((pinnedEmbed) => {
             messageSchema.findOneAndUpdate(
-                { messageId: messageDb.id },
+                { messageId: messageDb.messageId },
                 { $push: { 'pinnedEmbeds': pinnedEmbed._id } },
                 { upsert: true, new: true }
             ).exec();
@@ -176,17 +176,17 @@ class Pin {
     }
 
     // Fetches the message attached to a pinnedEmbed object on the database.
-    // TO-DO: Necessary??
     async getStoredPinnedMessage(message) {
+        // TO-DO: Maybe better optimised with a populate function.
         const pinnedEmbed = await pinnedEmbedSchema.findOne({
             pinnedEmbedId: message.id
-        }).populate("message").exec();
-        
-        // This is disgusting. You know what else is disgusting?
-        // Message is a promise (prototype?!) and for the life of me I can't resolve it.
-        // Populate deserves a special place in hell for this, and so do I
+        }).exec();
+
         if (!pinnedEmbed) return null;
-        return JSON.parse(JSON.stringify(pinnedEmbed.message));
+        
+        return await messageSchema.findOne({
+            _id: pinnedEmbed.message
+        }).exec();
     }
 
     // Fetches the array of pinnedEmbeds attached to a message object.
