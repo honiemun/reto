@@ -13,7 +13,7 @@ module.exports = {
 
 	callback: async ({ user, message, instance, interaction, channel }) => {
 		await interaction.deferReply();
-		const formattingCategories = await Formatting.getFormattingRules(message);
+		const formattingCategories = await Formatting.getFormattingDescriptions(message);
 		const embeds = [];
 		const pages = {}
 		
