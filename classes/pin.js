@@ -228,13 +228,30 @@ class Pin {
     }
 
     async setEmbedSingleImage(message) {
-        if (!message.attachments) return;
-        if (message.attachments.size > 1) return;
+        if (!message.attachments && !message.embeds) return;
+        
+        // Image based on an attachment
+        if (message.attachments.size == 1 && !message.embeds.length) {
+            for (const attachment of message.attachments.values()) {
+                if (attachment.url) {
+                    return {
+                        url: attachment.url
+                    };
+                }
+            }
+        }
 
-        for (const attachment of message.attachments.values()) {
-            if (attachment.url) {
+        // Image based on an embed
+        else if (message.embeds.length == 1 && !message.attachments.size) {
+            const embed = message.embeds[0];
+            let imageUrl = false;
+            
+            if (embed.image && embed.image.url) imageUrl = embed.image.url;
+            if (embed.thumbnail && embed.thumbnail.url) imageUrl = embed.thumbnail.url;
+
+            if (imageUrl) {
                 return {
-                    url: attachment.url
+                    url: imageUrl
                 };
             }
         }
@@ -258,7 +275,7 @@ class Pin {
         }
         
         // Embeds
-        if (message.embeds.length > 0) {
+        if (message.embeds.length > 1) {
             for (const embed of message.embeds) {
                 let imageUrl = false;
                 
@@ -275,7 +292,7 @@ class Pin {
                 }
             }
         }
-
+        
         return embedArray;
     }
 
