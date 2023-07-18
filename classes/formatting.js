@@ -21,8 +21,10 @@ class Formatting {
         
         const rules = await this.getFormattingRules(message, reactingUser, guild, reactable);
         const regex = /\{(\w+)\}/g; // Find all text in curly braces
-
-        for (const uncleanFormat of textToFormat.match(regex)) {
+        const uncleanFormats = textToFormat.match(regex);
+        if (!uncleanFormats) return textToFormat;
+        
+        for (const uncleanFormat of uncleanFormats) {
             const format = uncleanFormat.replace(/[{}]/g, "");
             if (!rules[format]) continue;
             console.log(rules[format])

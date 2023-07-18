@@ -40,12 +40,20 @@ client.on("ready", () => {
 		events: {
 			dir: path.join(__dirname, 'events')
 		},
-		messagesPath: path.join(__dirname, 'i18n/messages.json'),
 		testServers: [
 			'952707420700934195', // Retool Development
 		],
 		botOwners: [
 			'690962744454938734', // Honiemun
+		],
+		disabledDefaultCommands: [
+			// TO-DO: See which of these are actually useful
+			WOK.DefaultCommands.ChannelCommand,
+			WOK.DefaultCommands.CustomCommand,
+			WOK.DefaultCommands.Prefix,
+			WOK.DefaultCommands.RequiredPermissions,
+			WOK.DefaultCommands.RequiredRoles,
+			WOK.DefaultCommands.ToggleCommand
 		],
 		mongoUri: process.env.MONGO_URI
 	});

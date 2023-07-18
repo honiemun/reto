@@ -3,6 +3,7 @@ const retoEmojis = require('../data/retoEmojis');
 
 // Schemas
 const guildSchema = require('../schemas/guild');
+const reactableSchema = require('../schemas/reactable');
 
 class Personalisation {
 
@@ -55,15 +56,15 @@ class Personalisation {
       .exec();
     }
     
-    async changeReactionEmbed(guild, title, description) {
-      await guildSchema.findOneAndUpdate(
-        { guildId: guild },
+    async changeReactionEmbed(reactableId, title, description) {
+      await reactableSchema.findOneAndUpdate(
+        { _id: reactableId },
         { $set : {
           'reactionConfirmationTitle' : title,
           'reactionConfirmationDescription' : description
           }
         },
-        { upsert: true }
+        { upsert: false }
       )
       .exec();
     }

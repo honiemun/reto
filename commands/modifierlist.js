@@ -1,3 +1,4 @@
+const { CommandType } = require("wokcommands");
 const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 const Formatting = require("../classes/formatting");
@@ -7,8 +8,7 @@ module.exports = {
 	category: 'Personalisation',
 	description: 'Shows a complete list of every modifier that can be used for customising text.',
 
-	slash: 'both',
-	testOnly: true, // This only works for test servers!
+	type: CommandType.SLASH,
 	guildOnly: false,
 
 	callback: async ({ user, message, instance, interaction, channel }) => {

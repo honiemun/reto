@@ -1,9 +1,14 @@
+const { CommandType } = require("wokcommands");
+const { ApplicationCommandOptionType } = require("discord.js");
+
 const Profile = require("../classes/profile");
-const ApplicationCommandOptionType = require("discord.js");
 
 module.exports = {
 	category: 'Profiles',
 	description: 'Shows you (or another user\'s) Reto Profile.',
+
+	type: CommandType.SLASH,
+	guildOnly: false,
 
 	options: [
 		{
@@ -13,11 +18,7 @@ module.exports = {
 			type: ApplicationCommandOptionType.User
 		}
 	],
-
-	slash: 'both',
-	testOnly: true, // This only works for test servers!
-	guildOnly: false,
-
+	
 	callback: ({ instance, interaction, member }) => {
 		interaction.deferReply();
 		const user = interaction.options.getUser("user") ? interaction.options.getUser("user") : member

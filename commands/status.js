@@ -1,3 +1,5 @@
+const { CommandType } = require("wokcommands");
+
 module.exports = {
 	category: 'Configuration',
 	description: 'Sets the bots status.',
@@ -5,8 +7,7 @@ module.exports = {
 	minArgs: 1,
 	expectedArgs: '<status>',
 
-	slash: 'both',
-	testOnly: true, // This only works for test servers!
+	type: CommandType.SLASH,
 	ownerOnly: true,
 
 	callback: async ({ client, text }) => {

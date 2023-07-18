@@ -1,6 +1,7 @@
+const { CommandType } = require("wokcommands");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
+
 const Personalisation = require("../classes/personalisation");
-const { EmbedBuilder } = require("discord.js");
-const ApplicationCommandOptionType = require("discord.js");
 
 module.exports = {
 	category: 'Personalisation',
@@ -25,8 +26,7 @@ module.exports = {
 		}
 	],
 
-	slash: 'both',
-	testOnly: true, // This only works for test servers!
+	type: CommandType.SLASH,
 	guildOnly: false,
 
 	callback: ({ interaction, member }) => {

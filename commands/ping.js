@@ -1,9 +1,10 @@
+const { CommandType } = require("wokcommands");
+
 module.exports = {
 	category: 'Testing',
 	description: 'Replies with Pong!',
 
-	slash: 'both',
-	testOnly: true, // This only works for test servers!
+	type: CommandType.SLASH,
 	guildOnly: false,
 
 	callback: ({ message, instance, interaction }) => {
