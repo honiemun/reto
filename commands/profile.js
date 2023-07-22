@@ -21,9 +21,19 @@ module.exports = {
 	
 	callback: ({ instance, interaction, member }) => {
 		interaction.deferReply();
-		const user = interaction.options.getUser("user") ? interaction.options.getUser("user") : member
-		if (user == null) return
+		let user;
+
+		if (instance.options.getUser("user")) {
+			user = instance.options.getUser("user"); // Specified an User
+		} else if (member) {
+			user = member;							 // You're in a guild
+		} else {
+			user = interaction.user;				 // You're on DMs
+		}
+
+		if (user == null) return; // TO-DO: Throw an error!
 		
+
 		Profile.fetchProfileEmbed(user, member, instance, interaction).then((embed) => {
 			if (!embed) return;
 			return interaction.editReply({embeds: [ embed ]})

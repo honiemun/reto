@@ -18,8 +18,9 @@ class Profile {
     async fetchProfileEmbed(author, member, instance, interaction) {
         if (author == null) return;
 
-        const user = author instanceof GuildMember ? author.user : author
-        const username = author instanceof GuildMember ? author.nickname : author.username
+        const isOnGuild = author instanceof GuildMember;
+        const user = isOnGuild ? author.user : author
+        const username = isOnGuild ? author.nickname : author.username
         
 		const userDatabase = await userSchema.findOne(
 			{ userId: user.id },
@@ -50,7 +51,7 @@ class Profile {
             ]
         }
 
-        if (member.guild) {
+        if (isOnGuild) {
             // Get info from guild
 
             memberDatabase = await memberSchema.findOne(
@@ -81,7 +82,7 @@ class Profile {
         })
         
         let memberRank = 0;
-        if (member.guild) {
+        if (isOnGuild) {
             memberRank =  await this.getRank(memberSchema, memberDatabase, "karma");
 
             embed.fields.push({
@@ -102,7 +103,7 @@ class Profile {
         console.log(JSON.parse(process.env.BOT_OWNERS));
         if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) { embed.fields.push(await this.getProgrammerBadge(instance, interaction)); }
         if (userRank <= 10) { embed.fields.push(await this.getMedalBadge(userRank, instance, interaction)); }
-        if (memberRank <= 10) { embed.fields.push(await this.getMedalBadge(memberRank, instance, interaction, member.guild.name)); }
+        if (isOnGuild && memberRank <= 10) { embed.fields.push(await this.getMedalBadge(memberRank, instance, interaction, member.guild.name)); }
         if (userDatabase.earlySupporter) { embed.fields.push(await this.getEarlySupporterBadge(instance, interaction)); }
 
         return embed
