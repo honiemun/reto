@@ -38,6 +38,7 @@ class Setup {
                 // Add dynamic data for the Best Of
                 if (emoji.isBestOf) {
                     emoji.sendsToChannel = bestOf.id;
+                    emoji.sendingThreshold = 1;
                     emoji.lockedBehindRoles.push(curator.id);
                 }
 
@@ -50,6 +51,7 @@ class Setup {
                     karmaAwarded: emoji.karmaAwarded,
                     messageConfirmation: emoji.messageConfirmation,
                     sendsToChannel: emoji.sendsToChannel,
+                    sendingThreshold: emoji.sendingThreshold,
                     lockedBehindRoles: emoji.lockedBehindRoles
                 });
             });

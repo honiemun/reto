@@ -23,8 +23,8 @@ module.exports = {
 		interaction.deferReply();
 		let user;
 
-		if (instance.options.getUser("user")) {
-			user = instance.options.getUser("user"); // Specified an User
+		if (interaction.options.getUser("user")) {
+			user = interaction.options.getUser("user"); // Specified an User
 		} else if (member) {
 			user = member;							 // You're in a guild
 		} else {

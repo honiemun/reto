@@ -37,6 +37,13 @@ const reactableSchema = new mongoose.Schema({
 		required: false
 	},
 
+	// If sendsToChannel is set, this determines how many reactions are needed to send this message.
+	sendingThreshold: {
+		type: Number,
+		required: false,
+		default: 0
+	},
+
 	// The amount of karma this reactable awards. Can be positive or negative.
 	karmaAwarded: {
 		type: Number,
