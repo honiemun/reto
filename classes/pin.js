@@ -41,10 +41,16 @@ class Pin {
         const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
-        const iterableChannels = await this.getIterableChannels(messageDocument, reactable);
+        const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, isPositive);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
+            // Delete embeds
+            if (!isPositive) {
+                this.deletePinnedEmbed(iterableChannel, client);
+                continue;
+            }
+
             client.channels.fetch(iterableChannel.id).then((channel) => {
     
                 // Attach a Jump to message button
@@ -94,48 +100,71 @@ class Pin {
         await databaseMessage.deleteOne();
 
         // Delete all pinned messages (database and Discord)
-        const iterableChannels = await this.getIterableChannels(databaseMessage, false);
+        const iterableChannels = await this.getIterableChannels(message, databaseMessage, false, false);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
-            client.channels.fetch(iterableChannel.id).then(channel => {
-                try {
-                    channel.messages.delete(iterableChannel.embed);
-                } catch (e) {
-                    console.log("❌ Couldn't delete pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
-                }
-
-                pinnedEmbedSchema.findOneAndRemove({
-                    pinnedEmbedId: message.id
-                }).exec();
-            });
+            this.deletePinnedEmbed(iterableChannel, client);
         }
 
     }
 
-    async getIterableChannels(dbMessage, reactable) {
+    async getIterableChannels(message, dbMessage, reactable, isPositive) {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
         let iterableChannels = [];
 
-         if (pinnedMessages.length > 0) {
-            for (const pinnedMessage of pinnedMessages) iterableChannels.push({
-                id: pinnedMessage.channelId,
-                embed: pinnedMessage.pinnedEmbedId,
-                edit: true
-            });
-        } if (reactable.sendsToChannel) {
+        console.log(pinnedMessages)
+        
+        // Add to list if message has enough reactions
+        let reactionCount = 0;
+
+        if (reactable) {
+            for (const emojiId of reactable.emojiIds) {
+                // TO-DO: What happens if it's not in cache?!
+                const reaction = message.reactions.cache.get(emojiId)
+                if (!reaction) continue;
+                reactionCount += reaction.count;
+            }
+        }
+
+        // Update pinned messages
+        if (pinnedMessages.length > 0) {
+            for (const pinnedMessage of pinnedMessages) {
+                if (reactionCount >= reactable.sendingThreshold || !isPositive) {
+                    iterableChannels.push({
+                        id: pinnedMessage.channelId,
+                        embed: pinnedMessage.pinnedEmbedId,
+                        edit: true
+                    });
+                }
+            }
+        }
+        
+        // Create new message
+        else if (reactable.sendsToChannel && reactionCount >= reactable.sendingThreshold) {
             iterableChannels.push({
                 id: reactable.sendsToChannel,
                 embed: "",
                 edit: false
             });
         }
-        
-        if (iterableChannels.length == 0) return;
 
         return iterableChannels;
     }
     
+    async deletePinnedEmbed(iterableChannel, client) {
+        client.channels.fetch(iterableChannel.id).then(channel => {
+            try {
+                channel.messages.delete(iterableChannel.embed);
+            } catch (e) {
+                console.log("❌ Couldn't delete pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
+            }
+
+            pinnedEmbedSchema.deleteMany({
+                pinnedEmbedId: iterableChannel.embed
+            }).exec();
+        });
+    }
     async generateMessageEmbed(message) {
         // Generate default message embed
         let messageEmbed = {
