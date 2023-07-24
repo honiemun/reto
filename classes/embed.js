@@ -1,4 +1,5 @@
-const { ActionRowBuilder, ButtonBuilder, EmbedBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, StringSelectMenuBuilder,
+		StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
 const Setup = require('./setup');
 const embeds = require('../data/embeds');
 
@@ -114,6 +115,42 @@ class Embed {
             .setDescription(reason)
             .setFooter({text: date.toString() });
     }
+
+	async createReactableSelectorEmbed(interaction, reactables, includesAll, title) {
+		const select = new StringSelectMenuBuilder()
+			.setCustomId('selectedReactable')
+			.setPlaceholder('Select a reactable');
+
+		if (includesAll) {
+			select.addOptions(
+				new StringSelectMenuOptionBuilder()
+					.setLabel("All reactables") // Uppercase
+					.setValue("all")
+			);
+		}
+		
+		for (const reactable of reactables) {
+			select.addOptions(
+				new StringSelectMenuOptionBuilder()
+					.setLabel(reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1)) // Uppercase
+					.setEmoji(reactable.emojiIds[0])
+					.setValue(reactable._id.toString())
+			);
+		}
+		
+		const row = new ActionRowBuilder()
+			.addComponents(select);
+
+        const reactableSelect = await interaction.editReply({ embeds: [
+			new EmbedBuilder()
+				.setColor("Yellow")
+				.setTitle(title)
+				.setDescription("Pick a reactable from the list below!")
+		], components: [ row ] })
+
+
+		return reactableSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
+	}
 }
 
 module.exports = new Embed();

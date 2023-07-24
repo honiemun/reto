@@ -49,6 +49,13 @@ const guildSchema = new mongoose.Schema({
 		type: Boolean,
 		required: false,
 		default: false
+	},
+
+	// The time until a premium subscription expires.
+	// This is usually the purchasing date plus the amount of days they were billed for.
+	premiumTime: {
+		type: Date,
+		required: false
 	}
 });
 

@@ -69,6 +69,39 @@ class Personalisation {
       .exec();
     }
 
+    async updatePinningThreshold(reactableId, sendingThreshold) {
+      await reactableSchema.findOneAndUpdate(
+        { _id: reactableId },
+        { $set : {
+          'sendingThreshold' : sendingThreshold
+          }
+        },
+        { upsert: false }
+      )
+      .exec();
+    }
+
+    async updatePinChannel(reactableId, sendsToChannel) {
+      let query = { $set : {
+        'sendsToChannel' : sendsToChannel
+        }
+      };
+
+      // If the element doesn't exist, delete from database
+      if (!sendsToChannel) {
+        query = { $unset : {
+          'sendsToChannel' : ""
+          }
+        };
+      }
+
+      await reactableSchema.findOneAndUpdate(
+        { _id: reactableId },
+        query,
+        { upsert: false }
+      )
+      .exec();
+    }
     async createGuideEmbed(client, guild) {
       const reactableDocument = await reactableSchema.find({
         guildId: guild.id

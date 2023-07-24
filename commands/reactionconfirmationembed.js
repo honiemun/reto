@@ -1,9 +1,9 @@
 const { CommandType } = require("wokcommands");
-const { EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder,
-		ActionRowBuilder, ApplicationCommandOptionType, ComponentType } = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
 const mongoose = require('mongoose');
 
 const Personalisation = require("../classes/personalisation");
+const Embed = require("../classes/embed");
 
 // Schemas
 const reactableSchema = require("../schemas/reactable");
@@ -31,46 +31,13 @@ module.exports = {
 	],
 
 	slash: 'both',
-	testOnly: true, // This only works for test servers!
-	guildOnly: false,
+	guildOnly: true,
 
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();
 
-		// Select (alternative, not working)
-
-		const select = new StringSelectMenuBuilder()
-			.setCustomId('selectedReactable')
-			.setPlaceholder('Select a reactable')
-			.addOptions(
-				new StringSelectMenuOptionBuilder()
-					.setLabel("All reactables") // Uppercase
-					.setValue("all")
-			);
-
 		const reactables = await reactableSchema.find({ guildId: member.guild.id });
-		
-		for (const reactable of reactables) {
-			select.addOptions(
-				new StringSelectMenuOptionBuilder()
-					.setLabel(reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1)) // Uppercase
-					.setEmoji(reactable.emojiIds[0])
-					.setValue(reactable._id.toString())
-			);
-		}
-		
-		const row = new ActionRowBuilder()
-			.addComponents(select);
-
-        const reactableSelect = await interaction.editReply({ embeds: [
-			new EmbedBuilder()
-				.setColor("Yellow")
-				.setTitle("❓ Which reactable should we apply this embed to?")
-				.setDescription("Pick a reactable from the list below!")
-		], components: [ row ] })
-
-
-		const collector = reactableSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
+		const collector = await Embed.createReactableSelectorEmbed(interaction, reactables, true, '❓ Which reactable should we apply this embed to?')
 
 		collector.on('collect', async i => {
 			const reactableId = i.values[0];

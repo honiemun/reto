@@ -36,6 +36,13 @@ const userSchema = new mongoose.Schema({
 		required: false,
 		default: false
 	},
+
+	// The time until a premium subscription expires.
+	// This is usually the purchasing date plus the amount of days they were billed for.
+	premiumTime: {
+		type: Date,
+		required: false
+	}
 });
 
 module.exports = mongoose.model("user", userSchema);
