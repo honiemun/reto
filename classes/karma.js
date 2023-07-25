@@ -51,10 +51,10 @@ class Karma {
 					{
 						title: reactable.reactionConfirmationTitle ?
 							    await Formatting.format(reactable.reactionConfirmationTitle, message, user, message.guild, reactable) :
-							    await Formatting.format("{rl} gave {al}'s message a {re} {rn}", message, user, null, reactable),
+							    await Formatting.format("{r} gave {a}'s message a {re} {rn}", message, user, null, reactable),
 						description: reactable.reactionConfirmationDescription ?
 								await Formatting.format(reactable.reactionConfirmationDescription, message, user, message.guild, reactable) :
-							    await Formatting.format("**{al}** now has {ke} `{k}` **{kn}**.", message, null, message.guild, null)
+							    await Formatting.format("**{a}** now has {ke} `{k}` **{kn}**.", message, null, message.guild, null)
 					},
 				],
 				allowedMentions: {

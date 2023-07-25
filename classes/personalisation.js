@@ -65,13 +65,19 @@ class Personalisation {
     }
     
     async changeReactionEmbed(reactableId, title, description) {
+      const update = title && description ?
+      { $set: {
+        'reactionConfirmationTitle' : title,
+        'reactionConfirmationDescription' : description
+      }} :
+      { $unset: { 
+        'reactionConfirmationTitle' : null,
+        'reactionConfirmationDescription' : null
+      }}
+      
       await reactableSchema.findOneAndUpdate(
         { _id: reactableId },
-        { $set : {
-          'reactionConfirmationTitle' : title,
-          'reactionConfirmationDescription' : description
-          }
-        },
+        update,
         { upsert: false }
       )
       .exec();
