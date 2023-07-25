@@ -55,7 +55,7 @@ module.exports = {
                     options: [
                         {
 
-                            name: "emoji",
+                            name: "name",
                             description: "The name to set this server's local karma to.",
                             required: true,
                             type: ApplicationCommandOptionType.String
@@ -73,6 +73,7 @@ module.exports = {
 	],
 
 	slash: 'both',
+    testOnly: true,
 	guildOnly: true,
     
 	callback: async ({ interaction, member }) => {

@@ -69,13 +69,13 @@ class GuildKarma {
             
             case "default":
                 karmaName = null;
-                confirmationMessage = "The name for this server's karma has been reset to default.";
+                confirmationMessage = "The name for this server's karma has been reset.";
                 break;
         }
 
 		Personalisation.changeGuildKarmaName(member.guild.id, karmaName)
 		
-        return interaction.reply({embeds: [ new EmbedBuilder()
+        return interaction.editReply({embeds: [ new EmbedBuilder()
             .setColor("Green")
             .setTitle("✔️ Server Karma changed!")
             .setDescription(confirmationMessage)
