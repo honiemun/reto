@@ -30,18 +30,26 @@ class Personalisation {
     }
 
     async changeGuildKarmaName(guild, karmaName) {
+      const update = karmaName ?
+      { $set: { 'karmaName': karmaName } } :
+      { $unset: { 'karmaName': null } }
+      
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
-        { $set : { 'karmaName' : karmaName } },
+        update,
         { upsert: true }
       )
       .exec();
     }
 
     async changeGuildKarmaEmoji(guild, karmaEmoji) {
+      const update = karmaEmoji ?
+      { $set: { 'karmaEmoji': karmaEmoji } } :
+      { $unset: { 'karmaEmoji': null } }
+      
       await guildSchema.findOneAndUpdate(
         { guildId: guild },
-        { $set : { 'karmaEmoji' : karmaEmoji } },
+        update,
         { upsert: true }
       )
       .exec();
@@ -82,22 +90,13 @@ class Personalisation {
     }
 
     async updatePinChannel(reactableId, sendsToChannel) {
-      let query = { $set : {
-        'sendsToChannel' : sendsToChannel
-        }
-      };
-
-      // If the element doesn't exist, delete from database
-      if (!sendsToChannel) {
-        query = { $unset : {
-          'sendsToChannel' : ""
-          }
-        };
-      }
+      const update = sendsToChannel ?
+        { $set: { 'sendsToChannel': sendsToChannel } } :
+        { $unset: { 'sendsToChannel': null } }
 
       await reactableSchema.findOneAndUpdate(
         { _id: reactableId },
-        query,
+        update,
         { upsert: false }
       )
       .exec();
