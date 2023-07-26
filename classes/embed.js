@@ -47,10 +47,12 @@ class Embed {
 		let actionComponents = []
 		for (let component of components) {
 			let buttonBuilder = new ButtonBuilder()
-				.setLabel(component.label)
 				.setStyle(component.style)
 				.setDisabled(component.disabled ? component.disabled : false);
-			
+
+			if (component.emoji) buttonBuilder.setEmoji(component.emoji);
+			if (component.label) buttonBuilder.setLabel(component.label);
+
 			if (component.url) {
 				buttonBuilder.setURL(component.url)
 			} else {

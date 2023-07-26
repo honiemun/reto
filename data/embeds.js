@@ -10,7 +10,14 @@ module.exports = [
             fields: [
                 {
                     "name": "Before we begin...",
-                    "value": "Please, take a moment to read through our Privacy Policy! (Don't worry, it's not written in dense legalese.)\n\n*The short of it:*\n★ Whenever someone reacts to a message you sent, Reto keeps logs of its contents for up to 30 days.\n★ Reto keeps track of the servers both you and it are in.\n★ If the server is set to Public, other people may see the messages you sent that have been reacted to over a vote threshold.\n★ You can delete or export your data at any time!"
+                    "value": `
+Please, take a moment to read through our Privacy Policy! (Don't worry, it's not written in dense legalese.)
+
+*The short of it:*
+- Whenever someone reacts to a message you sent, Reto keeps logs of its contents for up to 30 days.
+- Reto keeps track of the servers both you and it are in.
+- If the server is set to Public, other people may see the messages you sent that have been reacted to over a vote threshold.
+- You can delete or receive a copy of your data at any time!`
                 }
             ],
             footer: {
@@ -28,9 +35,16 @@ module.exports = [
                 id: "privacyPolicy",
                 label: "Privacy policy",
                 style: "Link",
-                url: "https://retobot.gg/privacy-policy",
+                url: "https://retobot.com/privacy-policy",
                 disabled: false
-            }
+            },
+            {
+                id: "termsOfService",
+                label: "Terms of service",
+                style: "Link",
+                url: "https://retobot.com/terms-of-service",
+                disabled: false
+            },
         ]
     },
     {
@@ -41,33 +55,202 @@ module.exports = [
             description: "To get started, pick out what kind of setup process you'd like.",
             fields: [
                 {
-                    "name": "Quick setup",
-                    "inline": true,
-                    "value": "The one most people will need.\nThis will create for you:\n\n★ A <:plus:1004190494844264509> **plus** and <:minus:1004190495964139540> **minus** emoji. Anyone can vote on their favourite messages with these!\n★ A <:10:1004190492650647594> **bestof** emoji that will send whatever post is reacted to it to a new `#best-of` channel.\n★ A `@Curator` role - people with this role can use the **bestof** emoji to send messages to the `#best-of` channel.\n★ Sets the server as Public, meaning the funniest messages can be discovered with `/explore`.\n★ Sets up confirmations as a Reaction.\n\n*(All these features can be modified later down the line.)*"
-                },
-                {
                     "name": "Advanced setup",
                     "inline": true,
-                    "value": "Want to customise Reto to the fullest?\nUse the Advanced wizard to make the bot your own!\n\n★ Choose if you want the default **+1** and/or **-1** Reactables.\n★ Create an optional `#best-of` channel, and send messages to it using an exclusive emoji or Democracy Mode *(a message vote threshold).*\n★ Create your own server-specific Reactables!\n★ Choose if you'd like your server's messages to remain Public or Private.\n★ Send a confirmation message or reaction each time someone uses a Reactable.\n\n*(This is currently in development.)*"
+                    "value": `
+Want to customise Reto to the fullest?
+Use the Advanced wizard to make the bot your own!
+
+- Choose if you want the default **Plus** and/or **Minus** Reactables.
+- Create an optional \`#best-of\` channel, and send messages to it using a **Pin** Reactable and/or Democracy Mode *(a message vote threshold).*
+- Set up your own server-specific Karma.
+- Send a confirmation message or reaction each time someone uses a Reactable.`
+                },
+                {
+                    "name": "Quick setup",
+                    "inline": true,
+                    "value": `
+The default settings - get to the fun in no time!
+This will create for you:
+
+- A <:plus:1004190494844264509> **plus** and <:minus:1004190495964139540> **minus** emoji. Anyone can vote on their favourite messages with these!
+- A <:10:1004190492650647594> **pin** emoji that will send whatever post is reacted to it to a newly created \`#best-of\` channel.
+- A \`@Curator\` role - people with this role can use the **pin** emoji to send messages to the \`#best-of\` channel.
+- Sets up confirmations as a Reaction.
+
+*(All these features can be modified later down the line.)*`
                 }
             ]
         },
         components: [
             {
-                id: "quickSetup",
-                label: "Quick setup",
-                style: ButtonStyle.Primary,
-                next: "publicServer",
-                disabled: false,
-                function: function(guild, member) { Setup.quickSetup(guild, member); }
-            },
-            {
                 id: "advancedSetup",
                 label: "Advanced setup",
-                style: "Secondary",
-                disabled: true
+                style: ButtonStyle.Primary,
+                disabled: false,
+                next: "introReactables"
+            },
+            {
+                id: "quickSetup",
+                label: "Quick setup",
+                style: ButtonStyle.Secondary,
+                next: "startFromScratch",
+                disabled: false,
             }
         ]
+    },
+    {
+        // TO-DO: Skip if this is the first time running Setup!!
+        id: "startFromScratch",
+        embed: {
+            color: 0,
+            title: "Start from scratch?",
+            description: `
+You're starting a **Quick Setup.** Do you want to delete the **Custom Emoji**, **Pinnable Channels** and **Roles** that Reto generated for you, or would you like to reuse them (where possible?)
+
+If you choose not to delete these, you can manually remove the unused emoji, channels and roles from your server anytime.`,
+            footer: {
+                text: "Warning: This action is irreversible!"
+            }
+        },
+        components: [
+            {
+                id: "keepOldData",
+                label: "Keep old data",
+                style: ButtonStyle.Secondary,
+                next: "publicServer",
+                disabled: false,
+                function: function(guild, member) { Setup.quickSetup(guild, member, false); }
+            },
+            {
+                id: "eraseOldData",
+                label: "Erase old data",
+                style: ButtonStyle.Danger,
+                next: "publicServer",
+                disabled: false,
+                function: function(guild, member) { Setup.quickSetup(guild, member, true); }
+            }
+        ]
+    },
+    {
+        id: "introReactables",
+        embed: {
+            color: 0,
+            title: "Introduction to Reactables",
+            description: `
+**Reactables** are the heart of Reto - reacting to a message with any of these can kick off tons of functionality!
+
+We're going to set-up the most basic of Reto reactables first: a **Plus** and **Minus** emoji, which will add +1 and -1 to your Karma when reacted, and a **Pin** reactable, which will send any messages reacted with it to a special channel.
+
+All of these Reactables are optional, and you can customize their functionality later down the line.`,
+        },
+        components: [
+            {
+                id: "reactableConfirm",
+                label: "Got it!",
+                style: ButtonStyle.Primary,
+                next: "plusReactable",
+                disabled: false
+            }
+        ]
+    },
+    {
+        id: "plusReactable",
+        embed: {
+            color: 0,
+            title: "Setting up the Plus reactable",
+            description: `
+> The **Plus** reactable adds \`+1\` to the Karma of anyone you react to.
+
+Select an emoji from the list below to create this Reactable.`
+        },
+        components: [
+            {
+                id: "default",
+                emoji: "<:plus:1004190494844264509>",
+                style: ButtonStyle.Success,
+                next: "minusReactable",
+                disabled: false
+            },
+            {
+                id: "heart",
+                emoji: "❤",
+                style: ButtonStyle.Primary,
+                next: "minusReactable",
+                disabled: false
+            },
+            {
+                id: "hand",
+                emoji: "👍",
+                style: ButtonStyle.Primary,
+                next: "minusReactable",
+                disabled: false
+            },
+            {
+                id: "arrow",
+                emoji: "⬆️",
+                style: ButtonStyle.Primary,
+                next: "minusReactable",
+                disabled: false
+            },
+            {
+                id: "plusSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "minusReactable",
+                disabled: false
+            }
+        ],
+
+    },
+    {
+        id: "minusReactable",
+        embed: {
+            color: 0,
+            title: "Setting up the Minus reactable",
+            description: `
+> The **Minus** reactable adds \`-1\` to the Karma of anyone you react to.
+
+Select an emoji from the list below to create this Reactable.`
+        },
+        components: [
+            {
+                id: "default",
+                emoji: "<:minus:1004190495964139540>",
+                style: ButtonStyle.Success,
+                next: "publicServer",
+                disabled: false
+            },
+            {
+                id: "heart",
+                emoji: "💔",
+                style: ButtonStyle.Primary,
+                next: "publicServer",
+                disabled: false
+            },
+            {
+                id: "hand",
+                emoji: "👎",
+                style: ButtonStyle.Primary,
+                next: "publicServer",
+                disabled: false
+            },
+            {
+                id: "arrow",
+                emoji: "⬇️",
+                style: ButtonStyle.Primary,
+                next: "publicServer",
+                disabled: false
+            },
+            {
+                id: "plusSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "publicServer",
+                disabled: false
+            }
+        ],
+
     },
     {
         id: "publicServer",
@@ -99,7 +282,40 @@ module.exports = [
         embed: {
             color: 0,
             title: "Setup complete!",
-            description: "You're all set up! You can now use Reto in your server!\nTo change any of these settings, you can re-run `/setup` anytime.\n\nA Getting Started guide is available on your designated `#best-of` channel, or by using the `/guide` command. *(currently not implemented)*\n\nThanks for using Reto!\n[Join the support server](" + process.env.SUPPORT_SERVER + ") for help, or to report bugs or suggest features!",
-        }
+            description: `
+You're all set up! You can now use Reto in your server!
+To change any of these settings, you can re-run \`/setup\` anytime.
+
+A Getting Started guide is available on your designated pinned channel, or by using the \`/guide\` command.
+Thank you for using Reto!`,
+        
+            fields: [
+                {
+                    "name": "❔ Need any help?",
+                    "inline": false,
+                    "value": "[Join the support server](" + process.env.SUPPORT_SERVER + ") if you've got any issues, to report bugs or suggest features!"
+                },
+                {
+                    "name": "🌟 Go Beyond",
+                    "inline": false,
+                    "value": "If you enjoy Reto, consider becoming a **Reto Gold** member to gain exclusive access to more customization features and support Reto's development!"
+                }
+            ]
+        },
+
+        components: [
+            {
+                id: "retoGold",
+                label: "Go Gold",
+                style: ButtonStyle.Link,
+                url: "https://retobot.com/gold"
+            },
+            {
+                id: "supportServer",
+                label: "Support server",
+                style: ButtonStyle.Link,
+                url: process.env.SUPPORT_SERVER
+            }
+        ]
     }
 ]
