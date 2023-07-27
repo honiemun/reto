@@ -12,7 +12,7 @@ class Embed {
         Embed._instance = this;
     }
 
-	async createEmbed (id, msgInt, channel, member) {
+	async createEmbed (id, msgInt, channel, member, client) {
 		if (!embeds) return;
 
 		// Find the setup assigned with the sent ID
@@ -25,20 +25,27 @@ class Embed {
 
 		// Create the embed we're sending
 		let replyEmbed = {
-			embeds: [currentSetup.embed]
+			embeds: [currentSetup.embed],
+			components: []
 		}
 
 		// Add components if they exist
 		if (currentSetup.components) {
 			await this.createComponents(currentSetup.components).then(function(component) {
-				replyEmbed.components = [component];
+				replyEmbed.components.push(component);
+			});
+		}
+
+		if (currentSetup.selector) {
+			await this.createSelector(currentSetup.selector, channel, client).then(function(selector) {
+				replyEmbed.components.push(selector);
 			});
 		}
 
 		// Send the embed
 		msgInt.replied
-			? msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member); })
-			: msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member); });
+			? msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); })
+			: msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); });
 	}
 
 	async createComponents (components) {
@@ -67,7 +74,43 @@ class Embed {
 
 	}
 
-	async createCollector (currentSetup, msgInt, channel, member) {
+	async createSelector (selector, channel, client) {
+		const select = new StringSelectMenuBuilder()
+			.setCustomId(selector.id)
+			.setPlaceholder(selector.placeholder);
+		
+		const options = await this.getSelectorOptions(selector, channel, client);
+
+		for (const option of options) {
+			let optionBuilder = new StringSelectMenuOptionBuilder()
+				.setLabel(option.label)
+				.setValue(option.value);
+			
+			if (option.emoji) optionBuilder.setEmoji(option.emoji);
+			
+			select.addOptions(optionBuilder);
+		}
+
+		// Dynamic population
+		
+		return new ActionRowBuilder().addComponents(select);
+	}
+
+	async getSelectorOptions (selector, channel, client) {
+		let options = selector.options;
+		
+		if (selector.populate) {
+			const populator = selector.populate(client, channel.guild.id)
+
+			for (const option of populator) {
+				options.push(option);
+			}
+		}
+		
+		return options;
+	}
+
+	async createCollector (currentSetup, msgInt, channel, member, client) {
 		// Create a collector
 		if (!currentSetup.components) return;
 
@@ -77,18 +120,29 @@ class Embed {
 		})
 
 		// Add a listener to the collector
-		collector?.on('collect', (i) => {
+		collector?.on('collect', async (i) => {
 			// Remove previous info
 			i.deferUpdate();
 			msgInt.editReply({ components: [] });
 			collector.stop();
 
+			// Buttons (components)
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
-					// Create the next step
-					component.next ? this.createEmbed(component.next, msgInt, channel, member) : this.createEmbed(component.id, msgInt, channel, member);
-					// Execute function
-					if (component.function) component.function(channel.guild, member);
+					await this.selectCollectorOption(component, msgInt, channel, member, client);
+					return;
+				}
+			}
+
+			// Select Menu (selectors)
+			if (currentSetup.selector) {
+				const options = await this.getSelectorOptions(currentSetup.selector, channel, client);
+				
+				for (let option of options) {
+					if (option.value === i.values[0]) {
+						await this.selectCollectorOption(option, msgInt, channel, member, client);
+						return;
+					}
 				}
 			}
 		})
@@ -97,6 +151,13 @@ class Embed {
 		collector?.on('end', (collected, reason) => {
 			msgInt.editReply({ components: [] });
 		});
+	}
+
+	async selectCollectorOption(component, msgInt, channel, member, client) {
+		// Create the next step
+		component.next ? this.createEmbed(component.next, msgInt, channel, member, client) : this.createEmbed(component.id, msgInt, channel, member, client);
+		// Execute function
+		if (component.function) component.function(channel.guild, member);
 	}
 
     async createErrorEmbed(reason) {

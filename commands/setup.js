@@ -8,7 +8,7 @@ module.exports = {
 
 	type: CommandType.SLASH,
 
-	callback: async ({ interaction: msgInt, channel, guild, member }) => {
-		Embed.createEmbed('setup', msgInt, channel, member);
+	callback: async ({ interaction: msgInt, channel, member, client }) => {
+		Embed.createEmbed('setup', msgInt, channel, member, client);
 	},
 }

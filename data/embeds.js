@@ -218,32 +218,147 @@ Select an emoji from the list below to create this Reactable.`
                 id: "default",
                 emoji: "<:minus:1004190495964139540>",
                 style: ButtonStyle.Success,
-                next: "publicServer",
+                next: "pinnableChannel",
                 disabled: false
             },
             {
                 id: "heart",
                 emoji: "💔",
                 style: ButtonStyle.Primary,
-                next: "publicServer",
+                next: "pinnableChannel",
                 disabled: false
             },
             {
                 id: "hand",
                 emoji: "👎",
                 style: ButtonStyle.Primary,
-                next: "publicServer",
+                next: "pinnableChannel",
                 disabled: false
             },
             {
                 id: "arrow",
                 emoji: "⬇️",
                 style: ButtonStyle.Primary,
-                next: "publicServer",
+                next: "pinnableChannel",
                 disabled: false
             },
             {
+                id: "minusSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "pinnableChannel",
+                disabled: false
+            }
+        ],
+
+    },
+    {
+        id: "pinnableChannel",
+        embed: {
+            color: 0,
+            title: "Create a Pinnable Channel",
+            description: `
+With Reto, you can send extra-special messages to a special, _Pinnable Channel_, by using a special Reactable or after it passing a Karma Amount.
+
+Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel below.`
+        },
+        components: [
+            {
+                id: "pinChannelSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "publicServer",
+                disabled: false
+            }
+        ],
+        selector: {
+            id: "pinnableChannel",
+            placeholder: "Create or select a Pinnable Channel",
+            populate: function (client, guildId) {
+                // Fetch channels
+
+                const guild = client.guilds.cache.get(guildId);
+                let guilds = [];
+
+                guild.channels.cache.forEach((channel) => {
+                    if (channel.type == 0) { // Only Text Channels
+                        guilds.push({
+                            label: "#" + channel.name,
+                            value: channel.id,
+                            next: "pinThreshold"
+                        })
+                    }
+                });
+
+                return guilds.slice(0, 24);
+            },
+            options: [
+                {
+                    label: "Create a new channel (#best-of)",
+                    value: "createBestOf",
+                    emoji: "✨",
+                    next: "pinThreshold"
+                }
+            ]
+        }
+        
+    },
+    {
+        id: "pinThreshold",
+        embed: {
+            color: 0,
+            title: "Create a Pinning Threshold",
+            description: `
+With a Pinning Threshold, any member of your server can use your Karma-giving Reactables to send messages to the Pinnable Channel you've created.
+
+Do you want to set a Pinning Threshold?
+
+*(Note: Currently not implemented - sorry!)*`
+        },
+        components: [
+            {
                 id: "plusSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "pinReactable",
+                disabled: false
+            }
+        ],
+    },
+    {
+        id: "pinReactable",
+        embed: {
+            color: 0,
+            title: "Setting up the Pin reactable",
+            description: `
+> The **Pin** reactable immediately sends a message to the Pinnable Channel you've assigned.
+
+Select an emoji from the list below to create this Reactable.`
+        },
+        components: [
+            {
+                id: "default",
+                emoji: "<:10:1004190492650647594>",
+                style: ButtonStyle.Success,
+                next: "pinReactableRoles",
+                disabled: false
+            },
+            {
+                id: "star",
+                emoji: "⭐",
+                style: ButtonStyle.Primary,
+                next: "pinReactableRoles",
+                disabled: false
+            },
+            {
+                id: "pin",
+                emoji: "\uD83D\uDCCC", // Pushpin
+                style: ButtonStyle.Primary,
+                next: "pinReactableRoles",
+                disabled: false
+            },
+            {
+                id: "pinSkip",
                 label: "Skip",
                 style: ButtonStyle.Secondary,
                 next: "publicServer",
@@ -253,27 +368,103 @@ Select an emoji from the list below to create this Reactable.`
 
     },
     {
+        id: "pinReactableRoles",
+        embed: {
+            color: 0,
+            title: "Role lock the Pin Reactable",
+            description: `
+With the Pin Reactable, any person can send any message to the Pinnable Channel. It's recommended you set it up so only people with high server roles have access to it.
+
+Do you want to lock the Pin Reactable to a specific role?`
+        },
+        components: [
+            {
+                id: "pinRoleSkip",
+                label: "Don't add a role lock",
+                style: ButtonStyle.Secondary,
+                next: "publicServer",
+                disabled: false
+            }
+        ],
+        selector: {
+            id: "pinnableChannel",
+            placeholder: "Create or select a Pinnable Channel",
+            populate: function (client, guildId) {
+                // Fetch channels
+
+                const guild = client.guilds.cache.get(guildId);
+                let roles = [];
+
+                guild.roles.cache.forEach((role) => {
+                    if (role.name != "@everyone") { // Skip @everyone
+                        roles.push({
+                            label: "@" + role.name,
+                            value: role.id,
+                            next: "publicServer"
+                        })
+                    }
+                });
+
+                return roles.slice(0, 24);
+            },
+            options: [
+                {
+                    label: "Create a new role (@Curator)",
+                    value: "createCurator",
+                    emoji: "✨",
+                    next: "publicServer"
+                }
+            ]
+        }
+    },
+    {
         id: "publicServer",
         embed: {
             color: 0,
             title: "Do you want your server to be Public?",
-            description: "With Reto, you can find the top-voted messages in every Public server the bot is in using `/explore` - and check out the Global Post Leaderboards to see the best messages throughout all Discord!\n\nIf you'd like the best posts from this server to be featured for anyone to find, you can set it as **Public**. If this is a private server, you might want to opt-out and set it as **Private**.",
+            description: `
+With Reto, you can find the top-voted messages in every Public server the bot is in using \`/discover\` - and check out the Global Post Leaderboards to see the best messages throughout all Discord!
+
+If you'd like the best posts from this server to be featured for anyone to find, you can set it as **Public**. If this is a private server, you might want to opt-out and set it as **Private**.`,
         },
         components: [
             {
                 id: "serverPublic",
                 label: "Set server as Public",
-                next: "done",
+                next: "newsletter",
                 style: ButtonStyle.Primary,
-                disabled: false,
                 function: function(guild) { Setup.setPublicServer(guild); }
             },
             {
                 id: "serverPrivate",
                 label: "Set server as Private",
+                next: "newsletter",
+                style: ButtonStyle.Secondary,
+            }
+        ]
+    },
+    {
+        id: "newsletter",
+        embed: {
+            color: 0,
+            title: "Reto Newsletter",
+            description: `
+Reto is constantly being updated with new commands and features!
+
+If you'd like to hear what's new in Reto *(once a month, don't worry!)*, consider **Subscribing** to hear the latest news in your Pinnable Channel. Otherwise, we'll send minimal updates whenever there's critical information or major Events.`,
+        },
+        components: [
+            {
+                id: "subscribe",
+                label: "Subscribe to the Newsletter",
                 next: "done",
-                style: "Secondary",
-                disabled: false
+                style: ButtonStyle.Primary
+            },
+            {
+                id: "minimal",
+                label: "Get minimal news",
+                next: "done",
+                style: ButtonStyle.Secondary,
             }
         ]
     },
