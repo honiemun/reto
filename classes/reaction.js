@@ -1,0 +1,145 @@
+const { Message, PartialMessage, User, PartialUser } = require('discord.js');
+
+// Schemas
+const guildSchema = require("../schemas/guild");
+const reactableSchema = require("../schemas/reactable");
+const reactionSchema = require('../schemas/reaction');
+
+// Classes
+const Pin = require("./pin");
+const Karma = require("./karma");
+const ReactionCheck = require("./reactionCheck");
+
+class Reaction {
+    
+    constructor() {
+        if (Reaction._instance) {
+          throw new Error("Singleton classes can't be instantiated more than once.")
+        }
+        Reaction._instance = this;
+    }
+
+    async messageReactionHandler(reaction, user, isPositive) {
+        if (reaction.partial) await reaction.fetch();
+        if (user.bot) return;
+
+        const guildDocument = await guildSchema.findOne({
+            guildId: reaction.message.guildId
+        })
+        .exec();
+        
+        const guildReactables = await reactableSchema.find({
+            guildId: reaction.message.guildId
+        })
+        .exec();
+
+        if (!guildReactables) return;
+
+        for (const reactable of guildReactables) {
+            const reactableIsValid = reactable.emojiIds.includes(reaction.emoji.name)
+                || reactable.emojiIds.includes(reaction.emoji.id);
+
+            if (!reactableIsValid) continue;
+
+            const karmaToAward = isPositive
+                ? reactable.karmaAwarded
+                : reactable.karmaAwarded * -1;
+
+            // If you're reacting to a Pinned Message,
+            // we redirect all points accrued to the original message.
+            const message = await Pin.getStoredPinnedMessage(reaction.message).then((pinnedMessage) => {
+                console.log(pinnedMessage);
+                if (pinnedMessage) {
+                    // TO-DO: Can this be simplified?
+                    return reaction.message.client.channels.fetch(pinnedMessage.channelId).then((channel) => {
+                        return channel.messages.fetch(pinnedMessage.messageId);
+                })
+                } else return reaction.message;
+            })
+            
+            if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
+            if (!message.author) return;
+            
+            // Check if the reaction isn't duplicated
+            const amountReacted = await ReactionCheck.checkIfPreviouslyReacted(message, user, reactable)
+            if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
+            else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
+            
+            // Send to console
+            await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
+
+            // Store reaction
+            const savedReaction = await this.saveOrDeleteReaction(message, user, reactable, isPositive);
+            if (!savedReaction) return;
+
+            // Award the karma total to user
+            await Karma.awardKarmaToUser(
+                karmaToAward,
+                message.author,
+                message
+            )
+
+            // Send message to channel
+            await Pin.pinMessageToChannel(
+                message,
+                reactable,
+                message.client,
+                isPositive,
+                user
+            )
+
+            // Send notification
+            await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable, isPositive);
+        }
+    }
+
+    async saveOrDeleteReaction(message, reactingUser, reactable, toSave) {
+        //if (await ReactionCheck.checkIfPreviouslyReacted(message, reactingUser, reactable)) return false;
+
+        if (toSave) await this.saveReaction(message, reactingUser, reactable);
+        else await this.deleteReaction(message, reactingUser, reactable);
+        return true;
+    }
+
+    async saveReaction(message, reactingUser, reactable) {
+        return new reactionSchema({
+            messageId: message.id,
+            userId: reactingUser.id,
+            reactableId: reactable._id
+        }).save();
+    }
+
+    async deleteReaction(message, reactingUser, reactable) {
+        return reactionSchema.deleteMany({
+            messageId: message.id,
+            userId: reactingUser.id,
+            reactableId: reactable._id
+        }).exec();
+    }
+
+    async sendReactionToConsole(message, reactingUser, reactable, karmaToAward, isPositive) {
+        const reactableName = reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1);
+        const reactableAmount = " (" + (karmaToAward<0?"":"+") + karmaToAward + ")"
+        const reactPrefix = isPositive ? "" : "un"
+        console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray);
+    }
+
+    // Currently goes un-used - the reactionHandler recursively deletes
+    // every reaction if this is implemented.
+    /*
+    undoReaction: async function (message: Message | PartialMessage, reactingUser: User | PartialUser) {
+        const userReactions = message.reactions.cache.filter(reaction => reaction.users.cache.has(reactingUser.id));
+
+        try {
+            for (const reaction of userReactions.values()) {
+                await reaction.users.remove(reactingUser.id);
+            }
+        } catch (error) {
+            console.error("💔 Couldn't remove the user's repeated reaction");
+        }
+    }
+    */
+
+}
+
+module.exports = new Reaction();
