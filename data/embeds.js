@@ -26,6 +26,13 @@ Please, take a moment to read through our Privacy Policy! (Don't worry, it's not
         },
         components: [
             {
+                id: "skipTo",
+                label: "Skip to Pin Threshold",
+                style: ButtonStyle.Primary,
+                disabled: false,
+                next: "pinThreshold"
+            },
+            {
                 id: "chooseSetupType",
                 label: "Let's get started!",
                 style: ButtonStyle.Primary,
@@ -311,11 +318,29 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
             description: `
 With a Pinning Threshold, any member of your server can use your Karma-giving Reactables to send messages to the Pinnable Channel you've created.
 
-Do you want to set a Pinning Threshold?
-
-*(Note: Currently not implemented - sorry!)*`
+This is similar to _Starboard_ functions in other bots.`
         },
         components: [
+            {
+                id: "setThreshold",
+                label: "Set a Threshold",
+                style: ButtonStyle.Primary,
+                next: "pinReactable",
+                disabled: false,
+                modal: {
+                    id: "thresholdModal",
+                    title: "Set a Threshold",
+                    inputs: [
+                        {
+                            id: "threshold",
+                            label: "Pinning Threshold",
+                            placeholder: "How much Karma is needed to pin a message?",
+                            required: true,
+                            longForm: false
+                        }
+                    ]
+                }
+            },
             {
                 id: "plusSkip",
                 label: "Skip",

@@ -1,5 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, StringSelectMenuBuilder,
-		StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
+		StringSelectMenuOptionBuilder, ComponentType, ModalBuilder, TextInputBuilder,
+		TextInputStyle } = require('discord.js');
 const Setup = require('./setup');
 const embeds = require('../data/embeds');
 
@@ -123,12 +124,18 @@ class Embed {
 		collector?.on('collect', async (i) => {
 			// Remove previous info
 			i.deferUpdate();
-			msgInt.editReply({ components: [] });
+			//msgInt.editReply({ components: [] });
 			collector.stop();
 
 			// Buttons (components)
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
+					// Modals
+					if (component.modal) {
+						await this.createModal(component.modal, i);
+						return;
+					}
+
 					await this.selectCollectorOption(component, msgInt, channel, member, client);
 					return;
 				}
@@ -158,6 +165,35 @@ class Embed {
 		component.next ? this.createEmbed(component.next, msgInt, channel, member, client) : this.createEmbed(component.id, msgInt, channel, member, client);
 		// Execute function
 		if (component.function) component.function(channel.guild, member);
+	}
+
+	async createModal(modal, interaction) {
+		// Generate modal
+		const modalBuilder = new ModalBuilder()
+			.setCustomId(modal.id)
+			.setTitle(modal.title);
+		
+		// Generate inputs
+		for (let input of modal.inputs) {
+			let modalElement = new TextInputBuilder()
+				.setCustomId(input.id)
+				.setLabel(input.label);
+			
+			modal.longForm ?
+			modalElement.setStyle(TextInputStyle.Paragraph) :
+			modalElement.setStyle(TextInputStyle.Short);
+
+			if (input.placeholder) modalElement.setPlaceholder(input.placeholder);
+			if (input.required) modalElement.setRequired(true);
+
+			const actionRow = new ActionRowBuilder().addComponents(modalElement);
+			modalBuilder.addComponents(actionRow);
+		}
+
+		// Send modal
+		await interaction.showModal(modalBuilder);
+
+		//await this.modalCollector(modal, msgInt, channel, member, client);
 	}
 
     async createErrorEmbed(reason) {
