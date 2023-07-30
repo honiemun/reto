@@ -1,7 +1,11 @@
 const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, StringSelectMenuBuilder,
 		StringSelectMenuOptionBuilder, ComponentType, ModalBuilder, TextInputBuilder,
-		TextInputStyle } = require('discord.js');
-const Setup = require('./setup');
+		TextInputStyle, Events, ButtonStyle } = require('discord.js');
+
+// Classes
+const Validation = require("../classes/validation");
+
+// Data
 const embeds = require('../data/embeds');
 
 class Embed {
@@ -122,21 +126,16 @@ class Embed {
 
 		// Add a listener to the collector
 		collector?.on('collect', async (i) => {
-			// Remove previous info
-			i.deferUpdate();
-			//msgInt.editReply({ components: [] });
-			collector.stop();
-
 			// Buttons (components)
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
 					// Modals
 					if (component.modal) {
-						await this.createModal(component.modal, i);
+						await this.createModal(component.modal, i, msgInt, channel, member, client);
 						return;
 					}
 
-					await this.selectCollectorOption(component, msgInt, channel, member, client);
+					await this.selectCollectorOption(component, i, msgInt, channel, member, client);
 					return;
 				}
 			}
@@ -147,7 +146,7 @@ class Embed {
 				
 				for (let option of options) {
 					if (option.value === i.values[0]) {
-						await this.selectCollectorOption(option, msgInt, channel, member, client);
+						await this.selectCollectorOption(option, i, msgInt, channel, member, client);
 						return;
 					}
 				}
@@ -160,14 +159,24 @@ class Embed {
 		});
 	}
 
-	async selectCollectorOption(component, msgInt, channel, member, client) {
+	async selectCollectorOption(component, i, msgInt, channel, member, client) {
+		// When the update isn't deferred, we receive an error.
+		i.deferUpdate();
+		
 		// Create the next step
-		component.next ? this.createEmbed(component.next, msgInt, channel, member, client) : this.createEmbed(component.id, msgInt, channel, member, client);
+		await this.nextTab(component, msgInt, channel, member, client);
 		// Execute function
 		if (component.function) component.function(channel.guild, member);
 	}
 
-	async createModal(modal, interaction) {
+	async nextTab(component, msgInt, channel, member, client) {
+		component.next ?
+			this.createEmbed(component.next, msgInt, channel, member, client) :
+			this.createEmbed(component.id, msgInt, channel, member, client);
+	}
+
+	async createModal(modal, interaction, msgInt, channel, member, client) {
+		console.log(client.readyTimestamp);
 		// Generate modal
 		const modalBuilder = new ModalBuilder()
 			.setCustomId(modal.id)
@@ -193,26 +202,115 @@ class Embed {
 		// Send modal
 		await interaction.showModal(modalBuilder);
 
-		//await this.modalCollector(modal, msgInt, channel, member, client);
+		// Await for a response
+		console.log(client.readyTimestamp);
+		await this.modalCollector(modal, msgInt, channel, member, client);
 	}
 
+	async modalCollector(modal, msgInt, channel, member, client) {
+		console.log(client.readyTimestamp);
+		client.on(Events.InteractionCreate, async interaction => {
+			if (!interaction.isModalSubmit()) return;
+
+			let inputArray = [];
+
+			for (let input of modal.inputs) {
+				const value = interaction.fields.getTextInputValue(input.id);
+				const validation = await this.validateModalInput(input, value);
+
+				// Retry if the validation fails
+				if (validation) {
+					await this.generateModalRetry(modal, validation, interaction, msgInt, channel, member, client)
+					return;
+				}
+
+				inputArray.push(value);
+			}
+
+			if (interaction.customId === modal.id) {
+				interaction.deferUpdate(); // Hacky way to go about this!
+				await this.nextTab(modal, msgInt, channel, member, client);
+			}
+			
+			console.log(inputArray);
+
+			// TO-DO: Execute function
+		});		
+	}
+
+	async validateModalInput(input, value) {
+		// False means it passes validation.
+		if (!input.validation) return false;
+
+		switch (input.validation) {
+			case "number":
+				if (isNaN(value)) return await this.createErrorEmbed("The `" + input.label + "` element is not a number.");
+				break;
+			/*
+			// We can't really write emoji on a modal
+			// Discord summoning 10000 unnamed developers
+			// to create the most pointless restrictions
+			case "emoji":
+				return await Validation.validateEmoji(value);
+				break;
+			*/
+			default:
+				return false;
+				break;
+		}
+	}
+
+	async generateModalRetry(modal, validation, interaction, msgInt, channel, member, client) {
+		console.log(client.readyTimestamp);
+		// Create retry button
+		const retry = new ButtonBuilder()
+		.setLabel("Retry")
+		.setStyle(ButtonStyle.Primary)
+		.setCustomId("retry");
+		
+		// Send error embed
+		interaction.reply({
+			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ]
+		})
+
+		// Create collector
+		const collector = interaction.channel?.createMessageComponentCollector({
+			max: 1,
+			time: 1000 * 60,
+		})
+
+		// Add a listener to the collector
+		collector?.on('collect', async (i) => {
+			console.log(client.readyTimestamp);
+			await this.createModal(modal, i, msgInt, channel, member, client);
+			return;
+		})
+
+		// On collector end, remove all buttons
+		collector?.on('end', (collected, reason) => {
+			interaction.editReply({ components: [] });
+		});
+	}
+	
     async createErrorEmbed(reason) {
         const date = new Date();
 		const randomErrorMessage = [
 			"Something went wrong!",
+			"Looks like something broke!",
 			"We've found an error...",
 			"There's been a problem!",
 			"Sorry, an error has ocurred...",
 			"Dead Reto, oops!",
 			"Try plugging it off then on again?",
-			"Guru Meditation"
+			"Guru Meditation",
+			"That's not supposed to happen..."
 		];
 
         return new EmbedBuilder()
             .setColor("Red")
             .setTitle("⚠️ " + randomErrorMessage[Math.floor(Math.random()*randomErrorMessage.length)])
             .setDescription(reason)
-            .setFooter({text: date.toString() });
+            .setFooter({text: date.getHours() + ":" + date.getMinutes() + " • " + date.toLocaleDateString('en-US') });
     }
 
 	async createReactableSelectorEmbed(interaction, reactables, includesAll, title) {

@@ -330,13 +330,15 @@ This is similar to _Starboard_ functions in other bots.`
                 modal: {
                     id: "thresholdModal",
                     title: "Set a Threshold",
+                    next: "pinReactable",
                     inputs: [
                         {
                             id: "threshold",
                             label: "Pinning Threshold",
                             placeholder: "How much Karma is needed to pin a message?",
                             required: true,
-                            longForm: false
+                            longForm: false,
+                            validation: "number"
                         }
                     ]
                 }

@@ -2,7 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 
 // Classes
 const Personalisation = require("../classes/personalisation");
-const Embed = require("../classes/embed");
+const Validation = require("../classes/validation");
 
 class GuildKarma {
 
@@ -22,21 +22,10 @@ class GuildKarma {
                 karmaEmoji = interaction.options.getString("emoji");
                 confirmationMessage = "The new emoji for this server's karma is " + interaction.options.getString("emoji") + ".";
 
-                // Check if the emoji is valid
-                const isEmoji = (str) => str.match(/((?<!\\)<:[^:]+:(\d+)>)|\p{Emoji_Presentation}|\p{Extended_Pictographic}/gmu);
+                const emojiError = await Validation.validateEmoji(karmaEmoji);
 
-                if (!isEmoji(interaction.options.getString("emoji"))) {
-                    Embed.createErrorEmbed("`" + interaction.options.getString("emoji") + "` is not an emoji!").then(async function (errorEmbed) {
-                        await interaction.followUp({ embeds: [ errorEmbed ], ephemeral: true })
-                    })
-                    return;
-                }
-        
-                if (isEmoji(interaction.options.getString("emoji")).length > 1) {
-                    Embed.createErrorEmbed("You can only set one emoji at a time!").then(async function (errorEmbed) {
-                        await interaction.followUp({ embeds: [ errorEmbed ], ephemeral: true })
-                    })
-                    return;
+                if (emojiError) {
+                    return interaction.followUp({ embeds: [ emojiError ], ephemeral: true });
                 }
 
                 break;
