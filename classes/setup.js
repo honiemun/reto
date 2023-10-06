@@ -1,7 +1,9 @@
 const { ChannelType, PermissionsBitField } = require('discord.js');
+
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
 const defaultReactables = require('../data/defaultReactables');
+
 const fs = require("fs");
 const path = require("path");
 
@@ -26,33 +28,7 @@ class Setup {
         await this.asignRoleToUser(curator, member);
 
         // Create default emoji
-        // TO-DO: Throw error if something goes horribly wrong
-        for (const emoji of defaultReactables) {
-            await this.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
-                // Save new emoji into list
-                emoji.emojiIds.push(createdEmoji.id);
-
-                // Add dynamic data for the Best Of
-                if (emoji.isBestOf) {
-                    emoji.sendsToChannel = bestOf.id;
-                    emoji.sendingThreshold = 1;
-                    emoji.lockedBehindRoles.push(curator.id);
-                }
-
-                this.createReactable({
-                    guildId: guild.id,
-                    globalKarma: true,
-                    
-                    name: emoji.name,
-                    emojiIds: emoji.emojiIds,
-                    karmaAwarded: emoji.karmaAwarded,
-                    messageConfirmation: emoji.messageConfirmation,
-                    sendsToChannel: emoji.sendsToChannel,
-                    sendingThreshold: emoji.sendingThreshold,
-                    lockedBehindRoles: emoji.lockedBehindRoles
-                });
-            });
-        }
+        await this.createDefaultReactables(guild, bestOf, curator);
 
         // Store guild data
         this.createGuild({
@@ -157,6 +133,37 @@ class Setup {
             name: 'Curator',
             reason: 'This role allows people who have it to pin (using the :pin:, 📌 or ⭐ emoji) to send messages to the #best-of channel.',
         });
+    }
+
+    async createDefaultReactables (guild, bestOf, curator) {
+        // TO-DO: Throw error if something goes horribly wrong
+        
+        for (const emoji of defaultReactables) {
+            await this.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
+                // Save new emoji into list
+                emoji.emojiIds.push(createdEmoji.id);
+
+                // Add dynamic data for the Best Of
+                if (emoji.isBestOf) {
+                    emoji.sendsToChannel = bestOf.id;
+                    emoji.sendingThreshold = 1;
+                    emoji.lockedBehindRoles.push(curator.id);
+                }
+
+                this.createReactable({
+                    guildId: guild.id,
+                    globalKarma: true,
+                    
+                    name: emoji.name,
+                    emojiIds: emoji.emojiIds,
+                    karmaAwarded: emoji.karmaAwarded,
+                    messageConfirmation: emoji.messageConfirmation,
+                    sendsToChannel: emoji.sendsToChannel,
+                    sendingThreshold: emoji.sendingThreshold,
+                    lockedBehindRoles: emoji.lockedBehindRoles
+                });
+            });
+        }
     }
 
     async asignRoleToUser (role, member) {
