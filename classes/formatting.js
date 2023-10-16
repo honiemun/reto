@@ -86,6 +86,7 @@ class Formatting {
 
         return rules
     }
+
     async getFormattingDescriptions () {
         // Changes from Reto Legacy:
         // - u and um are now a and am, for the sake of clarity (Username is now Author).
@@ -183,6 +184,19 @@ class Formatting {
                     "description": "The emoji this server uses for Karma.",
                 }
             }
+        }
+    }
+
+    
+    async arrayToCommaOrString(arr) {
+        if (arr.length === 1) {
+            return arr[0];
+        } else if (arr.length >= 2) {
+            const lastTwo = arr.slice(-2).join(' or ');
+            const rest = arr.slice(0, -2).join(', ');
+            return rest.length > 0 ? `${rest}, ${lastTwo}` : lastTwo;
+        } else {
+            return '';
         }
     }
 }

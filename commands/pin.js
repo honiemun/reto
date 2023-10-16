@@ -9,7 +9,7 @@ module.exports = {
 	description: 'Manages whether Reactables can pin messages.',
 
 	type: CommandType.SLASH,
-	guildOnly: false,
+	guildOnly: true,
 
 	options: [
         {

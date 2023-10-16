@@ -231,8 +231,6 @@ class Embed {
 				interaction.deferUpdate(); // Hacky way to go about this!
 				await this.nextTab(modal, msgInt, channel, member, client);
 			}
-			
-			console.log(inputArray);
 
 			// TO-DO: Execute function
 		});		
@@ -313,6 +311,7 @@ class Embed {
             .setFooter({text: date.getHours() + ":" + date.getMinutes() + " • " + date.toLocaleDateString('en-US') });
     }
 
+	// TO-DO: Phase out, where possible, with an Autocomplete. See Autoreact.
 	async createReactableSelectorEmbed(interaction, reactables, includesAll, title) {
 		const select = new StringSelectMenuBuilder()
 			.setCustomId('selectedReactable')
@@ -343,6 +342,48 @@ class Embed {
 				.setColor("Yellow")
 				.setTitle(title)
 				.setDescription("Pick a reactable from the list below!")
+		], components: [ row ] })
+
+
+		return reactableSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
+	}
+
+	async createAutoreactTypeSelectorEmbed(interaction) {
+		const channel = interaction.options.getChannel("channel");
+
+		const select = new StringSelectMenuBuilder()
+			.setCustomId('selectedAutoreact')
+			.setPlaceholder('Select the type of message')
+			.setMinValues(1)
+			.setMaxValues(4);
+
+		select.addOptions(
+			new StringSelectMenuOptionBuilder()
+				.setLabel("Text")
+				.setDescription("Text-only messages.")
+				.setValue("text"),
+			new StringSelectMenuOptionBuilder()
+				.setLabel("Media")
+				.setDescription("Messages that include images, video or audio.")
+				.setValue("media"),
+			new StringSelectMenuOptionBuilder()
+				.setLabel("File")
+				.setDescription("Messages that have any other type of file attached.")
+				.setValue("file"),
+			new StringSelectMenuOptionBuilder()
+				.setLabel("Embed")
+				.setDescription("Messages that include an embed or a link with preview.")
+				.setValue("embed"),
+		);
+
+		const row = new ActionRowBuilder()
+			.addComponents(select);
+
+        const reactableSelect = await interaction.editReply({ embeds: [
+			new EmbedBuilder()
+				.setColor("Yellow")
+				.setTitle("Types of content")
+				.setDescription("The bot will autoreact to any messages that include certain types of content on <#" + channel + ">.\nPlease select which types of content will trigger the auto-reaction.")
 		], components: [ row ] })
 
 
