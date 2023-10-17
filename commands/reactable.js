@@ -1,5 +1,5 @@
 const { CommandType } = require("wokcommands");
-const { ApplicationCommandOptionType } = require("discord.js");
+const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
 const Autocomplete = require("../classes/autocomplete");
@@ -13,6 +13,10 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: true,
+
+    permissions: [
+		PermissionFlagsBits.ManageGuildExpressions
+	],
 
 	options: [
         {
@@ -43,10 +47,6 @@ module.exports = {
     autocomplete: async (command, argument, interaction) => {
         return await Autocomplete.autocomplete("reactable", {guildId: interaction.guild.id});
     },
-
-	slash: 'both',
-    testOnly: true,
-	guildOnly: true,
     
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();

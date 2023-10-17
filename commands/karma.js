@@ -1,5 +1,5 @@
 const { CommandType } = require("wokcommands");
-const { ApplicationCommandOptionType } = require("discord.js");
+const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
 const GuildKarma = require("../classes/guildKarma");
@@ -9,7 +9,11 @@ module.exports = {
 	description: 'Manages the look of this server\'s Karma.',
 
 	type: CommandType.SLASH,
-	guildOnly: false,
+	guildOnly: true,
+    
+    permissions: [
+		PermissionFlagsBits.ManageGuildExpressions
+	],
 
 	options: [
         {
@@ -71,10 +75,6 @@ module.exports = {
             ]
         }
 	],
-
-	slash: 'both',
-    testOnly: true,
-	guildOnly: true,
     
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();

@@ -1,15 +1,22 @@
 const { CommandType } = require("wokcommands");
-const { ApplicationCommandOptionType } = require("discord.js");
+const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
 const Reactable = require("../classes/reactable");
 
 module.exports = {
+    // TO-DO: Consider if this needs to be ported to Reactable or renamed.
+    // (/reactable pinnablechannel)?
 	category: 'Personalisation',
 	description: 'Manages whether Reactables can pin messages.',
 
 	type: CommandType.SLASH,
 	guildOnly: true,
+
+    permissions: [
+        PermissionFlagsBits.ManageChannels |
+		PermissionFlagsBits.ManageGuildExpressions
+	],
 
 	options: [
         {
@@ -54,10 +61,6 @@ module.exports = {
             ]
         }
 	],
-
-	slash: 'both',
-    testOnly: true,
-	guildOnly: true,
     
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();

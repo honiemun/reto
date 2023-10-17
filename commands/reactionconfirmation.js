@@ -1,5 +1,5 @@
 const { CommandType } = require("wokcommands");
-const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
+const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
 const ReactionConfirmation = require("../classes/reactionConfirmation");
@@ -70,8 +70,11 @@ module.exports = {
 	],
 
 	type: CommandType.SLASH,
-	testOnly: true,
 	guildOnly: true,
+
+    permissions: [
+		PermissionFlagsBits.ManageGuildExpressions
+	],
 
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();

@@ -49,8 +49,8 @@ class Embed {
 
 		// Send the embed
 		msgInt.replied
-			? msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); })
-			: msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); });
+			? await msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); })
+			: await msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); });
 	}
 
 	async createComponents (components) {
@@ -171,8 +171,8 @@ class Embed {
 
 	async nextTab(component, msgInt, channel, member, client) {
 		component.next ?
-			this.createEmbed(component.next, msgInt, channel, member, client) :
-			this.createEmbed(component.id, msgInt, channel, member, client);
+			await this.createEmbed(component.next, msgInt, channel, member, client) :
+			await this.createEmbed(component.id, msgInt, channel, member, client);
 	}
 
 	async createModal(modal, interaction, msgInt, channel, member, client) {

@@ -9,6 +9,8 @@ module.exports = {
 	description: 'Allows bot owners to import data. For internal use only.',
 
 	type: CommandType.SLASH,
+	guildOnly: false,
+	ownerOnly: true,
 
 	options: [
         {
@@ -40,11 +42,6 @@ module.exports = {
             ]
         }
 	],
-
-	slash: 'both',
-    testOnly: true,
-	guildOnly: true,
-	ownerOnly: true,
     
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();

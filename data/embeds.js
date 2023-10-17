@@ -25,6 +25,8 @@ Please, take a moment to read through our Privacy Policy! (Don't worry, it's not
             }
         },
         components: [
+            /*
+            // TO-DO: Delete - for debugging only!!
             {
                 id: "skipTo",
                 label: "Skip to Pin Threshold",
@@ -32,6 +34,7 @@ Please, take a moment to read through our Privacy Policy! (Don't worry, it's not
                 disabled: false,
                 next: "pinThreshold"
             },
+            */
             {
                 id: "chooseSetupType",
                 label: "Let's get started!",
