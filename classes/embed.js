@@ -389,6 +389,34 @@ class Embed {
 
 		return reactableSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
 	}
+
+	async createDefaultEmojiSelectorEmbed(interaction, reactable,reactableName) {
+		const select = new StringSelectMenuBuilder()
+			.setCustomId('selectedAutoreact')
+			.setPlaceholder('Select the default emoji for ' + reactableName)
+
+		for (const emojiId of reactable.emojiIds) {
+			select.addOptions(
+				new StringSelectMenuOptionBuilder()
+					.setLabel("Emoji")
+					.setEmoji(emojiId)
+					.setValue(emojiId)
+			);
+		}
+
+		const row = new ActionRowBuilder()
+			.addComponents(select);
+
+        const emojiSelect = await interaction.editReply({ embeds: [
+			new EmbedBuilder()
+				.setColor("Yellow")
+				.setTitle("Default Emoji")
+				.setDescription("Which emoji will become the Default Emoji for the **" + reactableName + "**?")
+		], components: [ row ] })
+
+
+		return emojiSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
+	}
 }
 
 module.exports = new Embed();

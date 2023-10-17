@@ -1,6 +1,9 @@
 const { Guild, Message, PartialMessage } = require("discord.js");
 const retoEmojis = require('../data/retoEmojis');
 
+// Classes
+const Parsing = require("../classes/parsing");
+
 // Schemas
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
@@ -153,8 +156,10 @@ class Personalisation {
           tutorial.push("- You can react with any of these emoji: " + await this.naturalJoin(emojis) + ".");
         }
 
+        const defaultEmoji = await Parsing.emoji(reactable.emojiIds[0], guild);
+
         embed.fields.push({
-          "name": reactable.emojiIds[0] + " " + reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1),
+          "name": defaultEmoji + " " + reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1),
           "value": tutorial.join("\n")
         })
       }

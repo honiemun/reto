@@ -4,7 +4,6 @@ const { ApplicationCommandOptionType } = require("discord.js");
 // Classes
 const Autocomplete = require("../classes/autocomplete");
 const Autoreact = require("../classes/autoreact");
-const Reactable = require("../classes/reactable");
 
 // Schemas
 const reactableSchema = require("../schemas/reactable");
@@ -100,7 +99,6 @@ module.exports = {
                 break;
             
             default:
-                return "Edit or delete!"
                 break;
         }
 	}

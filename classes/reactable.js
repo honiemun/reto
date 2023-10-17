@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 // Classes
 const Personalisation = require("../classes/personalisation");
 const Embed = require("../classes/embed");
+const Parsing = require("../classes/parsing");
 const Premium = require("../classes/premium");
 
 // Schemas
@@ -109,6 +110,45 @@ class Reactable {
 			]});
         });
     }
+
+    async editDefaultEmoji(interaction, reactable) {
+		const reactableName = interaction.options.getString("reactable").charAt(0).toUpperCase() + interaction.options.getString("reactable").slice(1);
+		
+		const collector = await Embed.createDefaultEmojiSelectorEmbed(interaction, reactable, reactableName);
+
+		collector.on('collect', async i => {
+
+            await this.pushEmojiToFront(i.values[0], reactable);
+
+            // Send confirmation
+            const emoji = await Parsing.emoji(i.values[0], interaction.guild);
+            
+			await interaction.editReply({ embeds: [ new EmbedBuilder()
+				.setColor("Green")
+				.setTitle("✔️ Default emoji updated!")
+				.setDescription("The new emoji shown as the default for **" + reactableName + "** is now " + emoji + ".")
+			], components: []});
+		});
+    }
+
+    async pushEmojiToFront(emoji, reactable) {
+        // Find the index of the element with the given string
+        let emojiList = reactable.emojiIds;
+        const index = emojiList.findIndex(item => item.includes(emoji));
+        if (!index) return;
+
+        const removedElement = emojiList.splice(index, 1)[0];
+        emojiList.unshift(removedElement);
+
+        reactableSchema.updateOne(
+            { _id: reactable._id },
+            { $set: {
+                'emojiIds': emojiList}
+            },
+			{ upsert: false }
+		).exec();
+      }
+      
 }
 
 module.exports = new Reactable();

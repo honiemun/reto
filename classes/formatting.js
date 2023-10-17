@@ -79,7 +79,7 @@ class Formatting {
         
         if (reactable) {
             rules.rn = reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1);
-            rules.re = reactable.emojiIds[0];
+            rules.re = this.emoji(reactable.emojiIds[0], guild);
             rules.rk = reactable.karmaAwarded;
             rules.p  = "<#" + reactable.sendsToChannel + ">";
         }

@@ -40,8 +40,6 @@ module.exports = async (message, instance) => {
         messageTypes.push("text");
     };
 
-    console.log(messageTypes);
-
     for (const rule of rules) {
         if (!rule.contentTypes.some(value => messageTypes.includes(value))) continue;
 
