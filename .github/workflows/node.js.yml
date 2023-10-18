@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: ~/reto/package-lock.json
+          cache-dependency-path: /root/reto/package-lock.json
       - run: npm ci
       - run: npm run build --if-present
       - name: SSH Remote Commands
