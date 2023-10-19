@@ -1,7 +1,11 @@
 const { ChannelType, PermissionsBitField } = require('discord.js');
 
+// Schemas
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
+const autoreactSchema = require('../schemas/autoreact');
+
+// Data
 const defaultReactables = require('../data/defaultReactables');
 
 const fs = require("fs");
@@ -39,10 +43,11 @@ class Setup {
     async startSetupFromScratch(guild, deleteData) {
         // Delete pre-existing guild data
         await guildSchema.deleteMany({ guildId: guild.id });
+        await autoreactSchema.deleteMany({ guildId: guild.id });
 
         // Find existing reactables in database
         await reactableSchema.find({ guildId: guild.id}).then(async (reactables) => {
-            // Delete all channels associated with reactables
+            // Delete all data associated with reactables
             for (const reactable of reactables) {
 
                 // TO-DO: We should check if Reto created these
@@ -50,13 +55,6 @@ class Setup {
                 // (fetch audit logs?)
 
                 if (deleteData) {
-                    if (reactable.sendsToChannel) {
-                        const channel = guild.channels.cache.find(channel => channel.id === reactable.sendsToChannel);
-                        if (channel) {
-                            await channel.delete();
-                        }
-                    }
-    
                     for (const roleId of reactable.lockedBehindRoles) {
                         const role = guild.roles.cache.find(role => role.id === roleId);
                         if (role) {

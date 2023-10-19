@@ -15,7 +15,7 @@ module.exports = async (message, instance) => {
             }
         }
     ]);
-
+    
     if (!rules) return;
 
 
@@ -45,6 +45,7 @@ module.exports = async (message, instance) => {
 
         // React with the primary emoji
         const reactable = rule.reactables[0];
+        if (!reactable) return;
         let emoji = message.guild.emojis.cache.find(emoji => emoji.id === reactable.emojiIds[0]);
         if (!emoji) emoji = reactable.emojiIds[0]; // TO-DO: Error-checking. Automatically assumes if emoji isn't Discord-made, it's a default one.
 

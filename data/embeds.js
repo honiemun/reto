@@ -116,9 +116,11 @@ This will create for you:
             color: 0,
             title: "Start from scratch?",
             description: `
-You're starting a **Quick Setup.** Do you want to delete the **Custom Emoji**, **Pinnable Channels** and **Roles** that Reto generated for you, or would you like to reuse them (where possible?)
+You're starting a **Quick Setup.** Do you want to delete the **Custom Emoji**, **Roles** and **Autovote Rules** that Reto generated for you, or would you like to reuse them (where possible?)
 
-If you choose not to delete these, you can manually remove the unused emoji, channels and roles from your server anytime.`,
+- To keep your pinned messages safe, *Pinnable Channels* will be unlinked but not deleted.
+- Karma totals will not be affected.
+- You can manually remove the unused emoji, channels and roles from your server anytime.`,
             footer: {
                 text: "Warning: This action is irreversible!"
             }
