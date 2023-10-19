@@ -139,7 +139,7 @@ class Setup {
         for (const emoji of defaultReactables) {
             await this.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
                 // Save new emoji into list
-                emoji.emojiIds.push(createdEmoji.id);
+                emoji.emojiIds.unshift(createdEmoji.id);
 
                 // Add dynamic data for the Best Of
                 if (emoji.isBestOf) {
