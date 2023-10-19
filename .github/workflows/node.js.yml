@@ -28,6 +28,7 @@ jobs:
       - run: npm ci
         working-directory: ./reto
       - run: npm run build --if-present
+        working-directory: ./reto
       - name: SSH Remote Commands
         # You may pin to the exact commit or the version.
         # uses: appleboy/ssh-action@f9010ff7f1bbd7db1a0b4bab661437550cea20c0
