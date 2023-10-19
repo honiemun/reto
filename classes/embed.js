@@ -84,6 +84,9 @@ class Embed {
 			.setCustomId(selector.id)
 			.setPlaceholder(selector.placeholder);
 		
+		if (selector.minValues) select.setMinValues(selector.minValues);
+		if (selector.maxValues) select.setMaxValues(selector.maxValues);
+		
 		const options = await this.getSelectorOptions(selector, channel, client);
 
 		for (const option of options) {

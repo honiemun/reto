@@ -178,34 +178,6 @@ Select an emoji from the list below to create this Reactable.`
         },
         components: [
             {
-                id: "default",
-                emoji: "<:plus:1004190494844264509>",
-                style: ButtonStyle.Success,
-                next: "minusReactable",
-                disabled: false
-            },
-            {
-                id: "heart",
-                emoji: "❤",
-                style: ButtonStyle.Primary,
-                next: "minusReactable",
-                disabled: false
-            },
-            {
-                id: "hand",
-                emoji: "👍",
-                style: ButtonStyle.Primary,
-                next: "minusReactable",
-                disabled: false
-            },
-            {
-                id: "arrow",
-                emoji: "⬆️",
-                style: ButtonStyle.Primary,
-                next: "minusReactable",
-                disabled: false
-            },
-            {
                 id: "plusSkip",
                 label: "Skip",
                 style: ButtonStyle.Secondary,
@@ -213,6 +185,67 @@ Select an emoji from the list below to create this Reactable.`
                 disabled: false
             }
         ],
+        selector: {
+            id: "plusReactable",
+            placeholder: "Select a Plus Emoji",
+            minValues: 1,
+            maxValues: 5,
+            populate: function (client, guildId) {
+                // Fetch emoji
+
+                const guild = client.guilds.cache.get(guildId);
+                let emojis = [];
+
+                guild.emojis.cache.forEach((emoji) => {
+                    emojis.push({
+                        label: ":" + emoji.name + ":",
+                        value: emoji.id,
+                        emoji: emoji.toString(),
+                        next: "minusReactable"
+                    })
+                });
+
+                return emojis.slice(0, 19);
+            },
+            options: [
+                {
+                    label: "Reto (recommended)",
+                    value: "reto",
+                    emoji: "<:retoolplus:1164370563792375889>",
+                    next: "minusReactable"
+                },
+                {
+                    label: "Heart",
+                    value: "❤",
+                    emoji: "❤",
+                    next: "minusReactable"
+                },
+                {
+                    label: "Thumbs-up",
+                    value: "👍",
+                    emoji: "👍",
+                    next: "minusReactable"
+                },
+                {
+                    label: "Arrow",
+                    value: "⬆️",
+                    emoji: "⬆️",
+                    next: "minusReactable"
+                },
+                {
+                    label: "Checkmark",
+                    value: "✔",
+                    emoji: "✔",
+                    next: "minusReactable"
+                },
+                {
+                    label: "Green Checkmark",
+                    value: "✅",
+                    emoji: "✅",
+                    next: "minusReactable"
+                }
+            ]
+        }
 
     },
     {
@@ -227,34 +260,6 @@ Select an emoji from the list below to create this Reactable.`
         },
         components: [
             {
-                id: "default",
-                emoji: "<:minus:1004190495964139540>",
-                style: ButtonStyle.Success,
-                next: "pinnableChannel",
-                disabled: false
-            },
-            {
-                id: "heart",
-                emoji: "💔",
-                style: ButtonStyle.Primary,
-                next: "pinnableChannel",
-                disabled: false
-            },
-            {
-                id: "hand",
-                emoji: "👎",
-                style: ButtonStyle.Primary,
-                next: "pinnableChannel",
-                disabled: false
-            },
-            {
-                id: "arrow",
-                emoji: "⬇️",
-                style: ButtonStyle.Primary,
-                next: "pinnableChannel",
-                disabled: false
-            },
-            {
                 id: "minusSkip",
                 label: "Skip",
                 style: ButtonStyle.Secondary,
@@ -262,6 +267,67 @@ Select an emoji from the list below to create this Reactable.`
                 disabled: false
             }
         ],
+        selector: {
+            id: "minusReactable",
+            placeholder: "Select a Minus Emoji",
+            minValues: 1,
+            maxValues: 5,
+            populate: function (client, guildId) {
+                // Fetch emoji
+
+                const guild = client.guilds.cache.get(guildId);
+                let emojis = [];
+
+                guild.emojis.cache.forEach((emoji) => {
+                    emojis.push({
+                        label: ":" + emoji.name + ":",
+                        value: emoji.id,
+                        emoji: emoji.toString(),
+                        next: "pinnableChannel"
+                    })
+                });
+
+                return emojis.slice(0, 19);
+            },
+            options: [
+                {
+                    label: "Reto (recommended)",
+                    value: "reto",
+                    emoji: "<:retoolminus:1164370558666948608>",
+                    next: "pinnableChannel"
+                },
+                {
+                    label: "Broken Heart",
+                    value: "💔",
+                    emoji: "💔",
+                    next: "pinnableChannel"
+                },
+                {
+                    label: "Thumbs-down",
+                    value: "👎",
+                    emoji: "👎",
+                    next: "pinnableChannel"
+                },
+                {
+                    label: "Arrow",
+                    value: "⬇️",
+                    emoji: "⬇️",
+                    next: "pinnableChannel"
+                },
+                {
+                    label: "Cross",
+                    value: "❌",
+                    emoji: "❌",
+                    next: "pinnableChannel"
+                },
+                {
+                    label: "Green Cross",
+                    value: "❎",
+                    emoji: "❎",
+                    next: "pinnableChannel"
+                }
+            ]
+        }
 
     },
     {
@@ -369,27 +435,6 @@ Select an emoji from the list below to create this Reactable.`
         },
         components: [
             {
-                id: "default",
-                emoji: "<:10:1004190492650647594>",
-                style: ButtonStyle.Success,
-                next: "pinReactableRoles",
-                disabled: false
-            },
-            {
-                id: "star",
-                emoji: "⭐",
-                style: ButtonStyle.Primary,
-                next: "pinReactableRoles",
-                disabled: false
-            },
-            {
-                id: "pin",
-                emoji: "\uD83D\uDCCC", // Pushpin
-                style: ButtonStyle.Primary,
-                next: "pinReactableRoles",
-                disabled: false
-            },
-            {
                 id: "pinSkip",
                 label: "Skip",
                 style: ButtonStyle.Secondary,
@@ -397,6 +442,61 @@ Select an emoji from the list below to create this Reactable.`
                 disabled: false
             }
         ],
+        selector: {
+            id: "pinReactable",
+            placeholder: "Select a Pin Emoji",
+            minValues: 1,
+            maxValues: 5,
+            populate: function (client, guildId) {
+                // Fetch emoji
+
+                const guild = client.guilds.cache.get(guildId);
+                let emojis = [];
+
+                guild.emojis.cache.forEach((emoji) => {
+                    emojis.push({
+                        label: ":" + emoji.name + ":",
+                        value: emoji.id,
+                        emoji: emoji.toString(),
+                        next: "pinReactableRoles"
+                    })
+                });
+
+                return emojis.slice(0, 19);
+            },
+            options: [
+                {
+                    label: "Reto (recommended)",
+                    value: "reto",
+                    emoji: "<:retoolpin:1164370561720406067>",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Star",
+                    value: "⭐",
+                    emoji: "⭐",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Glowing Star",
+                    value: "\uD83C\uDF1F",
+                    emoji: "\uD83C\uDF1F",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Pin",
+                    value: "\uD83D\uDCCC",
+                    emoji: "\uD83D\uDCCC",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Round Pin",
+                    value: "\uD83D\uDCCD",
+                    emoji: "\uD83D\uDCCD",
+                    next: "pinReactableRoles"
+                },
+            ]
+        }
 
     },
     {
