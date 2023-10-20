@@ -1,19 +1,21 @@
+const reactablePacks = require('./reactablePacks');
+
 module.exports = [
     {
         name: 'plus',
-        emojiUrl: 'https://cdn.discordapp.com/attachments/1159661391813292072/1159663271222186064/plus.png',
+        emojiUrl: reactablePacks.reto.images.plus,
         emojiIds: ['👍', '❤️', '⬆️'],
         karmaAwarded: 1
     },
     {
         name: 'minus',
-        emojiUrl: 'https://cdn.discordapp.com/attachments/1159661391813292072/1159663270802763827/minus.png',
+        emojiUrl: reactablePacks.reto.images.minus,
         emojiIds: ['👎', '💔', '⬇️'],
         karmaAwarded: -1
     },
     {
         name: 'pin',
-        emojiUrl: 'https://cdn.discordapp.com/attachments/1159661391813292072/1159663271020863548/pin.png',
+        emojiUrl: reactablePacks.reto.images.pin,
         emojiIds: ['📌', '⭐'],
         karmaAwarded: 0,
         isBestOf: true,

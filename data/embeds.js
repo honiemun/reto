@@ -1,6 +1,9 @@
 const { Guild, GuildMember, ButtonStyle } = require("discord.js");
 const Setup = require("../classes/setup")
 
+// Data
+const reactablePacks = require('./reactablePacks');
+
 module.exports = [
     {
         id: "setup",
@@ -211,7 +214,7 @@ Select an emoji from the list below to create this Reactable.`
                 {
                     label: "Reto (recommended)",
                     value: "reto",
-                    emoji: "<:retoolplus:1164370563792375889>",
+                    emoji: reactablePacks.reto.emoji.plus,
                     next: "minusReactable"
                 },
                 {
@@ -243,8 +246,15 @@ Select an emoji from the list below to create this Reactable.`
                     value: "✅",
                     emoji: "✅",
                     next: "minusReactable"
+                },
+                {
+                    label: "Reddit",
+                    value: "reddit",
+                    emoji: reactablePacks.reddit.emoji.plus,
+                    next: "minusReactable"
                 }
-            ]
+            ],
+            function: function(components, guild) { Setup.createCustomReactable("plus", components, guild); }
         }
 
     },
@@ -287,13 +297,13 @@ Select an emoji from the list below to create this Reactable.`
                     })
                 });
 
-                return emojis.slice(0, 19);
+                return emojis.slice(0, 18);
             },
             options: [
                 {
                     label: "Reto (recommended)",
                     value: "reto",
-                    emoji: "<:retoolminus:1164370558666948608>",
+                    emoji: reactablePacks.reto.emoji.minus,
                     next: "pinnableChannel"
                 },
                 {
@@ -325,8 +335,15 @@ Select an emoji from the list below to create this Reactable.`
                     value: "❎",
                     emoji: "❎",
                     next: "pinnableChannel"
+                },
+                {
+                    label: "Reddit",
+                    value: "reddit",
+                    emoji: reactablePacks.reddit.emoji.minus,
+                    next: "pinnableChannel"
                 }
-            ]
+            ],
+            function: function(components, guild) { Setup.createCustomReactable("minus", components, guild); }
         }
 
     },
@@ -462,13 +479,13 @@ Select an emoji from the list below to create this Reactable.`
                     })
                 });
 
-                return emojis.slice(0, 19);
+                return emojis.slice(0, 18);
             },
             options: [
                 {
                     label: "Reto (recommended)",
                     value: "reto",
-                    emoji: "<:retoolpin:1164370561720406067>",
+                    emoji: reactablePacks.reto.emoji.pin,
                     next: "pinReactableRoles"
                 },
                 {
@@ -495,7 +512,14 @@ Select an emoji from the list below to create this Reactable.`
                     emoji: "\uD83D\uDCCD",
                     next: "pinReactableRoles"
                 },
-            ]
+                {
+                    label: "Reddit",
+                    value: "reddit",
+                    emoji: reactablePacks.reddit.emoji.pin,
+                    next: "pinReactableRoles"
+                },
+            ],
+            function: function(components, guild) { Setup.createCustomReactable("pin", components, guild); }
         }
 
     },

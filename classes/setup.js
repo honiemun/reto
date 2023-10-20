@@ -7,6 +7,7 @@ const autoreactSchema = require('../schemas/autoreact');
 
 // Data
 const defaultReactables = require('../data/defaultReactables');
+const reactablePacks = require('../data/reactablePacks');
 
 const fs = require("fs");
 const path = require("path");
@@ -88,8 +89,16 @@ class Setup {
     }
 
     async createReactable (reactable) {
-        const newReactables = new reactableSchema(reactable);
-        return newReactables.save();
+		return await reactableSchema.findOneAndUpdate(
+			{
+				guildId: reactable.guildId,
+				name: reactable.name
+			},
+			{
+				$set: createReactable
+			},
+			{ upsert: true }
+		).exec();
     }
 
     async createDiscordEmoji (emoji, name, guild) {
@@ -140,6 +149,7 @@ class Setup {
             await this.createDiscordEmoji(emoji.emojiUrl, emoji.name, guild).then((createdEmoji) => {
                 // Save new emoji into list
                 emoji.emojiIds.unshift(createdEmoji.id);
+            });
 
                 // Add dynamic data for the Best Of
                 if (emoji.isBestOf) {
@@ -160,10 +170,63 @@ class Setup {
                     sendingThreshold: emoji.sendingThreshold,
                     lockedBehindRoles: emoji.lockedBehindRoles
                 });
-            });
         }
     }
 
+    async createCustomReactable (reactableType, components, guild) {
+        let emoji = defaultReactables.filter(obj => obj.name === reactableType);
+        if (!emoji) return;
+
+        // Create Discord emoji
+        let emojiIds = [];
+        let customEmojiCreated = 0;
+        for (const component of components) {
+            if (/<a?:.+?:\d{18}>|\p{Extended_Pictographic}/gu.test(component) || !isNaN(component)) {
+                // If the emoji is a default Unicode emoji or an existing Discord emoji (ID), just add to list
+                console.log(component + " is already existing, adding");
+                emojiIds.push(component);
+            } else {
+                // If the emoji is part of a Pack, create the emoji
+                console.log(component + " is a new emoji, creating");
+
+                const emojiImage = reactablePacks[component].images[reactableType];
+                const emojiName = customEmojiCreated == 0 ? reactableType : component + "-" + reactableType;
+                if (!emojiImage) continue;
+                
+                // Delete emoji with the same name if it already exists
+                const emoji = guild.emojis.cache.find(emoji => emoji.name === emojiName);
+                if (emoji) {
+                    try {
+                        await emoji.delete();
+                    } catch (error) {
+                        console.log(error);
+                    }
+                }
+
+                customEmojiCreated += 1;
+                await this.createDiscordEmoji(emojiImage, emojiName, guild).then((createdEmoji) => {
+                    emojiIds.push(createdEmoji.id);
+                })
+            }
+        }
+
+        console.log(emojiIds);
+
+        // Create Reactable
+        this.createReactable({
+            guildId: guild.id,
+            globalKarma: true,
+            
+            name: emoji.name,
+            emojiIds: emojiIds,
+            karmaAwarded: emoji.karmaAwarded,
+            messageConfirmation: emoji.messageConfirmation,
+            sendsToChannel: emoji.sendsToChannel,
+            sendingThreshold: emoji.sendingThreshold,
+            lockedBehindRoles: emoji.lockedBehindRoles
+        });
+    }
+    
     async asignRoleToUser (role, member) {
         return member.roles.add(role);
     }

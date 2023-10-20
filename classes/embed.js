@@ -138,7 +138,7 @@ class Embed {
 						return;
 					}
 
-					await this.selectCollectorOption(component, i, msgInt, channel, member, client);
+					await this.selectCollectorOption(component, i, currentSetup, msgInt, channel, member, client);
 					return;
 				}
 			}
@@ -148,8 +148,9 @@ class Embed {
 				const options = await this.getSelectorOptions(currentSetup.selector, channel, client);
 				
 				for (let option of options) {
+					// TO-DO: Should actually be various values?
 					if (option.value === i.values[0]) {
-						await this.selectCollectorOption(option, i, msgInt, channel, member, client);
+						await this.selectCollectorOption(option, i, currentSetup, msgInt, channel, member, client);
 						return;
 					}
 				}
@@ -162,7 +163,7 @@ class Embed {
 		});
 	}
 
-	async selectCollectorOption(component, i, msgInt, channel, member, client) {
+	async selectCollectorOption(component, i, currentSetup, msgInt, channel, member, client) {
 		// When the update isn't deferred, we receive an error.
 		i.deferUpdate();
 		
@@ -170,6 +171,8 @@ class Embed {
 		await this.nextTab(component, msgInt, channel, member, client);
 		// Execute function
 		if (component.function) component.function(channel.guild, member);
+		// TO-DO: Should actually return a list of components and not a list of values
+		if (currentSetup.selector && currentSetup.selector.function) currentSetup.selector.function(i.values, channel.guild, member);
 	}
 
 	async nextTab(component, msgInt, channel, member, client) {
