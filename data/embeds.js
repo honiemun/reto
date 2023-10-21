@@ -220,7 +220,7 @@ Select an emoji from the list below to create this Reactable.`
                     })
                 });
 
-                return emojis.slice(0, 18);
+                return emojis.slice(0, 17);
             },
             options: [
                 {
