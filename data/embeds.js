@@ -177,7 +177,8 @@ All of these Reactables are optional, and you can customize their functionality 
                 label: "Got it!",
                 style: ButtonStyle.Primary,
                 next: "plusReactable",
-                disabled: false
+                disabled: false,
+                function: function(guild) { Setup.createGuild(guild); }
             }
         ]
     },
@@ -587,7 +588,7 @@ Do you want to lock the Pin Reactable to a specific role?`
                     next: "publicServer"
                 }
             ],
-            function: function(components, guild) { Setup.setRoleLock(components, guild); }
+            function: function(components, guild, member) { Setup.setRoleLock(components, guild, member); }
         }
     },
     {

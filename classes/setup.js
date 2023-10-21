@@ -31,15 +31,13 @@ class Setup {
         
         // Create @Curator role
         const curator = await this.createCuratorRole(guild);
-        await this.asignRoleToUser(curator, member);
+        await this.assignRoleToUser(curator, member);
 
         // Create default emoji
         await this.createDefaultReactables(guild, bestOf, curator);
 
         // Store guild data
-        this.createGuild({
-			guildId: guild.id
-		});
+        this.createGuild(guild);
     }
 
     async startSetupFromScratch(guild, deleteData) {
@@ -85,8 +83,17 @@ class Setup {
     }
 
     async createGuild (guild) {
-        const newGuild = new guildSchema(guild);
-        return newGuild.save();
+		return await guildSchema.findOneAndUpdate(
+			{
+				guildId: guild.id
+			},
+            {
+                $setOnInsert: {
+                    guildId: guild.id
+                }
+            },
+			{ upsert: true }
+		).exec();
     }
 
     async createReactable (reactable) {
@@ -121,7 +128,7 @@ class Setup {
         await this.saveToSetupCache("channel", channel, guild);
     }
 
-    async setRoleLock(components, guild) {
+    async setRoleLock(components, guild, member) {
         const reactable = this.SetupCache[guild.id].pin; // If we added something else that uses role lock, this should be refactored
         let roleList = [];
 
@@ -129,6 +136,7 @@ class Setup {
         for (const role of components) {
             if (role == "createCurator") {
                 const curator = await this.createCuratorRole(guild);
+                await this.assignRoleToUser(curator, member);
                 roleList.push(curator.id);
             } else {
                 roleList.push(role);
@@ -298,10 +306,11 @@ class Setup {
             this.SetupCache[guild.id] = {};
         }
 
-        return this.SetupCache[guild.id][key] = value;
+        this.SetupCache[guild.id][key] = value;
+        console.log(this.SetupCache); // TO-DO: Remove !!
     }
     
-    async asignRoleToUser (role, member) {
+    async assignRoleToUser (role, member) {
         return member.roles.add(role);
     }
 }
