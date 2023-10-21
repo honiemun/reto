@@ -84,7 +84,8 @@ class Reactable {
                 break;
         }
 
-		const reactables = await reactableSchema.find(findObject).exec().slice(0, 25);
+		let reactables = await reactableSchema.find(findObject).exec();
+        reactables.slice(0, 24);
 
         // Send error if you're trying to disable pin on server with no pinning reactables
         if (!reactables.length && cmd == "disable") {
