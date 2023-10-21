@@ -115,7 +115,7 @@ class Embed {
 			}
 		}
 		
-		return options;
+		return options.slice(0, 24);
 	}
 
 	async createCollector (currentSetup, msgInt, channel, member, client) {
