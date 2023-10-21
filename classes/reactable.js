@@ -85,8 +85,7 @@ class Reactable {
         }
 
 		let reactables = await reactableSchema.find(findObject).exec();
-        reactables.slice(0, 24);
-
+        
         // Send error if you're trying to disable pin on server with no pinning reactables
         if (!reactables.length) {
 			Embed.createErrorEmbed("There are no reactables on your server that pin messages to a channel!\n_(You can set one by using `/pin channel set`.)_").then(async function (errorEmbed) {
