@@ -9,12 +9,15 @@ module.exports = {
 	guildOnly: false,
 
 	callback: ({ message, instance, interaction }) => {
-		// For some reason, still shows old message...?
 		const latency = Date.now() - interaction.createdTimestamp;
 		
-        return new EmbedBuilder()
-            .setColor("Red")
-            .setTitle("🏓 Pong!")
-            .setDescription("*Woah - that ball took `" + latency + "ms` to travel...!*")
+        return {
+			embeds: [
+				new EmbedBuilder()
+					.setColor("Red")
+					.setTitle("🏓 Pong!")
+					.setDescription("*Woah - that ball took `" + latency + "ms` to travel...!*")
+			]
+		}
 	},
 }

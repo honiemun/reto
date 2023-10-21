@@ -172,12 +172,13 @@ class Embed {
 		// Execute function
 		if (component.function) component.function(channel.guild, member);
 		// TO-DO: Should actually return a list of components and not a list of values
-		if (currentSetup.selector && currentSetup.selector.function) currentSetup.selector.function(i.values, channel.guild, member);
+		if (currentSetup.selector && currentSetup.selector.function && i.values) currentSetup.selector.function(i.values, channel.guild, member);
 	}
 
 	async nextTab(component, msgInt, channel, member, client) {
-		component.next ?
-			await this.createEmbed(component.next, msgInt, channel, member, client) :
+		const next = component.nextFunction ? await component.nextFunction(msgInt) : component.next;
+		next ?
+			await this.createEmbed(next, msgInt, channel, member, client) :
 			await this.createEmbed(component.id, msgInt, channel, member, client);
 	}
 

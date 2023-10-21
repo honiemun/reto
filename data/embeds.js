@@ -1,8 +1,13 @@
 const { Guild, GuildMember, ButtonStyle } = require("discord.js");
 const Setup = require("../classes/setup")
 
+// Schema
+const guildSchema = require('../schemas/guild');
+
 // Data
 const reactablePacks = require('./reactablePacks');
+
+// TO-DO: Functions should be async whereever possible
 
 module.exports = [
     {
@@ -75,9 +80,11 @@ Want to customise Reto to the fullest?
 Use the Advanced wizard to make the bot your own!
 
 - Choose if you want the default **Plus** and/or **Minus** Reactables.
-- Create an optional \`#best-of\` channel, and send messages to it using a **Pin** Reactable and/or Democracy Mode *(a message vote threshold).*
+- Create an optional \`#best-of\` channel, and send messages to it using a **Pin** Reactable.
 - Set up your own server-specific Karma.
-- Send a confirmation message or reaction each time someone uses a Reactable.`
+- Send a confirmation message or reaction each time someone uses a Reactable.
+
+⚠️ *Advanced setup is experimental and may have some bugs.*`
                 },
                 {
                     "name": "Quick setup",
@@ -86,12 +93,13 @@ Use the Advanced wizard to make the bot your own!
 The default settings - get to the fun in no time!
 This will create for you:
 
-- A <:plus:1004190494844264509> **plus** and <:minus:1004190495964139540> **minus** emoji. Anyone can vote on their favourite messages with these!
-- A <:10:1004190492650647594> **pin** emoji that will send whatever post is reacted to it to a newly created \`#best-of\` channel.
+- A ` + reactablePacks.reto.emoji.plus + ` **plus** and ` + reactablePacks.reto.emoji.minus + ` **minus** emoji. Anyone can vote on their favourite messages with these!
+- A ` + reactablePacks.reto.emoji.pin + ` **pin** emoji that will send whatever post is reacted to it to a newly created \`#best-of\` channel.
 - A \`@Curator\` role - people with this role can use the **pin** emoji to send messages to the \`#best-of\` channel.
 - Sets up confirmations as a Reaction.
 
 *(All these features can be modified later down the line.)*`
+                // TO-DO: Re-implement "[...] and/or a Pinnable Threshold." on Advanced setup
                 }
             ]
         },
@@ -107,13 +115,17 @@ This will create for you:
                 id: "quickSetup",
                 label: "Quick setup",
                 style: ButtonStyle.Secondary,
-                next: "startFromScratch",
+                nextFunction: async function(msgInt) {
+                    const guild = await guildSchema.findOne({
+                        guildId: msgInt.guild.id
+                    });
+                    return guild ? "startFromScratch" : "publicServer";
+                },
                 disabled: false,
             }
         ]
     },
     {
-        // TO-DO: Skip if this is the first time running Setup!!
         id: "startFromScratch",
         embed: {
             color: 0,
@@ -155,7 +167,7 @@ You're starting a **Quick Setup.** Do you want to delete the **Custom Emoji**, *
             description: `
 **Reactables** are the heart of Reto - reacting to a message with any of these can kick off tons of functionality!
 
-We're going to set-up the most basic of Reto reactables first: a **Plus** and **Minus** emoji, which will add +1 and -1 to your Karma when reacted, and a **Pin** reactable, which will send any messages reacted with it to a special channel.
+We're going to set-up the most basic of Reto reactables first: a **Plus** and **Minus** reactable, which will add +1 and -1 to your Karma when reacted, and a **Pin** reactable, which will send any messages reacted with it to a special channel.
 
 All of these Reactables are optional, and you can customize their functionality later down the line.`,
         },
@@ -380,7 +392,7 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                         guilds.push({
                             label: "#" + channel.name,
                             value: channel.id,
-                            next: "pinThreshold"
+                            next: "pinReactable" // "pinThreshold"
                         })
                     }
                 });
@@ -392,12 +404,14 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                     label: "Create a new channel (#best-of)",
                     value: "createBestOf",
                     emoji: "✨",
-                    next: "pinThreshold"
+                    next: "pinReactable" // "pinThreshold"
                 }
-            ]
-        }
+            ],
+            function: function(components, guild) { Setup.setPinnableChannel(components, guild); }
+        },
         
     },
+    // TO-DO: Pin Thresholds are currently not in use!
     {
         id: "pinThreshold",
         embed: {
@@ -545,6 +559,8 @@ Do you want to lock the Pin Reactable to a specific role?`
         selector: {
             id: "pinnableChannel",
             placeholder: "Create or select a Pinnable Channel",
+            minValues: 1,
+            maxValues: 5,
             populate: function (client, guildId) {
                 // Fetch channels
 
@@ -570,7 +586,8 @@ Do you want to lock the Pin Reactable to a specific role?`
                     emoji: "✨",
                     next: "publicServer"
                 }
-            ]
+            ],
+            function: function(components, guild) { Setup.setRoleLock(components, guild); }
         }
     },
     {
@@ -589,13 +606,14 @@ If you'd like the best posts from this server to be featured for anyone to find,
                 label: "Set server as Public",
                 next: "newsletter",
                 style: ButtonStyle.Primary,
-                function: function(guild) { Setup.setPublicServer(guild); }
+                function: function(guild) { Setup.setPublicServer(guild, true); }
             },
             {
                 id: "serverPrivate",
                 label: "Set server as Private",
                 next: "newsletter",
                 style: ButtonStyle.Secondary,
+                function: function(guild) { Setup.setPublicServer(guild, false); }
             }
         ]
     },
@@ -614,13 +632,15 @@ If you'd like to hear what's new in Reto *(once a month, don't worry!)*, conside
                 id: "subscribe",
                 label: "Subscribe to the Newsletter",
                 next: "done",
-                style: ButtonStyle.Primary
+                style: ButtonStyle.Primary,
+                function: function(guild) { Setup.setNewsletterSubscription(guild, true); }
             },
             {
                 id: "minimal",
                 label: "Get minimal news",
                 next: "done",
                 style: ButtonStyle.Secondary,
+                function: function(guild) { Setup.setNewsletterSubscription(guild, false); }
             }
         ]
     },

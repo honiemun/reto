@@ -51,6 +51,14 @@ const guildSchema = new mongoose.Schema({
 		default: false
 	},
 
+	// Defines if the server is subscribed to the Reto Newsletter,
+	// and receives bot updates on Pinnable channels (apart from major notices).
+	subscribedToNewsletter: {
+		type: Boolean,
+		required: false,
+		default: false
+	},
+
 	// The time until a premium subscription expires.
 	// This is usually the purchasing date plus the amount of days they were billed for.
 	premiumTime: {

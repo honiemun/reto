@@ -48,12 +48,11 @@ class Reaction {
             // If you're reacting to a Pinned Message,
             // we redirect all points accrued to the original message.
             const message = await Pin.getStoredPinnedMessage(reaction.message).then((pinnedMessage) => {
-                console.log(pinnedMessage);
                 if (pinnedMessage) {
                     // TO-DO: Can this be simplified?
                     return reaction.message.client.channels.fetch(pinnedMessage.channelId).then((channel) => {
                         return channel.messages.fetch(pinnedMessage.messageId);
-                })
+                    })
                 } else return reaction.message;
             })
             

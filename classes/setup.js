@@ -19,6 +19,7 @@ class Setup {
           throw new Error("Singleton classes can't be instantiated more than once.")
         }
         Setup._instance = this;
+        this.SetupCache = [];
     }
     
     async quickSetup (guild, member, deleteData) {
@@ -95,7 +96,7 @@ class Setup {
 				name: reactable.name
 			},
 			{
-				$set: createReactable
+				$set: reactable
 			},
 			{ upsert: true }
 		).exec();
@@ -106,6 +107,66 @@ class Setup {
             name: `${name}`,
             attachment: `${emoji}`
         });
+    }
+
+    async setPinnableChannel(components, guild) {
+        let channel = components[0]; 
+
+        if (components[0] == "createBestOf") {
+            const bestOf = await this.createBestOfChannel(guild);
+            channel = bestOf.id;
+        }
+
+        // Set into cache
+        await this.saveToSetupCache("channel", channel, guild);
+    }
+
+    async setRoleLock(components, guild) {
+        const reactable = this.SetupCache[guild.id].pin; // If we added something else that uses role lock, this should be refactored
+        let roleList = [];
+
+        // Define and create roles
+        for (const role of components) {
+            if (role == "createCurator") {
+                const curator = await this.createCuratorRole(guild);
+                roleList.push(curator.id);
+            } else {
+                roleList.push(role);
+            }
+        }
+
+        // Modify Reactable to add role locks
+        return await reactableSchema.findOneAndUpdate(
+            {
+                _id: reactable._id
+            },
+            {
+                $set: {
+                    lockedBehindRoles: roleList
+                }
+            },
+            { upsert: false }
+        ).exec();
+    }
+    
+    async setPublicServer (guild, enable) {
+        const update = await guildSchema.findOneAndUpdate(
+            { guildId: guild.id },
+            { $set : { public : enable } },
+            { upsert: false }
+        ).exec();
+        
+        return update;
+    }
+    
+    async setNewsletterSubscription (guild, enable) {
+        const update = await guildSchema.findOneAndUpdate(
+            { guildId: guild.id },
+            { $set : { subscribedToNewsletter : enable } },
+            { upsert: false }
+        ).exec();
+        
+        return update;
     }
 
     async createBestOfChannel (guild) {
@@ -174,23 +235,22 @@ class Setup {
     }
 
     async createCustomReactable (reactableType, components, guild) {
-        let emoji = defaultReactables.filter(obj => obj.name === reactableType);
+        let emoji = defaultReactables.filter(obj => obj.name === reactableType)[0];
         if (!emoji) return;
 
-        // Create Discord emoji
         let emojiIds = [];
         let customEmojiCreated = 0;
+        let sendsToChannel = undefined;
+
+        // Create Discord emoji
         for (const component of components) {
             if (/<a?:.+?:\d{18}>|\p{Extended_Pictographic}/gu.test(component) || !isNaN(component)) {
                 // If the emoji is a default Unicode emoji or an existing Discord emoji (ID), just add to list
-                console.log(component + " is already existing, adding");
                 emojiIds.push(component);
             } else {
                 // If the emoji is part of a Pack, create the emoji
-                console.log(component + " is a new emoji, creating");
-
                 const emojiImage = reactablePacks[component].images[reactableType];
-                const emojiName = customEmojiCreated == 0 ? reactableType : component + "-" + reactableType;
+                const emojiName = customEmojiCreated == 0 ? reactableType : component + reactableType;
                 if (!emojiImage) continue;
                 
                 // Delete emoji with the same name if it already exists
@@ -210,10 +270,14 @@ class Setup {
             }
         }
 
-        console.log(emojiIds);
+        // Define Best Of channel
+        if (emoji.isBestOf) {
+            sendsToChannel = this.SetupCache[guild.id].channel;
+            console.log(sendsToChannel);
+        }
 
         // Create Reactable
-        this.createReactable({
+        const reactable = await this.createReactable({
             guildId: guild.id,
             globalKarma: true,
             
@@ -221,24 +285,26 @@ class Setup {
             emojiIds: emojiIds,
             karmaAwarded: emoji.karmaAwarded,
             messageConfirmation: emoji.messageConfirmation,
-            sendsToChannel: emoji.sendsToChannel,
+            sendsToChannel: sendsToChannel,
             sendingThreshold: emoji.sendingThreshold,
             lockedBehindRoles: emoji.lockedBehindRoles
         });
+
+        // Save to cache
+        await this.saveToSetupCache(reactable.name, reactable, guild);
+        console.log(this.SetupCache[guild.id]);
+    }
+
+    async saveToSetupCache(key, value, guild) {
+        if (!this.SetupCache[guild.id]) {
+            this.SetupCache[guild.id] = {};
+        }
+
+        return this.SetupCache[guild.id][key] = value;
     }
     
     async asignRoleToUser (role, member) {
         return member.roles.add(role);
-    }
-
-    async setPublicServer (guild) {
-        const update = await guildSchema.findOneAndUpdate(
-            { guildId: guild.id },
-            { $set : { 'public' : true } },
-            { upsert: false }
-        ).exec();
-        
-        return update;
     }
 }
 

@@ -113,7 +113,7 @@ class Pin {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
         let iterableChannels = [];
 
-        console.log(pinnedMessages)
+        console.log(dbMessage);
         
         // Add to list if message has enough reactions
         let reactionCount = 0;
