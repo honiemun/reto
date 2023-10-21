@@ -105,7 +105,7 @@ class Setup {
 			{
 				$set: reactable
 			},
-			{ upsert: true }
+			{ upsert: true, new: true }
 		).exec();
     }
 
