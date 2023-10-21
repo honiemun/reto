@@ -290,7 +290,7 @@ class Setup {
         });
 
         // Save to cache
-        await this.saveToSetupCache(reactable.name, reactable, guild);
+        await this.saveToSetupCache(reactableType, reactable, guild);
     }
 
     async saveToSetupCache(key, value, guild) {
