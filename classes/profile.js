@@ -100,7 +100,6 @@ class Profile {
             "inline": false
         })
         
-        console.log(JSON.parse(process.env.BOT_OWNERS));
         if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) { embed.fields.push(await this.getProgrammerBadge(instance, interaction)); }
         if (userRank <= 10) { embed.fields.push(await this.getMedalBadge(userRank, instance, interaction)); }
         if (isOnGuild && memberRank <= 10) { embed.fields.push(await this.getMedalBadge(memberRank, instance, interaction, member.guild.name)); }

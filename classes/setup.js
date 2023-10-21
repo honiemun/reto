@@ -273,7 +273,6 @@ class Setup {
         // Define Best Of channel
         if (emoji.isBestOf) {
             sendsToChannel = this.SetupCache[guild.id].channel;
-            console.log(sendsToChannel);
         }
 
         // Create Reactable
@@ -292,7 +291,6 @@ class Setup {
 
         // Save to cache
         await this.saveToSetupCache(reactable.name, reactable, guild);
-        console.log(this.SetupCache[guild.id]);
     }
 
     async saveToSetupCache(key, value, guild) {

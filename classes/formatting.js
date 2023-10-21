@@ -55,7 +55,6 @@ class Formatting {
 
         if (reactingUser) {
             rules.r  = reactingUser.username;
-            console.log(reactingUser)
 
             // rules.rl = reactingUser.nickname;
             // rules.rm = "<@&" + reactingUser.id + ">";

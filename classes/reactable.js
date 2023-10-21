@@ -23,7 +23,6 @@ class Reactable {
     async updateReactablePinAmount(interaction, member) {
         // Reto Gold exclusive command - exit if guild doesn't have a subscription
 		const guild = await guildSchema.find({ guildId: member.guild.id });
-        console.log("Let's go!")
         const premiumMessage = await Premium.sendGuildPremiumMessage(guild);
         if (premiumMessage) {
             return interaction.editReply(premiumMessage);

@@ -168,10 +168,7 @@ class Port {
                         }},
                         { upsert: true }
                     ).exec();
-                } else {
-                    console.log(currentReactables);
                 }
-            
             }
         }
     }

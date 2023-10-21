@@ -61,7 +61,6 @@ class Autocomplete {
 
     async autocompleteNameToQuery(type, query, response) {
         var autocomplete = await this.getAutocompleteType(type);
-        console.log({...query, ...autocomplete.deformatting(response)});
         return await autocomplete.database.findOne({...query, ...autocomplete.deformatting(response)}).exec();
     }
     

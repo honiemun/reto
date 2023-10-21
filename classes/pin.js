@@ -112,8 +112,6 @@ class Pin {
     async getIterableChannels(message, dbMessage, reactable, isPositive) {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
         let iterableChannels = [];
-
-        console.log(dbMessage);
         
         // Add to list if message has enough reactions
         let reactionCount = 0;

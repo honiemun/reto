@@ -183,7 +183,6 @@ class Embed {
 	}
 
 	async createModal(modal, interaction, msgInt, channel, member, client) {
-		console.log(client.readyTimestamp);
 		// Generate modal
 		const modalBuilder = new ModalBuilder()
 			.setCustomId(modal.id)
@@ -210,12 +209,10 @@ class Embed {
 		await interaction.showModal(modalBuilder);
 
 		// Await for a response
-		console.log(client.readyTimestamp);
 		await this.modalCollector(modal, msgInt, channel, member, client);
 	}
 
 	async modalCollector(modal, msgInt, channel, member, client) {
-		console.log(client.readyTimestamp);
 		client.on(Events.InteractionCreate, async interaction => {
 			if (!interaction.isModalSubmit()) return;
 
@@ -266,7 +263,6 @@ class Embed {
 	}
 
 	async generateModalRetry(modal, validation, interaction, msgInt, channel, member, client) {
-		console.log(client.readyTimestamp);
 		// Create retry button
 		const retry = new ButtonBuilder()
 		.setLabel("Retry")
@@ -286,7 +282,6 @@ class Embed {
 
 		// Add a listener to the collector
 		collector?.on('collect', async (i) => {
-			console.log(client.readyTimestamp);
 			await this.createModal(modal, i, msgInt, channel, member, client);
 			return;
 		})
