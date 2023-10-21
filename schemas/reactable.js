@@ -28,7 +28,7 @@ const reactableSchema = new mongoose.Schema({
 	// Used only for communication purposes.
 	name: {
 		type: String,
-		required: false
+		required: true
 	},
 
 	// The ID of the channel this reactable sends a post to.

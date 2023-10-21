@@ -297,6 +297,9 @@ class Setup {
             lockedBehindRoles: emoji.lockedBehindRoles
         });
 
+        console.log(emojiIds);
+        console.log(reactable);
+
         // Save to cache
         await this.saveToSetupCache(reactableType, reactable, guild);
     }
