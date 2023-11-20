@@ -19,8 +19,8 @@ module.exports = {
 		}
 	],
 	
-	callback: ({ instance, interaction, member }) => {
-		interaction.deferReply();
+	callback: async ({ instance, interaction, member }) => {
+		await interaction.deferReply();
 		let user;
 
 		if (interaction.options.getUser("user")) {
@@ -34,7 +34,7 @@ module.exports = {
 		if (user == null) return; // TO-DO: Throw an error!
 		
 
-		Profile.fetchProfileEmbed(user, member, instance, interaction).then((embed) => {
+		await Profile.fetchProfileEmbed(user, member, instance, interaction).then((embed) => {
 			if (!embed) return;
 			return interaction.editReply({embeds: [ embed ]})
 		});

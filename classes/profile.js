@@ -18,14 +18,31 @@ class Profile {
     async fetchProfileEmbed(author, member, instance, interaction) {
         if (author == null) return;
 
-        const isOnGuild = author instanceof GuildMember;
-        const user = isOnGuild ? author.user : author
-        const username = isOnGuild ? author.nickname : author.username
+        const isOnGuild = interaction.guild;
+        const isAuthorOrUser = author instanceof GuildMember;
+        const user = isAuthorOrUser ? author.user : author
+        const username = isAuthorOrUser ? author.nickname : author.username
         
-		const userDatabase = await userSchema.findOne(
-			{ userId: user.id },
-		).exec()
+		const userQuery = await userSchema.aggregate([
+            {
+                $setWindowFields: {
+                    partitionBy: "$state",
+                    sortBy: { globalKarma: -1 },
+                    output: {
+                        ranking: {
+                            $rank: {}
+                        }
+                    }
+                }
+            },
+            { $match: { userId: user.id }},
+            { $limit: 1 }
+		]).exec();
+        const userDatabase = userQuery[0];
         let memberDatabase;
+
+        let localRanking;
+        let globalRanking;
 
         const globalKarma = userDatabase && userDatabase.globalKarma != undefined ? userDatabase.globalKarma : "0"
 
@@ -51,12 +68,36 @@ class Profile {
             ]
         }
 
+        // If the user hasn't used Reto before, kick 'em out!
+        if (!userDatabase) {
+            embed.fields.push({
+                "name": "***Looks like you're new to Reto!***",
+                "value": "You don't have any Karma just yet - use `/guide` to get started, react to others' messages, and enjoy your stay on the server!",
+                "inline": false
+            })
+
+            return embed;
+        }
+
         if (isOnGuild) {
             // Get info from guild
-
-            memberDatabase = await memberSchema.findOne(
-                { userId: user.id, guildId: member.guild.id },
-            ).exec()
+            const memberQuery = await memberSchema.aggregate([
+                { $match: { guildId: member.guild.id }},
+                {
+                    $setWindowFields: {
+                        partitionBy: "$state",
+                        sortBy: { karma: -1 },
+                        output: {
+                            ranking: {
+                                $rank: {}
+                            }
+                        }
+                    }
+                },
+                { $match: { userId: user.id }},
+                { $limit: 1 }
+            ]).exec();
+            memberDatabase = memberQuery[0];
 
             const guildKarmaData = await Personalisation.getGuildKarmaData(member.guild)
             const localKarma = memberDatabase && memberDatabase.karma != undefined ? memberDatabase.karma : "0"
@@ -69,7 +110,7 @@ class Profile {
         }
 
         // Rankings
-        const userRank = await this.getRank(userSchema, userDatabase, "globalKarma");
+        globalRanking = userDatabase && userDatabase.ranking != undefined ? userDatabase.ranking : "N/A"
         embed.fields.push({
             "name": "*Rank*",
             "value": "** **",
@@ -77,17 +118,15 @@ class Profile {
         },
         {
             "name": '🌐 Global Rank',
-            "value": "```" + userRank + "```",
+            "value": "```" + globalRanking + "```",
             "inline": true
         })
         
-        let memberRank = 0;
         if (isOnGuild) {
-            memberRank =  await this.getRank(memberSchema, memberDatabase, "karma");
-
+            localRanking = memberDatabase && memberDatabase.ranking != undefined ? memberDatabase.ranking : "N/A"
             embed.fields.push({
                 "name": '✨ ' + member.guild.name + " Rank",
-                "value": "```" + memberRank + "```",
+                "value": "```" + localRanking + "```",
                 "inline": true
             })
         }
@@ -101,18 +140,11 @@ class Profile {
         })
         
         if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) { embed.fields.push(await this.getProgrammerBadge(instance, interaction)); }
-        if (userRank <= 10) { embed.fields.push(await this.getMedalBadge(userRank, instance, interaction)); }
-        if (isOnGuild && memberRank <= 10) { embed.fields.push(await this.getMedalBadge(memberRank, instance, interaction, member.guild.name)); }
+        if (globalRanking <= 10) { embed.fields.push(await this.getMedalBadge(globalRanking, instance, interaction)); }
+        if (isOnGuild && localRanking <= 10) { embed.fields.push(await this.getMedalBadge(localRanking, instance, interaction, member.guild.name)); }
         if (userDatabase.earlySupporter) { embed.fields.push(await this.getEarlySupporterBadge(instance, interaction)); }
 
         return embed
-    }
-
-    async getRank (schema, database, karma) {
-        let toFind = {}
-        toFind[karma] = { $gt: database[karma] }
-        const ranking = await schema.findOne(toFind).count();
-        return ranking + 1; // Arrays start at 0
     }
 
     async getProgrammerBadge (instance, interaction) {
