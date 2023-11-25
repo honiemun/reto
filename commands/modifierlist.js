@@ -59,7 +59,6 @@ module.exports = {
 		pages[id] = pages[id] || 0;
 
 		let embed = embeds[pages[id]];
-		let reply;
 		let collector;
 
 		const filter = (i) => i.user.id === user.id

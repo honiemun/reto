@@ -43,7 +43,7 @@ module.exports = {
         }
 	],
     
-	callback: async ({ interaction, member }) => {
+	callback: async ({ interaction }) => {
 		await interaction.deferReply();
 
         const cmdGroup = interaction.options.getSubcommand();
