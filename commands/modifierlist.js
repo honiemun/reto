@@ -93,5 +93,11 @@ module.exports = {
 				components: [ getRow(id) ]
 			});
 		});
+		
+		// On collector end, remove all buttons
+		collector.on('end', (collected, reason) => {
+			if (reason == "messageDelete") return;
+			msgInt.editReply({ components: [] });
+		});
 	},
 }

@@ -7,6 +7,7 @@ const Validation = require("../classes/validation");
 
 // Data
 const embeds = require('../data/embeds');
+const brandingColors = require('../data/brandingColors');
 
 class Embed {
 
@@ -26,7 +27,7 @@ class Embed {
 		
 		// Setup default colour
 		// TO-DO: Custom colours
-		currentSetup.embed.color = 0xff00a2;
+		currentSetup.embed.color = brandingColors.brightPink;
 
 		// Create the embed we're sending
 		let replyEmbed = {
@@ -48,9 +49,9 @@ class Embed {
 		}
 
 		// Send the embed
-		msgInt.replied
-			? await msgInt.editReply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); })
-			: await msgInt.reply(replyEmbed).then(() => { this.createCollector(currentSetup, msgInt, channel, member, client); });
+		await msgInt.editReply(replyEmbed).then((embed) => {
+			this.createCollector(currentSetup, embed, msgInt, channel, member, client);
+		});
 	}
 
 	async createComponents (components) {
@@ -118,17 +119,20 @@ class Embed {
 		return options.slice(0, 24);
 	}
 
-	async createCollector (currentSetup, msgInt, channel, member, client) {
+	async createCollector (currentSetup, embed, msgInt, channel, member, client) {
 		// Create a collector
 		if (!currentSetup.components) return;
 
-		const collector = msgInt.channel?.createMessageComponentCollector({
-			max: 1,
-			time: 1000 * 60,
-		})
+		const filter = (i) => i.user.id === member.id
+		const time = 1000 * 60 * 5
+
+		const collector = embed.createMessageComponentCollector({ filter, max: 1, time })
 
 		// Add a listener to the collector
-		collector?.on('collect', async (i) => {
+		collector.on('collect', async (i) => {
+			if (!i) return;
+			await i.deferUpdate();
+			
 			// Buttons (components)
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
@@ -158,15 +162,13 @@ class Embed {
 		})
 
 		// On collector end, remove all buttons
-		collector?.on('end', (collected, reason) => {
+		collector.on('end', (collected, reason) => {
+			if (reason == "messageDelete") return;
 			msgInt.editReply({ components: [] });
 		});
 	}
 
 	async selectCollectorOption(component, i, currentSetup, msgInt, channel, member, client) {
-		// When the update isn't deferred, we receive an error.
-		i.deferUpdate();
-		
 		// Create the next step
 		await this.nextTab(component, msgInt, channel, member, client);
 		// Execute function
@@ -270,14 +272,14 @@ class Embed {
 		.setCustomId("retry");
 		
 		// Send error embed
-		interaction.reply({
+		const modalRetry = await interaction.reply({
 			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ]
 		})
 
 		// Create collector
-		const collector = interaction.channel?.createMessageComponentCollector({
+		const collector = modalRetry.createMessageComponentCollector({
 			max: 1,
-			time: 1000 * 60,
+			time: 1000 * 60 * 5,
 		})
 
 		// Add a listener to the collector

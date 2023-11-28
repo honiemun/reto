@@ -16,7 +16,9 @@ module.exports = {
 		PermissionFlagsBits.ManageGuildExpressions
 	],
 
-	callback: async ({ interaction: msgInt, channel, member, client }) => {
-		return await Embed.createEmbed('setup', msgInt, channel, member, client);
+	callback: async ({ interaction, channel, member, client }) => {
+		await interaction.deferReply();
+		
+		return await Embed.createEmbed('setup', interaction, channel, member, client);
 	},
 }

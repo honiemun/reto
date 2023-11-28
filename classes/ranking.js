@@ -10,6 +10,7 @@ const memberSchema = require('../schemas/member');
 
 // Data
 const retoEmojis = require('../data/retoEmojis');
+const brandingColors = require('../data/brandingColors');
 
 class Ranking {
     
@@ -25,15 +26,16 @@ class Ranking {
 
         const rankingData = await this.getRankingData(type, member);
 
-        const karmaData = !typeIsGlobal ? await Personalisation.getGuildKarmaData(member.guild) : { emoji: retoEmojis.karmaEmoji, name: "Karma" };
-        
-        await this.createLeaderboardEmbed(rankingData, interaction, client, karmaData, 1);
+        await this.createLeaderboardEmbed(rankingData, interaction, client, typeIsGlobal, 1);
     }
 
-    async createLeaderboardEmbed(rankingData, interaction, client, karmaData, page) {
+    async createLeaderboardEmbed(rankingData, interaction, client, typeIsGlobal, page) {
 
         const rankings = await this.filterRankingByRange(rankingData, page);
         const pageLength = await this.getPageFromLength(rankingData);
+
+        const karmaData = !typeIsGlobal ? await Personalisation.getGuildKarmaData(interaction.guild) : { emoji: retoEmojis.karmaEmoji, name: "Karma" };
+        const leaderboardName = typeIsGlobal ? 'Leaderboard' : interaction.guild.name + ' Leaderboard';
         
         let rankingNumber = "";
         let rankingUsername = "";
@@ -54,8 +56,9 @@ class Ranking {
 
         // Create embed
         const embed = new EmbedBuilder()
-            .setTitle('Leaderboard')
+            .setTitle(leaderboardName)
             .setDescription('** **')
+            .setColor(brandingColors.brightPink)
             .addFields(
                 {
                     name: 'No.',
@@ -80,7 +83,7 @@ class Ranking {
         const row = await this.createButtonRow(page, pageLength);
 
         const message = await interaction.editReply({ embeds: [embed], components: [row]});
-        await this.createLeaderboardCollector(rankingData, interaction, message, client, karmaData, page, pageLength);
+        await this.createLeaderboardCollector(rankingData, interaction, message, embed, client, typeIsGlobal, page, pageLength);
     }
 
     async createButtonRow(page, pageLength) {
@@ -107,16 +110,16 @@ class Ranking {
         return row;
     }
 
-    async createLeaderboardCollector(rankingData, interaction, message, client, karmaData, page, pageLength) {
+    async createLeaderboardCollector(rankingData, interaction, message, embed, client, typeIsGlobal, page, pageLength) {
 
 		const filter = (i) => ['prev_leader', 'next_leader'].includes(i.customId) && i.user.id === interaction.user.id;
 		const time = 1000 * 60 * 5;
         const collector = message.createMessageComponentCollector({ filter, max: 1, time });
 
+        // Handle collections
         collector.on('collect', async (newInt) => {
 
 			if (!newInt) return;
-            console.log(newInt);
 			await newInt.deferUpdate();
             
 			if (newInt.customId === 'prev_leader' && page > 0) {
@@ -125,7 +128,18 @@ class Ranking {
 				page += 1;
 			}
 
-			await this.createLeaderboardEmbed(rankingData, newInt, client, karmaData, page);
+            // Loading message
+            await embed.setDescription(retoEmojis.loadingEmoji + " Loading page " + page + "...");
+            await interaction.editReply({ embeds: [embed] });
+
+			await this.createLeaderboardEmbed(rankingData, newInt, client, typeIsGlobal, page);
+		});
+
+		// On collector end, remove all buttons
+		collector.on('end', (collected, reason) => {
+			if (reason == "time") {
+                interaction.editReply({ components: [] });
+            }
 		});
     }
 
