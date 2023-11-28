@@ -20,17 +20,17 @@ class Ranking {
         Ranking._instance = this;
     }
 
-    async leaderboard(type, interaction, member, channel, client) {
+    async leaderboard(type, interaction, member, client) {
         const typeIsGlobal = type === 'global';
 
         const rankingData = await this.getRankingData(type, member);
 
         const karmaData = !typeIsGlobal ? await Personalisation.getGuildKarmaData(member.guild) : { emoji: retoEmojis.karmaEmoji, name: "Karma" };
-
-        await this.createLeaderboardEmbed(rankingData, interaction, channel, client, karmaData, 1);
+        
+        await this.createLeaderboardEmbed(rankingData, interaction, client, karmaData, 1);
     }
 
-    async createLeaderboardEmbed(rankingData, interaction, channel, client, karmaData, page) {
+    async createLeaderboardEmbed(rankingData, interaction, client, karmaData, page) {
 
         const rankings = await this.filterRankingByRange(rankingData, page);
         const pageLength = await this.getPageFromLength(rankingData);
@@ -74,13 +74,13 @@ class Ranking {
                 }
             )
             .setFooter({
-                text: 'Page ' + page + '/' + pageLength + '\n⚠️ This feature isn\'t fully functional yet!' // TO-DO: Remove lol
+                text: 'Page ' + page + '/' + pageLength
             });
         
         const row = await this.createButtonRow(page, pageLength);
 
-        await interaction.editReply({ embeds: [embed], components: [row]});
-        await this.createLeaderboardCollector(rankingData, interaction, channel, client, karmaData, page, pageLength);
+        const message = await interaction.editReply({ embeds: [embed], components: [row]});
+        await this.createLeaderboardCollector(rankingData, interaction, message, client, karmaData, page, pageLength);
     }
 
     async createButtonRow(page, pageLength) {
@@ -107,27 +107,25 @@ class Ranking {
         return row;
     }
 
-    async createLeaderboardCollector(rankingData, interaction, channel, client, karmaData, page, pageLength) {
-        
-		const filter = (i) => i.user.id === interaction.user.id;
+    async createLeaderboardCollector(rankingData, interaction, message, client, karmaData, page, pageLength) {
+
+		const filter = (i) => ['prev_leader', 'next_leader'].includes(i.customId) && i.user.id === interaction.user.id;
 		const time = 1000 * 60 * 5;
-        
-        const collector = channel.createMessageComponentCollector({ filter, time });
+        const collector = message.createMessageComponentCollector({ filter, max: 1, time });
 
         collector.on('collect', async (newInt) => {
 
-			if (!newInt) { return; }
+			if (!newInt) return;
+            console.log(newInt);
 			await newInt.deferUpdate();
             
-			if (newInt.customId !== 'prev_leader' && newInt.customId !== 'next_leader') return; // Only respond to these two!
-
 			if (newInt.customId === 'prev_leader' && page > 0) {
 				page -= 1;
 			} else if (newInt.customId === 'next_leader' && page < pageLength) {
 				page += 1;
 			}
 
-			await this.createLeaderboardEmbed(rankingData, newInt, channel, client, karmaData, page);
+			await this.createLeaderboardEmbed(rankingData, newInt, client, karmaData, page);
 		});
     }
 

@@ -11,7 +11,7 @@ module.exports = {
 	type: CommandType.SLASH,
 	guildOnly: false,
 
-	callback: async ({ user, message, instance, interaction, channel }) => {
+	callback: async ({ user, message, interaction }) => {
 		await interaction.deferReply();
 		const formattingCategories = await Formatting.getFormattingDescriptions(message);
 		const embeds = [];
@@ -64,13 +64,13 @@ module.exports = {
 		const filter = (i) => i.user.id === user.id
 		const time = 1000 * 60 * 5
 
-		await interaction.editReply({
+		const sentEmbed = await interaction.editReply({
 			embeds: [ embed ],
 			components: [ getRow(id) ]
 		})
 
 		// Check for tab change
-		collector = channel.createMessageComponentCollector({ filter, time });
+		collector = sentEmbed.createMessageComponentCollector({ filter, time });
 
 		collector.on('collect', async (interaction) => {
 			if (!interaction) { return; }

@@ -23,12 +23,12 @@ module.exports = {
 		}
 	],
 	
-	callback: async ({ interaction, member, channel, client }) => {
+	callback: async ({ interaction, member, client }) => {
 		await interaction.deferReply();
 
         const cmdGroup = interaction.options.getSubcommand();
         const type = cmdGroup == "server" ? "server" : "global";
 
-        await Ranking.leaderboard(type, interaction, member, channel, client);
+        await Ranking.leaderboard(type, interaction, member, client);
 	},
 }
