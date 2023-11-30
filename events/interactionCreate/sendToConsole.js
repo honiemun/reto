@@ -1,4 +1,6 @@
 module.exports = async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
     const cmdName = await getCommandName(interaction);
     const cmdOptions = await getCommandOptions(interaction);
 
@@ -7,7 +9,7 @@ module.exports = async (interaction) => {
 }
 
 async function getCommandName(interaction) {
-    const cmdGroup = interaction.options.getSubcommandGroup();
+    const cmdGroup = interaction.options.getSubcommandGroup(false);
     const cmd = interaction.options.getSubcommand(false);
 
     let cmdName;
