@@ -32,7 +32,7 @@ client.on("ready", async () => {
 	let serverCount = client.guilds.cache.size;
 
 	figlet("                 retool", { font: "Ogre" }, function (err, data) {
-		console.log(data) //.red
+		console.log(data.red)
 		console.log(pack.version.underline + " | " + "A reaction bot for the modern era".gray + " | " + "👥 Live in ".gray + serverCount + " servers".gray)
 		console.log("🔗 https://discord.com/oauth2/authorize?client_id=".gray + process.env.CLIENT_ID.gray + "&permissions=".gray +  process.env.PERMISSIONS.gray + "&scope=bot%20applications.commands".gray)
 	})
