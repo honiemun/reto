@@ -1,7 +1,7 @@
 const { CommandType } = require("wokcommands");
 const { ApplicationCommandOptionType } = require("discord.js");
 
-const Profile = require("../classes/profile");
+const Profile = require("../../classes/profile");
 
 module.exports = {
 	category: 'Profiles',

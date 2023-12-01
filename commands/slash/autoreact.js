@@ -2,11 +2,11 @@ const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
-const Autocomplete = require("../classes/autocomplete");
-const Autoreact = require("../classes/autoreact");
+const Autocomplete = require("../../classes/autocomplete");
+const Autoreact = require("../../classes/autoreact");
 
 // Schemas
-const reactableSchema = require("../schemas/reactable");
+const reactableSchema = require("../../schemas/reactable");
 
 module.exports = {
 	category: 'Personalisation',

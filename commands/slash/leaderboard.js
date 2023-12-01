@@ -1,7 +1,7 @@
 const { CommandType } = require("wokcommands");
 const { ApplicationCommandOptionType } = require("discord.js");
 
-const Ranking = require("../classes/ranking");
+const Ranking = require("../../classes/ranking");
 
 module.exports = {
 	category: 'Ranking',

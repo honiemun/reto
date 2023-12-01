@@ -2,7 +2,6 @@ const { CommandType } = require("wokcommands");
 const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 const Formatting = require("../../classes/formatting");
-const { forEach } = require("../../data/defaultReactables");
 
 module.exports = {
 	category: 'Personalisation',

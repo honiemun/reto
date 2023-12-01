@@ -2,7 +2,7 @@ const { CommandType } = require("wokcommands");
 const { ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
-const Port = require("../classes/port");
+const Port = require("../../classes/port");
 
 module.exports = {
 	category: 'Personalisation',

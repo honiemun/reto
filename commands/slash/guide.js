@@ -1,6 +1,6 @@
 const { CommandType } = require("wokcommands");
 
-const Personalisation = require("../classes/personalisation");
+const Personalisation = require("../../classes/personalisation");
 
 module.exports = {
 	category: 'Personalisation',

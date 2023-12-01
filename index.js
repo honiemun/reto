@@ -1,10 +1,13 @@
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
+
 const WOK = require("wokcommands");
 const path = require("path");
 const mongoose = require("mongoose");
 const figlet = require("figlet");
 const colors = require("colors");
-var pack = require('./package.json');
+const pack = require('./package.json');
+
+const contextMenu = require('./classes/handler/contextMenu.js')
 
 require("dotenv/config");
 
@@ -37,8 +40,8 @@ client.on("ready", async () => {
 	// Instantiate WOKCommands
 	new WOK({
 		client,
-		commandsDir: path.join(__dirname, 'commands'),
-		featuresDIr: path.join(__dirname, "features"),
+		commandsDir: path.join(__dirname, 'commands/slash'),
+		//featuresDIr: path.join(__dirname, "features"),
 		events: {
 			dir: path.join(__dirname, 'events')
 		},
@@ -59,6 +62,9 @@ client.on("ready", async () => {
 		],
 		mongoUri: process.env.MONGO_URI
 	});
+
+	// Instantiate Context Menu commands
+	await contextMenu.handler();
 });
 
 client.login(process.env.TOKEN);

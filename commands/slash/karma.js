@@ -2,7 +2,7 @@ const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
-const GuildKarma = require("../classes/guildKarma");
+const GuildKarma = require("../../classes/guildKarma");
 
 module.exports = {
 	category: 'Personalisation',

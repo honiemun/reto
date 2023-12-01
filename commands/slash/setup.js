@@ -1,7 +1,7 @@
 const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits } = require("discord.js");
 
-const Embed = require("../classes/embed");
+const Embed = require("../../classes/embed");
 
 module.exports = {
 	category: 'Configuration',

@@ -2,7 +2,7 @@ const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
-const Reactable = require("../classes/reactable");
+const Reactable = require("../../classes/reactable");
 
 module.exports = {
     // TO-DO: Consider if this needs to be ported to Reactable or renamed.

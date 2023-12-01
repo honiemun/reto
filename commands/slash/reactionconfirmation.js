@@ -2,7 +2,7 @@ const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
-const ReactionConfirmation = require("../classes/reactionConfirmation");
+const ReactionConfirmation = require("../../classes/reactionConfirmation");
 
 module.exports = {
 	category: 'Personalisation',

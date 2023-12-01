@@ -2,7 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require("discord.js");
 const { CommandType } = require("wokcommands");
 
 // Data
-const brandingColors = require('../data/brandingColors');
+const brandingColors = require('../../data/brandingColors');
 
 module.exports = {
 	category: 'About',

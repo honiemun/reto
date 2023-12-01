@@ -2,8 +2,8 @@ const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
-const Autocomplete = require("../classes/autocomplete");
-const Reactable = require("../classes/reactable");
+const Autocomplete = require("../../classes/autocomplete");
+const Reactable = require("../../classes/reactable");
 
 // Schemas
 
