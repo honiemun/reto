@@ -216,7 +216,7 @@ Select an emoji from the list below to create this Reactable.`
                     emojis.push({
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
-                        emoji: emoji.toString(),
+                        emoji: "<:" + emoji.name + ":" + emoji.id + ">",
                         next: "minusReactable"
                     })
                 });
@@ -305,7 +305,7 @@ Select an emoji from the list below to create this Reactable.`
                     emojis.push({
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
-                        emoji: emoji.toString(),
+                        emoji: "<:" + emoji.name + ":" + emoji.id + ">",
                         next: "pinnableChannel"
                     })
                 });
@@ -489,7 +489,7 @@ Select an emoji from the list below to create this Reactable.`
                     emojis.push({
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
-                        emoji: emoji.toString(),
+                        emoji: "<:" + emoji.name + ":" + emoji.id + ">",
                         next: "pinReactableRoles"
                     })
                 });
