@@ -5,7 +5,7 @@ const { ApplicationCommandType } = require("discord.js");
 const selectedMessageSchema = require('../../schemas/selectedMessage');
 
 module.exports = {
-    commandName: 'Add to context',
+    commandName: 'Add to chain',
     type: ApplicationCommandType.Message,
 
     testOnly: true,

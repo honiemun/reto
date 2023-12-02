@@ -43,7 +43,14 @@ const messageSchema = new mongoose.Schema({
 	pinnedEmbeds: [{
 		type: Schema.Types.ObjectId,
 		ref: "pinnedEmbed"
-	}]
+	}],
+
+	// Other messages that precede this one, whether it's replies or manually selected context messages.
+	chain: [{
+		type: Schema.Types.ObjectId,
+		ref: "pinnedEmbed"
+	}],
+	
 });
 
 module.exports = mongoose.model("message", messageSchema);

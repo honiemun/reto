@@ -10,6 +10,9 @@ const memberSchema = require('../schemas/member');
 const ReactionCheck = require("./reactionCheck")
 const Personalisation = require("./personalisation");
 
+// Data
+const retoEmojis = require('../data/retoEmojis');
+
 class Pin {
     
     constructor() {
@@ -37,7 +40,7 @@ class Pin {
             messageId: message.id
         }).exec();
 
-        const embed          = await this.generateMessageEmbed(message);
+        const embed          = await this.generateMessageEmbed(message, messageDocument);
         const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
@@ -163,24 +166,35 @@ class Pin {
             }).exec();
         });
     }
-    async generateMessageEmbed(message) {
+    async generateMessageEmbed(message, messageDocument) {
         // Generate default message embed
         let messageEmbed = {
             url: "https://retobot.com", // Necessary for multiple image support
-            description: message.content ? message.content : undefined,
+            description: "** **",
             timestamp: new Date().toISOString(),
             fields: []
         };
 
         // Optional fields
-        messageEmbed.author = await this.setEmbedAuthor(message);
         messageEmbed.footer = await this.setEmbedFooter(message);
         messageEmbed.color  = await this.setEmbedColor(message);
         messageEmbed.image  = await this.setEmbedSingleImage(message);
 
-        messageEmbed.fields = await this.parseEmbedIntoFields(message);
-        const embedReply = await this.setEmbedReply(message); // I pray to the Typescript gods above to forgive me for such ingenuity
-        if (message.reference && embedReply) messageEmbed.fields.push(embedReply);
+        // Embed replies, authors, et cetera
+        const replies = await this.storeEmbedReply(message);
+        const chain = await this.getMessageChain(replies);
+        const chainFields = await this.setEmbedMessages(message, chain);
+        messageEmbed.author = await this.setEmbedAuthor(message, chainFields);
+        
+        if (chainFields.length > 0) {
+            messageEmbed.fields = chainFields;
+        } else {
+            messageEmbed.description = message.content;
+        }
+
+        
+        const portedFields = await this.parseEmbedIntoFields(message);
+        if (portedFields.length > 0) messageEmbed.fields = messageEmbed.fields.concat(portedFields);
         
         let embedArray = await this.setEmbedImages(message, messageEmbed.url);
         embedArray.unshift(messageEmbed)
@@ -236,22 +250,119 @@ class Pin {
         return guildKarmaData?.emoji + ' **' + karmaTotal + '**'
     }
 
-    async setEmbedAuthor(message) {
+    async setEmbedAuthor(message, chain) {
         if (!message.author) return;
         const avatarURL = message.author.avatarURL()
-        return {
-            name: message.author.username,
-            icon_url: avatarURL ? avatarURL : undefined
+        const authors = await this.getAllAuthors(message, chain);
+        
+        switch (authors.length) {
+            case 1:
+                return {
+                    name: message.author.username,
+                    icon_url: avatarURL ? avatarURL : undefined
+                }
+            case 2:
+                return {
+                    name: message.author.username + " and " + authors[1],
+                    icon_url: avatarURL ? avatarURL : undefined
+                }
+            default:
+                return {
+                    name: message.author.username + " (and " + authors.length + " others)",
+                    icon_url: avatarURL ? avatarURL : undefined
+                }
         }
     }
 
-    async setEmbedReply(message) {
-        if (!message.reference || !message.reference.messageId) return;
-        const reply = await message.channel.messages.fetch(message.reference.messageId);
-        return {
-            name: 'Replying to ' + reply.author.username,
-            value: reply.content,
+    async getAllAuthors (message, chain) {
+        let authorList = [message.author.username];
+        if (!chain) return authorList;
+
+        for (const chainMessage of chain) {
+            if (!authorList.includes(chainMessage.name)) {
+                authorList.push(chainMessage.name);
+            }
         }
+
+        return authorList;
+    }
+
+    async storeEmbedReply(message) {
+        if (!message.reference || !message.reference.messageId) return;
+        // TO-DO: message.reference already replies with most the data we need
+        // This is exclusively for the user ID. Gotta be a way to optimize?
+        const reply = await message.channel.messages.fetch(message.reference.messageId); 
+
+        return await this.addMessageToChain(reply, message);
+    }
+
+    async setEmbedMessages(baseMessage, chain) {
+        let messageList = [];
+
+        if (!chain) return messageList;
+        chain.sort((a, b) => (a.createdTimestamp > b.createdTimestamp ? 1 : -1));
+
+        for (const chainMessage of chain) {
+
+            const chainElement = await baseMessage.channel.messages.fetch(chainMessage.messageId);
+            const includes = await this.generateIncludesString(chainElement, true, false);
+            const content = includes ? chainElement.content + "\n_" + retoEmojis.dottedLineEmoji +  " " + includes + "_": chainElement.content;
+
+            messageList.push({
+                name: chainElement.author.username,
+                value: content,
+            })
+        }
+
+        messageList.push({
+            name: baseMessage.author.username,
+            value: baseMessage.content,
+        })
+
+        return messageList;
+    }
+
+    async addMessageToChain(chainMessage, originalMessage) {
+        // Create a Message
+        const storedChainMessage = await messageSchema.findOneAndUpdate(
+			{ messageId: chainMessage.id },
+			{
+				$set: {
+                    'userId': chainMessage.author.id,
+                    'guildId': chainMessage.guildId,
+                    'channelId': chainMessage.channel.id,
+                },
+			},
+			{ upsert: true, new: true }
+		).exec()
+
+        const storedOriginalMessage = await messageSchema.findOneAndUpdate(
+            { messageId: originalMessage.id },
+            { $addToSet: {
+                'chain': { "$each": [storedChainMessage._id] } // Don't repeat IDs
+            }},
+            { upsert: true, new: true }
+        ).exec();
+
+        return storedOriginalMessage;
+    }
+
+    async getMessageChain (message) {
+        if (!message) return null;
+
+        const messageDocument = await messageSchema.aggregate([
+            { $match: { _id: message._id } },
+            { $limit: 1 },
+            {
+                $lookup: {
+                    from: "messages",
+                    localField: "chain",
+                    foreignField: "_id",
+                    as: "chainMessages"
+                }
+            }
+		]).exec();
+        return messageDocument[0].chainMessages;
     }
 
     async setEmbedSingleImage(message) {
@@ -360,7 +471,7 @@ class Pin {
         }
     }
 
-    async generateIncludesString(message) {
+    async generateIncludesString(message, imageAllowed = false, verbose = true) {
         if (!message.attachments) return;
         const [firstAttachment] = message.attachments.values();
         if (!firstAttachment) return;
@@ -370,11 +481,13 @@ class Pin {
 
         // Determine the type of attachment
         if (firstAttachment.contentType) {
+            console.log(firstAttachment.contentType)
             contentType = firstAttachment.contentType.split('/')[0];
 
-            if (contentType && contentType == 'video')      includesMessage = 'a video'
-            else if (contentType && contentType == 'audio') includesMessage = 'an audio'
-            else if (contentType != 'image')                includesMessage = 'an attachment'
+            if (contentType && contentType == 'video')                       includesMessage = 'a video'
+            else if (contentType && contentType == 'audio')                  includesMessage = 'an audio'
+            else if (contentType && contentType == 'image' && imageAllowed)  includesMessage = 'an image'
+            else if (contentType != 'image')                                 includesMessage = 'an attachment'
         } else {
             includesMessage = 'an attachment' // Certain files don't show a contentType at all.
         }
@@ -387,7 +500,7 @@ class Pin {
         }
 
         if (!includesMessage) return;
-        return 'This message includes ' + includesMessage + '.'
+        return verbose ? 'This message includes ' + includesMessage + '.' : 'Includes ' + includesMessage
     }
     
     async parseEmbedIntoFields(message) {
