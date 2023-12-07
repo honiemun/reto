@@ -112,7 +112,9 @@ class Embed {
 			const populator = selector.populate(client, channel.guild.id)
 
 			for (const option of populator) {
-				options.push(option);
+				if (!options.find(o => o.value === option.value)) { // Don't push duplicate entries
+					options.push(option);
+				}
 			}
 		}
 		

@@ -232,8 +232,8 @@ Select an emoji from the list below to create this Reactable.`
                 },
                 {
                     label: "Heart",
-                    value: "❤",
-                    emoji: "❤",
+                    value: "\u2764\uFE0F",
+                    emoji: "\u2764\uFE0F",
                     next: "minusReactable"
                 },
                 {
@@ -246,12 +246,6 @@ Select an emoji from the list below to create this Reactable.`
                     label: "Arrow",
                     value: "⬆️",
                     emoji: "⬆️",
-                    next: "minusReactable"
-                },
-                {
-                    label: "Checkmark",
-                    value: "✔",
-                    emoji: "✔",
                     next: "minusReactable"
                 },
                 {
@@ -335,12 +329,6 @@ Select an emoji from the list below to create this Reactable.`
                     label: "Arrow",
                     value: "⬇️",
                     emoji: "⬇️",
-                    next: "pinnableChannel"
-                },
-                {
-                    label: "Cross",
-                    value: "❌",
-                    emoji: "❌",
                     next: "pinnableChannel"
                 },
                 {
