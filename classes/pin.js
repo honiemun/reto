@@ -22,7 +22,7 @@ class Pin {
         Pin._instance = this;
     }
 
-    async pinMessageToChannel(message, reactable, client, isPositive, user = false) {
+    async pinMessageToChannel(message, reactable, client, isPositive, user = false, isChainUpdate = false) {
         if (!message) return;
 
         // Check if previously reacted
@@ -41,10 +41,12 @@ class Pin {
         }).exec();
 
         const embed          = await this.generateMessageEmbed(message);
+        console.log("Pin that shit baby");
         const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
-        const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, isPositive);
+        console.log("Entering it. channels");
+        const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, isPositive, isChainUpdate);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
@@ -73,7 +75,11 @@ class Pin {
                     })
                 } else {
                     channel.messages.fetch(iterableChannel.embed).then((pinnedMessage) => {
-                        pinnedMessage.edit({ content: karmaString, embeds: embed, components: [row] })
+                        try {
+                            pinnedMessage.edit({ content: karmaString, embeds: embed, components: [row] })
+                        } catch (e) {
+                            console.log("❌ Couldn't edit pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
+                        }
                     })
                 }
             });
@@ -103,7 +109,7 @@ class Pin {
         await databaseMessage.deleteOne();
 
         // Delete all pinned messages (database and Discord)
-        const iterableChannels = await this.getIterableChannels(message, databaseMessage, false, false);
+        const iterableChannels = await this.getIterableChannels(message, databaseMessage, false, false, false);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
@@ -112,8 +118,10 @@ class Pin {
 
     }
 
-    async getIterableChannels(message, dbMessage, reactable, isPositive) {
+    async getIterableChannels(message, dbMessage, reactable, isPositive, isChainUpdate = false) {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
+        console.log("database msg: " + dbMessage);
+        console.log("pinned msg: " + pinnedMessages);
         let iterableChannels = [];
         
         // Add to list if message has enough reactions
@@ -131,7 +139,7 @@ class Pin {
         // Update pinned messages
         if (pinnedMessages.length > 0) {
             for (const pinnedMessage of pinnedMessages) {
-                if (reactionCount >= reactable.sendingThreshold || !isPositive) {
+                if (reactionCount >= reactable.sendingThreshold || !isPositive || isChainUpdate) {
                     iterableChannels.push({
                         id: pinnedMessage.channelId,
                         embed: pinnedMessage.pinnedEmbedId,
@@ -150,6 +158,7 @@ class Pin {
             });
         }
 
+        console.log(iterableChannels);
         return iterableChannels;
     }
     
@@ -293,15 +302,13 @@ class Pin {
         // This is exclusively for the user ID. Gotta be a way to optimize?
         const reply = await message.channel.messages.fetch(message.reference.messageId); 
 
-        return await this.addMessageToChain(reply, message);
+        //return await Chain.addMessageToChain(reply, message);
     }
 
     async setEmbedMessages(baseMessage, chain) {
         let messageList = [];
 
         if (!chain) return messageList;
-        //console.log(chain);
-
         // TO-DO: Add support for making messages shorter
         // Old: - Honie
         //          Hello
@@ -330,94 +337,70 @@ class Pin {
         return messageList;
     }
 
-    async addMessageToChain(chainMessage, originalMessage) {
-        // Create a Message
-        const storedChainMessage = await messageSchema.findOneAndUpdate(
-			{ messageId: chainMessage.id },
-			{
-				$set: {
-                    'userId': chainMessage.author.id,
-                    'guildId': chainMessage.guildId,
-                    'channelId': chainMessage.channel.id,
-                },
-			},
-			{ upsert: true, new: true }
-		).exec()
-
-        const storedOriginalMessage = await messageSchema.findOneAndUpdate(
-            { messageId: originalMessage.id },
-            { $addToSet: {
-                'chain': { "$each": [storedChainMessage._id] } // Don't repeat IDs
-            }},
-            { upsert: true, new: true }
-        ).exec();
-
-        return storedOriginalMessage;
-    }
-
-    async getMessageChain (message, reply = false) {
+    async getMessageChain (message, previewMessage = false) {
         let messageChain = [];
+
+        // Add messages from the stored Chain
+        if (message) messageChain = await this.getStoredMessageChain(message);
+
+        // Add messages from the preview
+        if (previewMessage) messageChain.push(await this.getPreviewChain(previewMessage));
 
         // TO-DO:
         // Move immediate replies
         // const replies = await this.storeEmbedReply(message);
-
-        // Add messages from the stored Chain
-        if (message) {
-            // WARNING: This assumes that the message is already created in the database.
-            // Error checking or self-fixing in case it's not.
-            const messageDocument = await messageSchema.aggregate([
-                { $match: { "messageId": message.id } },
-                { $limit: 1 },
-                {
-                    $lookup: {
-                        from: "messages",
-                        localField: "chain",
-                        foreignField: "_id",
-                        as: "chainMessages"
-                    }
-                }
-            ]).exec();
-            console.log("Document");
-            console.log(messageDocument);
-            
-            for (let chainDocument of messageDocument[0].chainMessages) {
-                //console.log(chainDocument);
-                const chainMessage = await message.channel.messages.fetch(chainDocument.messageId);
-                if (!chainMessage) continue;
-
-                messageChain.push({
-                    document: chainDocument,
-                    message: chainMessage
-                });
-            }
-        }
-
-        // Add messages from the preview
-        if (reply) {
-            
-            // We receive the message element - we need the document to match it
-            // If the message doesn't exist, we create it now
-
-            const previewDocument = await messageSchema.findOneAndUpdate(
-                { messageId: reply.id },
-                {
-                    $set: { 'userId': reply.id, 'guildId': reply.guildId, 'channelId': reply.channel.id }
-                },
-                { upsert: true }
-            ).exec();
-            
-            messageChain.push({
-                document: previewDocument,
-                message: reply
-            });
-        }
 
         return await this.orderMessageChain(messageChain);
     }
 
     async orderMessageChain (messageChain) {
         return messageChain.sort((a, b) => (a.message.createdTimestamp > b.message.createdTimestamp ? 1 : -1));
+    }
+
+    async getStoredMessageChain (message) {
+        let messageChain = [];
+
+        const messageDocument = await messageSchema.aggregate([
+            { $match: { "messageId": message.id } },
+            { $limit: 1 },
+            {
+                $lookup: {
+                    from: "messages",
+                    localField: "chain",
+                    foreignField: "_id",
+                    as: "chainMessages"
+                }
+            }
+        ]).exec();
+        
+        if (!messageDocument.length) return [];
+        
+        for (let chainDocument of messageDocument[0].chainMessages) {
+            const chainMessage = await message.channel.messages.fetch(chainDocument.messageId);
+            if (!chainMessage) continue;
+
+            messageChain.push({
+                document: chainDocument,
+                message: chainMessage
+            });
+        }
+
+        return messageChain;
+    }
+
+    async getPreviewChain (previewMessage) {
+        const previewDocument = await messageSchema.findOneAndUpdate(
+            { messageId: previewMessage.id },
+            {
+                $set: { 'userId': previewMessage.id, 'guildId': previewMessage.guildId, 'channelId': previewMessage.channel.id }
+            },
+            { upsert: true }
+        ).exec();
+        
+        return {
+            document: previewDocument,
+            message: previewMessage
+        };
     }
 
     async setEmbedSingleImage(message) {
@@ -536,7 +519,6 @@ class Pin {
 
         // Determine the type of attachment
         if (firstAttachment.contentType) {
-            console.log(firstAttachment.contentType)
             contentType = firstAttachment.contentType.split('/')[0];
 
             if (contentType && contentType == 'video')                       includesMessage = 'a video'

@@ -86,7 +86,7 @@ class Chain {
         await this.addMessageToChain(interaction.targetMessage, selectedMessage);
 
         // Update Pin (if necessary)
-        await Pin.pinMessageToChannel(selectedMessage, false, selectedMessage.client, true);
+        await Pin.pinMessageToChannel(selectedMessage, false, selectedMessage.client, true, false, true);
 
         // Send confirmation
         interaction.editReply({ content: `✅ Message added to the chain!`, embeds: [], components: [] });
@@ -104,7 +104,7 @@ class Chain {
                 },
 			},
 			{ upsert: true, new: true }
-		).exec()
+		).exec();
 
         const storedOriginalMessage = await messageSchema.findOneAndUpdate(
             { messageId: originalMessage.id },
