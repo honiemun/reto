@@ -41,11 +41,9 @@ class Pin {
         }).exec();
 
         const embed          = await this.generateMessageEmbed(message);
-        console.log("Pin that shit baby");
         const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
-        console.log("Entering it. channels");
         const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, isPositive, isChainUpdate);
         if (!iterableChannels) return;
 
@@ -120,8 +118,6 @@ class Pin {
 
     async getIterableChannels(message, dbMessage, reactable, isPositive, isChainUpdate = false) {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
-        console.log("database msg: " + dbMessage);
-        console.log("pinned msg: " + pinnedMessages);
         let iterableChannels = [];
         
         // Add to list if message has enough reactions
@@ -158,7 +154,6 @@ class Pin {
             });
         }
 
-        console.log(iterableChannels);
         return iterableChannels;
     }
     
