@@ -24,7 +24,7 @@ const selectedMessageSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: 30
+        expires: 3600 // 1 hour
     }
 });
 

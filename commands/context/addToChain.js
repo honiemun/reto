@@ -1,8 +1,8 @@
 // Dependencies
 const { ApplicationCommandType } = require("discord.js");
 
-// Schemas
-const selectedMessageSchema = require('../../schemas/selectedMessage');
+// Classes
+const Chain = require("../../classes/chain");
 
 module.exports = {
     commandName: 'Add to chain',
@@ -11,6 +11,6 @@ module.exports = {
     testOnly: true,
 
 	callback: async ({ client, interaction }) => {
-        console.log("wow!")
+        await Chain.sendChainConfirmationMessage(interaction);
 	},
 }

@@ -12,8 +12,8 @@ module.exports = {
 
 	callback: async ({ client, interaction }) => {
         await selectedMessageSchema.findOneAndUpdate(
-            { userId: interaction.targetMessage.id, messageId: interaction.user.id },
-            { },
+            { userId: interaction.user.id },
+            { $set: { messageId: interaction.targetMessage.id } },
             { upsert: true }
         ).exec();
 

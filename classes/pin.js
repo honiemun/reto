@@ -40,7 +40,7 @@ class Pin {
             messageId: message.id
         }).exec();
 
-        const embed          = await this.generateMessageEmbed(message, messageDocument);
+        const embed          = await this.generateMessageEmbed(message);
         const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
@@ -166,7 +166,7 @@ class Pin {
             }).exec();
         });
     }
-    async generateMessageEmbed(message, messageDocument) {
+    async generateMessageEmbed(message, replyPreview = false) {
         // Generate default message embed
         let messageEmbed = {
             url: "https://retobot.com", // Necessary for multiple image support
@@ -181,8 +181,8 @@ class Pin {
         messageEmbed.image  = await this.setEmbedSingleImage(message);
 
         // Embed replies, authors, et cetera
-        const replies = await this.storeEmbedReply(message);
-        const chain = await this.getMessageChain(replies);
+        //const replies = await this.storeEmbedReply(message);
+        const chain = await this.getMessageChain(message, replyPreview);
         const chainFields = await this.setEmbedMessages(message, chain);
         messageEmbed.author = await this.setEmbedAuthor(message, chainFields);
         
@@ -300,16 +300,24 @@ class Pin {
         let messageList = [];
 
         if (!chain) return messageList;
-        chain.sort((a, b) => (a.createdTimestamp > b.createdTimestamp ? 1 : -1));
+        //console.log(chain);
 
-        for (const chainMessage of chain) {
+        // TO-DO: Add support for making messages shorter
+        // Old: - Honie
+        //          Hello
+        //      - Honie
+        //          Guys
+        // New: - Honie
+        //          Hello
+        //          Guys
+        for (const chainElement of chain) {
 
-            const chainElement = await baseMessage.channel.messages.fetch(chainMessage.messageId);
-            const includes = await this.generateIncludesString(chainElement, true, false);
-            const content = includes ? chainElement.content + "\n_" + retoEmojis.dottedLineEmoji +  " " + includes + "_": chainElement.content;
+            //const chainElement = await baseMessage.channel.messages.fetch(chainMessage.messageId);
+            const includes = await this.generateIncludesString(chainElement.message, true, false);
+            const content = includes ? chainElement.message.content + "\n_" + retoEmojis.dottedLineEmoji +  " " + includes + "_": chainElement.message.content;
 
             messageList.push({
-                name: chainElement.author.username,
+                name: chainElement.message.author.username,
                 value: content,
             })
         }
@@ -347,22 +355,69 @@ class Pin {
         return storedOriginalMessage;
     }
 
-    async getMessageChain (message) {
-        if (!message) return null;
+    async getMessageChain (message, reply = false) {
+        let messageChain = [];
 
-        const messageDocument = await messageSchema.aggregate([
-            { $match: { _id: message._id } },
-            { $limit: 1 },
-            {
-                $lookup: {
-                    from: "messages",
-                    localField: "chain",
-                    foreignField: "_id",
-                    as: "chainMessages"
+        // TO-DO:
+        // Move immediate replies
+        // const replies = await this.storeEmbedReply(message);
+
+        // Add messages from the stored Chain
+        if (message) {
+            // WARNING: This assumes that the message is already created in the database.
+            // Error checking or self-fixing in case it's not.
+            const messageDocument = await messageSchema.aggregate([
+                { $match: { "messageId": message.id } },
+                { $limit: 1 },
+                {
+                    $lookup: {
+                        from: "messages",
+                        localField: "chain",
+                        foreignField: "_id",
+                        as: "chainMessages"
+                    }
                 }
+            ]).exec();
+            console.log("Document");
+            console.log(messageDocument);
+            
+            for (let chainDocument of messageDocument[0].chainMessages) {
+                //console.log(chainDocument);
+                const chainMessage = await message.channel.messages.fetch(chainDocument.messageId);
+                if (!chainMessage) continue;
+
+                messageChain.push({
+                    document: chainDocument,
+                    message: chainMessage
+                });
             }
-		]).exec();
-        return messageDocument[0].chainMessages;
+        }
+
+        // Add messages from the preview
+        if (reply) {
+            
+            // We receive the message element - we need the document to match it
+            // If the message doesn't exist, we create it now
+
+            const previewDocument = await messageSchema.findOneAndUpdate(
+                { messageId: reply.id },
+                {
+                    $set: { 'userId': reply.id, 'guildId': reply.guildId, 'channelId': reply.channel.id }
+                },
+                { upsert: true }
+            ).exec();
+            
+            messageChain.push({
+                document: previewDocument,
+                message: reply
+            });
+        }
+
+        return await this.orderMessageChain(messageChain);
+    }
+
+    async orderMessageChain (messageChain) {
+        return messageChain.sort((a, b) => (a.message.createdTimestamp > b.message.createdTimestamp ? 1 : -1));
     }
 
     async setEmbedSingleImage(message) {
