@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, ActivityType } = require("discord.js");
 
 const WOK = require("wokcommands");
 const path = require("path");
@@ -65,6 +65,11 @@ client.on("ready", async () => {
 
 	// Instantiate Context Menu commands
 	await contextMenu.handler();
+	
+	// Warning activity if bot is being debugged
+	if (process.env.DEBUG_MODE) {
+		client.user.setActivity('⚠️ Debugging! Bot may be unstable', { type: ActivityType.Custom });
+	}
 });
 
 client.login(process.env.TOKEN);
