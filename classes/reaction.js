@@ -44,7 +44,6 @@ class Reaction {
             // Check if user can use this Reactable
             const member = await reaction.message.guild.members.fetch(user.id);
             const canReact = await this.checkMemberCanReact(member, reactable);
-            console.log(canReact);
             if (!canReact) return;
 
             const karmaToAward = isPositive

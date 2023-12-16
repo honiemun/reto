@@ -185,7 +185,6 @@ class Pin {
         messageEmbed.image  = await this.setEmbedSingleImage(message);
 
         // Embed replies, authors, et cetera
-        //const replies = await this.storeEmbedReply(message);
         const chain = await this.getMessageChain(message, replyPreview);
         const chainFields = await this.setEmbedMessages(message, chain);
         messageEmbed.author = await this.setEmbedAuthor(message, chainFields);
@@ -271,8 +270,10 @@ class Pin {
                     icon_url: avatarURL ? avatarURL : undefined
                 }
             default:
+                const extraAuthors = authors.length - 1
+                const others = extraAuthors == 1 ? "other" : "others";
                 return {
-                    name: message.author.username + " (and " + authors.length + " others)",
+                    name: message.author.username + " (and " + extraAuthors + others + ")",
                     icon_url: avatarURL ? avatarURL : undefined
                 }
         }
@@ -291,43 +292,53 @@ class Pin {
         return authorList;
     }
 
-    async storeEmbedReply(message) {
+    async getDirectReply (message) {
+        console.log(message.reference);
         if (!message.reference || !message.reference.messageId) return;
-        // TO-DO: message.reference already replies with most the data we need
-        // This is exclusively for the user ID. Gotta be a way to optimize?
         const reply = await message.channel.messages.fetch(message.reference.messageId); 
 
-        //return await Chain.addMessageToChain(reply, message);
+        return {
+            document: null,
+            message: reply
+        };
     }
 
-    async setEmbedMessages(baseMessage, chain) {
+    async setEmbedMessages (baseMessage, chain) {
         let messageList = [];
+        let previousElement;
 
         if (!chain) return messageList;
-        // TO-DO: Add support for making messages shorter
-        // Old: - Honie
-        //          Hello
-        //      - Honie
-        //          Guys
-        // New: - Honie
-        //          Hello
-        //          Guys
-        for (const chainElement of chain) {
+        for (const [i, chainElement] of chain.entries()) {
+            previousElement = messageList[messageList.length - 1];
 
-            //const chainElement = await baseMessage.channel.messages.fetch(chainMessage.messageId);
+            console.log(chain);
             const includes = await this.generateIncludesString(chainElement.message, true, false);
             const content = includes ? chainElement.message.content + "\n_" + retoEmojis.dottedLineEmoji +  " " + includes + "_": chainElement.message.content;
+            
+            if (previousElement && previousElement.name == chainElement.message.author.username) {
+                // Copy same content to previous element
+                previousElement.value += "\n" + content;
+            } else {
+                // Create a new element
+                messageList.push({
+                    name: chainElement.message.author.username,
+                    value: content,
+                })
+            }
+        };
 
+        // TO-DO: This code structure is repeated.
+        // Fix this up, eventually.
+        if (previousElement && previousElement.name == baseMessage.author.username) {
+            // Copy same content to previous element
+            previousElement.value += "\n" + baseMessage.content;
+        } else {
+            // Create a new element
             messageList.push({
-                name: chainElement.message.author.username,
-                value: content,
+                name: baseMessage.author.username,
+                value: baseMessage.content,
             })
         }
-
-        messageList.push({
-            name: baseMessage.author.username,
-            value: baseMessage.content,
-        })
 
         return messageList;
     }
@@ -341,9 +352,8 @@ class Pin {
         // Add messages from the preview
         if (previewMessage) messageChain.push(await this.getPreviewChain(previewMessage));
 
-        // TO-DO:
-        // Move immediate replies
-        // const replies = await this.storeEmbedReply(message);
+        // Add messages from direct replies
+        if (message.reference) messageChain.push(await this.getDirectReply(message));
 
         return await this.orderMessageChain(messageChain);
     }
