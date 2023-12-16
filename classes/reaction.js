@@ -40,6 +40,12 @@ class Reaction {
                 || reactable.emojiIds.includes(reaction.emoji.id);
 
             if (!reactableIsValid) continue;
+            
+            // Check if user can use this Reactable
+            const member = await reaction.message.guild.members.fetch(user.id);
+            const canReact = await this.checkMemberCanReact(member, reactable);
+            console.log(canReact);
+            if (!canReact) return;
 
             const karmaToAward = isPositive
                 ? reactable.karmaAwarded
@@ -123,6 +129,18 @@ class Reaction {
         console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray);
     }
 
+    async checkMemberCanReact(member, reactable) {
+        if (!reactable.lockedBehindRoles || !reactable.lockedBehindRoles.length) return true;
+
+        for (const role of reactable.lockedBehindRoles) {
+            if (member.roles.cache.has(role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
     // Currently goes un-used - the reactionHandler recursively deletes
     // every reaction if this is implemented.
     /*

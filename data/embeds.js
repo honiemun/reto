@@ -82,9 +82,7 @@ Use the Advanced wizard to make the bot your own!
 - Choose if you want the default **Plus** and/or **Minus** Reactables.
 - Create an optional \`#best-of\` channel, and send messages to it using a **Pin** Reactable.
 - Set up your own server-specific Karma.
-- Send a confirmation message or reaction each time someone uses a Reactable.
-
-⚠️ *Advanced setup is experimental and may have some bugs.*`
+- Send a confirmation message or reaction each time someone uses a Reactable.`
                 },
                 {
                     "name": "Quick setup",

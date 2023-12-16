@@ -1,12 +1,14 @@
 // Dependencies
-const { ButtonStyle, ActionRowBuilder, ButtonBuilder } = require("discord.js");
+const { ButtonStyle, ActionRowBuilder, ButtonBuilder, PermissionsBitField } = require("discord.js");
 
 // Schemas
 const messageSchema = require('../schemas/message');
 const selectedMessageSchema = require('../schemas/selectedMessage');
+const reactableSchema = require("../schemas/reactable");
 
 // Classes
 const Pin = require('../classes/pin');
+const Reaction = require('../classes/reaction');
 
 class Chain {
 
@@ -18,12 +20,16 @@ class Chain {
     }
     
     async sendChainConfirmationMessage(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const selectedMessageDocument = await selectedMessageSchema.findOne({
             userId: interaction.user.id
         }).exec();
 
-        if (!selectedMessageDocument) return interaction.reply({ content: `You have not selected a message.`, ephemeral: true });
-
+        
+        if (!selectedMessageDocument) return interaction.editReply({ content: `You have not selected a message.`, ephemeral: true });
+        if (selectedMessageDocument.messageId == interaction.targetMessage.id) return interaction.editReply({ content: `You can't add the same message to itself!`, ephemeral: true });
+        
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -38,11 +44,18 @@ class Chain {
                 
         interaction.channel.messages.fetch(selectedMessageDocument.messageId).then(async (selectedMessage) => {
             
-            if (interaction.targetMessage.createdTimestamp > selectedMessage.createdTimestamp) return interaction.reply({ content: `You can't add a message that's more recent than the selected message to a chain!`, ephemeral: true });
+            if (interaction.targetMessage.createdTimestamp > selectedMessage.createdTimestamp) return interaction.editReply({ content: `You can't add a message that's more recent than the selected message to a chain!`, ephemeral: true });
+            if (interaction.targetMessage.channelId != selectedMessage.channel.id) return interaction.editReply({ content: `The message you're adding to this chain has to be from the same channel as the original message.`, ephemeral: true });
 
+            // Check if member can use Chain Messages (message owner, server admin, or allowed to use any Pin)
+            const canReact = await this.checkIfMemberCanPin(interaction);
+            const isMessageAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
+            const isMessageAuthor = interaction.targetMessage.author.id == interaction.user.id;
+            if (!canReact && !isMessageAdmin && !isMessageAuthor) return interaction.editReply({ content: `You can't add a message to this chain!\nOnly the owner of the original message, members with the Manage Messages permission or those who can use role-locked pins can add messages to a chain.`, ephemeral: true });
+            
             const embed = await Pin.generateMessageEmbed(selectedMessage, interaction.targetMessage);
     
-            const confirmationMessage = await interaction.reply({
+            const confirmationMessage = await interaction.editReply({
                 content: `💬 Do you want to add this message to the chain?\n** **`,
                 embeds: embed,
                 components: [row],
@@ -69,9 +82,9 @@ class Chain {
                 case 'add':
                     return this.startChainCreation(interaction, selectedMessage);
                 case 'cancel':
-                    return this.cancelChainCreation(confirmationMessage);
+                    return this.cancelChainCreation(interaction);
                 default:
-                    return this.cancelChainCreation(confirmationMessage);
+                    return this.cancelChainCreation(interaction);
             }
         });
 
@@ -117,8 +130,28 @@ class Chain {
         return storedOriginalMessage;
     }
 
-    async cancelChainCreation (confirmationMessage) {
-        return confirmationMessage.delete();
+    async checkIfMemberCanPin(interaction) {
+        const guildReactables = await reactableSchema.find({
+            guildId: interaction.guild.id
+        })
+        .exec();
+
+        let roleLockedReactables = [];
+
+        for (const reactable of guildReactables) {
+            if (reactable.sendsToChannel && reactable.lockedBehindRoles) {
+                roleLockedReactables.push(reactable.lockedBehindRoles);
+                const canReact = await Reaction.checkMemberCanReact(interaction.member, reactable);
+                if (canReact) return true;
+            }
+        }
+
+        if (!roleLockedReactables.length) return true;
+        else return false;
+    }
+
+    async cancelChainCreation (interaction) {
+        return interaction.deleteReply();
     }
 }
 
