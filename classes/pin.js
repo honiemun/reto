@@ -293,7 +293,6 @@ class Pin {
     }
 
     async getDirectReply (message) {
-        console.log(message.reference);
         if (!message.reference || !message.reference.messageId) return;
         const reply = await message.channel.messages.fetch(message.reference.messageId); 
 
@@ -311,7 +310,6 @@ class Pin {
         for (const [i, chainElement] of chain.entries()) {
             previousElement = messageList[messageList.length - 1];
 
-            console.log(chain);
             const includes = await this.generateIncludesString(chainElement.message, true, false);
             const content = includes ? chainElement.message.content + "\n_" + retoEmojis.dottedLineEmoji +  " " + includes + "_": chainElement.message.content;
             
