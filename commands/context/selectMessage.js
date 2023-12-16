@@ -8,8 +8,6 @@ module.exports = {
     commandName: 'Select this message',
     type: ApplicationCommandType.Message,
 
-    testOnly: true,
-
 	callback: async ({ client, interaction }) => {
         await selectedMessageSchema.findOneAndUpdate(
             { userId: interaction.user.id },

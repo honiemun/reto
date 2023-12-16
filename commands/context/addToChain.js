@@ -8,8 +8,6 @@ module.exports = {
     commandName: 'Add to chain',
     type: ApplicationCommandType.Message,
 
-    testOnly: true,
-
 	callback: async ({ client, interaction }) => {
         await Chain.sendChainConfirmationMessage(interaction);
 	},
