@@ -38,8 +38,8 @@ jobs:
           host: ${{ secrets.HOST_IP }}
           username: ${{ secrets.HOST_USERNAME }}
           script: |
-            pm2 delete all
+            pm2 delete Reto
             cd /root/reto
             git pull
             npm install
-            pm2 start index.js
+            pm2 start "index.js" --name Reto
