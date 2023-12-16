@@ -170,7 +170,7 @@ class Personalisation {
       // Everything else
       embed.fields.push({
         "name": "You can also...",
-        "value": `- Use \`/profile\` to check your karma!`
+        "value": `- Use \`/profile\` to check your karma!\n- Fight for the top spot on the \`/leaderboard\` - on this server or throughout Reto`
       })
 
       return embed;
