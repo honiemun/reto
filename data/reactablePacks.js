@@ -1,9 +1,9 @@
 module.exports = {
     "reto": {
         "images": {
-            "plus": 'https://cdn.discordapp.com/attachments/1159661391813292072/1159663271222186064/plus.png',
-            "minus": 'https://cdn.discordapp.com/attachments/1159661391813292072/1159663270802763827/minus.png',
-            "pin": 'https://cdn.discordapp.com/attachments/1159661391813292072/1159663271020863548/pin.png'
+            "plus": './assets/reactables/plus.png',
+            "minus": './assets/reactables/minus.png',
+            "pin": './assets/reactables/pin.png'
         },
         "emoji": {
             "plus": "<:retoolplus:1164370563792375889>",
@@ -13,9 +13,9 @@ module.exports = {
     },
     "reddit": {
         "images": {
-            "plus": 'https://cdn.discordapp.com/attachments/1159661391813292072/1164743396087320646/upvote.png',
-            "minus": 'https://cdn.discordapp.com/attachments/1159661391813292072/1164736684307517470/downvote.png',
-            "pin": 'https://cdn.discordapp.com/attachments/1159661391813292072/1164736684068450305/gold.png'
+            "plus": './assets/reactables/reddit/plus.png',
+            "minus": './assets/reactables/reddit/minus.png',
+            "pin": './assets/reactables/reddit/pin.png'
         },
         "emoji": {
             "plus": "<:redditplus:1164736900637147207>",

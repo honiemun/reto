@@ -6,6 +6,7 @@ const guildSchema = require('../schemas/guild');
 
 // Data
 const reactablePacks = require('./reactablePacks');
+const emojiList = ['pin', 'plus', 'minus'];
 
 // TO-DO: Functions should be async whereever possible
 
@@ -203,7 +204,6 @@ Select an emoji from the list below to create this Reactable.`
             id: "plusReactable",
             placeholder: "Select a Plus Emoji",
             minValues: 1,
-            maxValues: 5,
             populate: function (client, guildId) {
                 // Fetch emoji
 
@@ -211,6 +211,7 @@ Select an emoji from the list below to create this Reactable.`
                 let emojis = [];
 
                 guild.emojis.cache.forEach((emoji) => {
+                    if (emojiList.includes(emoji.name)) return;
                     emojis.push({
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
@@ -286,7 +287,6 @@ Select an emoji from the list below to create this Reactable.`
             id: "minusReactable",
             placeholder: "Select a Minus Emoji",
             minValues: 1,
-            maxValues: 5,
             populate: function (client, guildId) {
                 // Fetch emoji
 
@@ -294,6 +294,7 @@ Select an emoji from the list below to create this Reactable.`
                 let emojis = [];
 
                 guild.emojis.cache.forEach((emoji) => {
+                    if (emojiList.includes(emoji.name)) return;
                     emojis.push({
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
@@ -464,7 +465,6 @@ Select an emoji from the list below to create this Reactable.`
             id: "pinReactable",
             placeholder: "Select a Pin Emoji",
             minValues: 1,
-            maxValues: 5,
             populate: function (client, guildId) {
                 // Fetch emoji
 
@@ -472,6 +472,7 @@ Select an emoji from the list below to create this Reactable.`
                 let emojis = [];
 
                 guild.emojis.cache.forEach((emoji) => {
+                    if (emojiList.includes(emoji.name)) return;
                     emojis.push({
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
@@ -547,7 +548,6 @@ Do you want to lock the Pin Reactable to a specific role?`
             id: "pinnableChannel",
             placeholder: "Create or select a Pinnable Channel",
             minValues: 1,
-            maxValues: 5,
             populate: function (client, guildId) {
                 // Fetch channels
 
@@ -564,7 +564,9 @@ Do you want to lock the Pin Reactable to a specific role?`
                     }
                 });
 
-                return roles.slice(0, 24);
+                if (roles.length > 0) {
+                    return roles.slice(0, 24);
+                }
             },
             options: [
                 {
