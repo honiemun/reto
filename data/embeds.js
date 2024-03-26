@@ -114,12 +114,12 @@ This will create for you:
                 id: "quickSetup",
                 label: "Quick setup",
                 style: ButtonStyle.Secondary,
-                nextFunction: async function(msgInt) {
-                    const guild = await guildSchema.findOne({
+                nextFunction: async function(msgInt, guild, member) {
+                    const guildDatabase = await guildSchema.findOne({
                         guildId: msgInt.guild.id
                     });
 
-                    if (guild) {
+                    if (guildDatabase) {
                         return "startFromScratch";
                     } else {
                         Setup.quickSetup(guild, member, false);

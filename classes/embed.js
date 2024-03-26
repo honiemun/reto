@@ -181,7 +181,7 @@ class Embed {
 	}
 
 	async nextTab(component, msgInt, channel, member, client) {
-		const next = component.nextFunction ? await component.nextFunction(msgInt) : component.next;
+		const next = component.nextFunction ? await component.nextFunction(msgInt, channel.guild, member) : component.next;
 		next ?
 			await this.createEmbed(next, msgInt, channel, member, client) :
 			await this.createEmbed(component.id, msgInt, channel, member, client);
