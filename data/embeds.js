@@ -118,7 +118,13 @@ This will create for you:
                     const guild = await guildSchema.findOne({
                         guildId: msgInt.guild.id
                     });
-                    return guild ? "startFromScratch" : "publicServer";
+
+                    if (guild) {
+                        return "startFromScratch";
+                    } else {
+                        Setup.quickSetup(guild, member, false);
+                        return "publicServer";
+                    }
                 },
                 disabled: false,
             }
