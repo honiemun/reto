@@ -54,14 +54,14 @@ Please, take a moment to read through our Privacy Policy! (Don't worry, it's not
                 id: "privacyPolicy",
                 label: "Privacy policy",
                 style: "Link",
-                url: "https://retobot.com/privacy-policy",
+                url: "https://retobot.com/legal/privacy-policy",
                 disabled: false
             },
             {
                 id: "termsOfService",
                 label: "Terms of service",
                 style: "Link",
-                url: "https://retobot.com/terms-of-service",
+                url: "https://retobot.com/legal/terms-of-service",
                 disabled: false
             },
         ]
