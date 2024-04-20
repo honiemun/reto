@@ -15,6 +15,6 @@ Clone to your local machine, install all dependencies using `npm i .` and run th
 You may need to create a `.env` file with your [app token and secret](https://discord.com/developers/applications), along with other optional features.
 
 ### Invite links
-A temporal [invite link](https://discord.com/api/oauth2/authorize?client_id=900470229845561385&permissions=0&scope=bot%20applications.commands) for the Retool Open Beta is available. The permissions may not be accurate.
+A temporal [invite link](https://discord.com/oauth2/authorize?client_id=900470229845561385&permissions=293400341584&scope=bot%20applications.commands) for the Retool Open Beta is available. The permissions may not be accurate.
 
 You can also visit the [Support server](https://discord.gg/PR8A88epzg) to report bugs and feature requests.

@@ -1,5 +1,5 @@
 // Dependencies
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
 
 // Data
 const brandingColors = require('../../data/brandingColors');
@@ -15,13 +15,15 @@ module.exports = async (guild) => {
         if ( channel.type === 0 &&
             channel.permissionsFor(guild.members.me).has(PermissionFlagsBits.SendMessages) &&
             !messageSent ) {
+            
+            const file = new AttachmentBuilder('./assets/logos/pfp.png');
 
             const embed = new EmbedBuilder()
             .setTitle("Welcome to Reto!")
             // TO-DO: Change after Open Beta
             .setDescription("Thank you for inviting Retool to your server! The bot is currently in Beta - keep in mind that some features might be missing or broken. If anything goes awry, check out the `/support` server!")
             .setColor(brandingColors.brightPink)
-            .setThumbnail("https://media.discordapp.net/attachments/1159661391813292072/1179564804877320212/icon.png")
+            .setThumbnail('attachment://pfp.png')
             .addFields(
                 {
                     name: '✨ Before we get started...',
@@ -50,7 +52,7 @@ module.exports = async (guild) => {
             */
 
             messageSent = true;
-            return await channel.send({ embeds: [embed] });
+            return await channel.send({ embeds: [embed], files: [file] });
 
         }
     })

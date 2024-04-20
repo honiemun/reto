@@ -67,7 +67,7 @@ client.on("ready", async () => {
 	await contextMenu.handler();
 	
 	// Warning activity if bot is being debugged
-	if (process.env.DEBUG_MODE) {
+	if (process.env.DEBUG_MODE == "true") {
 		client.user.setActivity('⚠️ Debugging! Bot may be unstable', { type: ActivityType.Custom });
 	}
 });
