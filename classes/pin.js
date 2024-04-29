@@ -135,7 +135,7 @@ class Pin {
         // Update pinned messages
         if (pinnedMessages.length > 0) {
             for (const pinnedMessage of pinnedMessages) {
-                if (reactionCount >= reactable.sendingThreshold || !isPositive || isChainUpdate) {
+                if (reactionCount >= reactable.reactionThreshold || !isPositive || isChainUpdate) {
                     iterableChannels.push({
                         id: pinnedMessage.channelId,
                         embed: pinnedMessage.pinnedEmbedId,
@@ -146,7 +146,7 @@ class Pin {
         }
         
         // Create new message
-        else if (reactable.sendsToChannel && reactionCount >= reactable.sendingThreshold) {
+        else if (reactable.sendsToChannel && reactionCount >= reactable.reactionThreshold) {
             iterableChannels.push({
                 id: reactable.sendsToChannel,
                 embed: "",

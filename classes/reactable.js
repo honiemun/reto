@@ -48,7 +48,7 @@ class Reactable {
 		collector.on('collect', async i => {
 			const reactableId = mongoose.Types.ObjectId(i.values[0]);
             
-			Personalisation.updatePinningThreshold(reactableId, interaction.options.getNumber("amount"));
+			Personalisation.updateKarmaThreshold(reactableId, interaction.options.getNumber("amount"));
 
 			await i.reply({ embeds: [ new EmbedBuilder()
 				.setColor("Green")

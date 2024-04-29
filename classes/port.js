@@ -159,7 +159,7 @@ class Port {
                             name: defaultReactable.name,
                             emojiIds: emojis,
                             karmaAwarded: defaultReactable.karmaAwarded,
-                            sendingThreshold: defaultReactable.sendingThreshold,
+                            reactionThreshold: defaultReactable.reactionThreshold,
                             lockedBehindRoles: defaultReactable.lockedBehindRoles,
                             
                             sendsToChannel: bestOf && defaultReactable.name == "pin" ? bestOf.channelid.toString() : undefined,

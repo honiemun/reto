@@ -128,6 +128,24 @@ class Setup {
         await this.saveToSetupCache("channel", channel, guild);
     }
 
+    async setKarmaThreshold (fields, guild) {
+
+        console.log("setting up karma threshold");
+        const reactable = this.SetupCache[guild.id].pin;
+
+        return await reactableSchema.findOneAndUpdate(
+            {
+                _id: reactable._id
+            },
+            {
+                $set: {
+                    karmaThreshold: fields.getTextInputValue('threshold')
+                }
+            },
+            { upsert: false }
+        ).exec();
+    }
+    
     async setRoleLock(components, guild, member) {
         const reactable = this.SetupCache[guild.id].pin; // If we added something else that uses role lock, this should be refactored
         let roleList = [];
@@ -223,7 +241,7 @@ class Setup {
                 // Add dynamic data for the Best Of
                 if (emoji.isBestOf) {
                     emoji.sendsToChannel = bestOf.id;
-                    emoji.sendingThreshold = 1;
+                    emoji.reactionThreshold = 1;
                     emoji.lockedBehindRoles.push(curator.id);
                 }
 
@@ -236,7 +254,7 @@ class Setup {
                     karmaAwarded: emoji.karmaAwarded,
                     messageConfirmation: emoji.messageConfirmation,
                     sendsToChannel: emoji.sendsToChannel,
-                    sendingThreshold: emoji.sendingThreshold,
+                    reactionThreshold: emoji.reactionThreshold,
                     lockedBehindRoles: emoji.lockedBehindRoles
                 });
         }
@@ -293,7 +311,7 @@ class Setup {
             karmaAwarded: emoji.karmaAwarded,
             messageConfirmation: emoji.messageConfirmation,
             sendsToChannel: sendsToChannel,
-            sendingThreshold: emoji.sendingThreshold,
+            reactionThreshold: emoji.reactionThreshold,
             lockedBehindRoles: emoji.lockedBehindRoles
         });
 

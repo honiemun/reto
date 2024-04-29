@@ -34,16 +34,6 @@ Please, take a moment to read through our Privacy Policy! (Don't worry, it's not
             }
         },
         components: [
-            /*
-            // TO-DO: Delete - for debugging only!!
-            {
-                id: "skipTo",
-                label: "Skip to Pin Threshold",
-                style: ButtonStyle.Primary,
-                disabled: false,
-                next: "pinThreshold"
-            },
-            */
             {
                 id: "chooseSetupType",
                 label: "Let's get started!",
@@ -386,7 +376,7 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                         guilds.push({
                             label: "#" + channel.name,
                             value: channel.id,
-                            next: "pinReactable" // "pinThreshold"
+                            next: "pinReactable"
                         })
                     }
                 });
@@ -398,55 +388,13 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                     label: "Create a new channel (#best-of)",
                     value: "createBestOf",
                     emoji: "✨",
-                    next: "pinReactable" // "pinThreshold"
+                    next: "pinReactable"
                 }
             ],
-            function: function(components, guild) { Setup.setPinnableChannel(components, guild); }
+            function: function(components, guild) {
+                Setup.setPinnableChannel(components, guild); }
         },
         
-    },
-    // TO-DO: Pin Thresholds are currently not in use!
-    {
-        id: "pinThreshold",
-        embed: {
-            color: 0,
-            title: "Create a Pinning Threshold",
-            description: `
-With a Pinning Threshold, any member of your server can use your Karma-giving Reactables to send messages to the Pinnable Channel you've created.
-
-This is similar to _Starboard_ functions in other bots.`
-        },
-        components: [
-            {
-                id: "setThreshold",
-                label: "Set a Threshold",
-                style: ButtonStyle.Primary,
-                next: "pinReactable",
-                disabled: false,
-                modal: {
-                    id: "thresholdModal",
-                    title: "Set a Threshold",
-                    next: "pinReactable",
-                    inputs: [
-                        {
-                            id: "threshold",
-                            label: "Pinning Threshold",
-                            placeholder: "How much Karma is needed to pin a message?",
-                            required: true,
-                            longForm: false,
-                            validation: "number"
-                        }
-                    ]
-                }
-            },
-            {
-                id: "plusSkip",
-                label: "Skip",
-                style: ButtonStyle.Secondary,
-                next: "pinReactable",
-                disabled: false
-            }
-        ],
     },
     {
         id: "pinReactable",
@@ -483,7 +431,7 @@ Select an emoji from the list below to create this Reactable.`
                         label: ":" + emoji.name + ":",
                         value: emoji.id,
                         emoji: "<:" + emoji.name + ":" + emoji.id + ">",
-                        next: "pinReactableRoles"
+                        next: "pinThreshold"
                     })
                 });
 
@@ -494,42 +442,85 @@ Select an emoji from the list below to create this Reactable.`
                     label: "Reto (recommended)",
                     value: "reto",
                     emoji: reactablePacks.reto.emoji.pin,
-                    next: "pinReactableRoles"
+                    next: "pinThreshold"
                 },
                 {
                     label: "Star",
                     value: "⭐",
                     emoji: "⭐",
-                    next: "pinReactableRoles"
+                    next: "pinThreshold"
                 },
                 {
                     label: "Glowing Star",
                     value: "\uD83C\uDF1F",
                     emoji: "\uD83C\uDF1F",
-                    next: "pinReactableRoles"
+                    next: "pinThreshold"
                 },
                 {
                     label: "Pin",
                     value: "\uD83D\uDCCC",
                     emoji: "\uD83D\uDCCC",
-                    next: "pinReactableRoles"
+                    next: "pinThreshold"
                 },
                 {
                     label: "Round Pin",
                     value: "\uD83D\uDCCD",
                     emoji: "\uD83D\uDCCD",
-                    next: "pinReactableRoles"
+                    next: "pinThreshold"
                 },
                 {
                     label: "Reddit",
                     value: "reddit",
                     emoji: reactablePacks.reddit.emoji.pin,
-                    next: "pinReactableRoles"
+                    next: "pinThreshold"
                 },
             ],
             function: function(components, guild) { Setup.createCustomReactable("pin", components, guild); }
         }
 
+    },
+    {
+        id: "pinThreshold",
+        embed: {
+            color: 0,
+            title: "Create a Pinning Threshold",
+            description: `
+With a Pinning Threshold, any member of your server can use your Karma-giving Reactables to send messages to the Pinnable Channel you've created.
+
+This is similar to _Starboard_ functions in other bots.`
+        },
+        components: [
+            {
+                id: "setThreshold",
+                label: "Set a Threshold",
+                style: ButtonStyle.Primary,
+                next: "pinReactableRoles",
+                disabled: false,
+                modal: {
+                    id: "thresholdModal",
+                    title: "Set a Threshold",
+                    next: "pinReactableRoles",
+                    inputs: [
+                        {
+                            id: "threshold",
+                            label: "Pinning Threshold",
+                            placeholder: "How much Karma is needed to pin a message?",
+                            required: true,
+                            longForm: false,
+                            validation: "number"
+                        }
+                    ],
+                },
+                function: function(components, guild) { Setup.setKarmaThreshold(components, guild); }
+            },
+            {
+                id: "plusSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "pinReactable",
+                disabled: false
+            },
+        ],
     },
     {
         id: "pinReactableRoles",
@@ -657,21 +648,26 @@ Thank you for using Reto!`,
                     "inline": false,
                     "value": "[Join the support server](" + process.env.SUPPORT_SERVER + ") if you've got any issues, to report bugs or suggest features!"
                 },
+                // TO-DO: Add Reto Gold
+                /*
                 {
                     "name": "🌟 Go Beyond",
                     "inline": false,
                     "value": "If you enjoy Reto, consider becoming a **Reto Gold** member to gain exclusive access to more customization features and support Reto's development!"
                 }
+                */
             ]
         },
 
         components: [
+            /*
             {
                 id: "retoGold",
                 label: "Go Gold",
                 style: ButtonStyle.Link,
                 url: "https://retobot.com/gold"
             },
+            */
             {
                 id: "supportServer",
                 label: "Support server",

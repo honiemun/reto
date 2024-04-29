@@ -86,11 +86,11 @@ class Personalisation {
       .exec();
     }
 
-    async updatePinningThreshold(reactableId, sendingThreshold) {
+    async updateKarmaThreshold(reactableId, reactionThreshold) {
       await reactableSchema.findOneAndUpdate(
         { _id: reactableId },
         { $set : {
-          'sendingThreshold' : sendingThreshold
+          'reactionThreshold' : reactionThreshold
           }
         },
         { upsert: false }
@@ -144,10 +144,10 @@ class Personalisation {
         }
 
         // Sent to channel(s)
-        if (reactable.sendsToChannel && reactable.sendingThreshold == 1) {
+        if (reactable.sendsToChannel && reactable.reactionThreshold == 1) {
           tutorial.push("- This reaction sends your message to the <#" + reactable.sendsToChannel + "> channel!");
-        } else if (reactable.sendsToChannel && reactable.sendingThreshold > 1) {
-          tutorial.push("- Getting this reaction " + reactable.sendingThreshold + " or more times sends your message to the <#" + reactable.sendsToChannel + "> channel!");
+        } else if (reactable.sendsToChannel && reactable.reactionThreshold > 1) {
+          tutorial.push("- Getting this reaction " + reactable.reactionThreshold + " or more times sends your message to the <#" + reactable.sendsToChannel + "> channel!");
         }
 
         // Multiple emoji

@@ -129,22 +129,29 @@ class Embed {
 		const filter = (i) => i.user.id === member.id
 		const time = 1000 * 60 * 5
 
-		const collector = embed.createMessageComponentCollector({ filter, max: 1, time })
+		const collector = embed.createMessageComponentCollector({ filter, max: 1, time });
 
 		// Add a listener to the collector
 		collector.on('collect', async (i) => {
 			if (!i) return;
-			await i.deferUpdate();
 			
-			// Buttons (components)
+			// Modals
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
 					// Modals
 					if (component.modal) {
-						await this.createModal(component.modal, i, msgInt, channel, member, client);
+						await this.createModal(component.modal, i, currentSetup, msgInt, channel, member, client);
 						return;
 					}
+				}
+			}
 
+			// Modals can't be deferred, so we're executing this after that check
+			await i.deferUpdate();
+
+			// Buttons (components)
+			for (let component of currentSetup.components) {
+				if (component.id === i.customId) {
 					await this.selectCollectorOption(component, i, currentSetup, msgInt, channel, member, client);
 					return;
 				}
@@ -187,7 +194,7 @@ class Embed {
 			await this.createEmbed(component.id, msgInt, channel, member, client);
 	}
 
-	async createModal(modal, interaction, msgInt, channel, member, client) {
+	async createModal(modal, interaction, currentSetup, msgInt, channel, member, client) {
 		// Generate modal
 		const modalBuilder = new ModalBuilder()
 			.setCustomId(modal.id)
@@ -214,10 +221,10 @@ class Embed {
 		await interaction.showModal(modalBuilder);
 
 		// Await for a response
-		await this.modalCollector(modal, msgInt, channel, member, client);
+		await this.modalCollector(modal, msgInt, currentSetup, channel, member, client);
 	}
 
-	async modalCollector(modal, msgInt, channel, member, client) {
+	async modalCollector(modal, msgInt, currentSetup, channel, member, client) {
 		client.on(Events.InteractionCreate, async interaction => {
 			if (!interaction.isModalSubmit()) return;
 
@@ -229,7 +236,7 @@ class Embed {
 
 				// Retry if the validation fails
 				if (validation) {
-					await this.generateModalRetry(modal, validation, interaction, msgInt, channel, member, client)
+					await this.generateModalRetry(modal, validation, interaction, currentSetup, msgInt, channel, member, client)
 					return;
 				}
 
@@ -241,7 +248,10 @@ class Embed {
 				await this.nextTab(modal, msgInt, channel, member, client);
 			}
 
-			// TO-DO: Execute function
+			// Execute function
+			const modalSetup = currentSetup.components.find(x => x.modal.id === modal.id);
+			if (!modalSetup) return;
+			if (modalSetup.function) modalSetup.function(interaction.fields, channel.guild);
 		});		
 	}
 
@@ -251,7 +261,7 @@ class Embed {
 
 		switch (input.validation) {
 			case "number":
-				if (isNaN(value)) return await this.createErrorEmbed("The `" + input.label + "` element is not a number.");
+				if (isNaN(value)) return await this.createErrorEmbed("The `" + input.label + "` element is not a number.\n> Retries are currently unavailable. Please restart `?setup`."); // TO-DO: Remove this once usable!
 				break;
 			/*
 			// We can't really write emoji on a modal
@@ -267,34 +277,47 @@ class Embed {
 		}
 	}
 
-	async generateModalRetry(modal, validation, interaction, msgInt, channel, member, client) {
+	async generateModalRetry(modal, validation, interaction, currentSetup, msgInt, channel, member, client) {
 		// Create retry button
 		const retry = new ButtonBuilder()
 		.setLabel("Retry")
 		.setStyle(ButtonStyle.Primary)
-		.setCustomId("retry");
+		.setCustomId("retry")
+		.setDisabled(true); // TO-DO: Please enable this when it does work!!
 		
 		// Send error embed
-		const modalRetry = await interaction.reply({
-			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ]
-		})
-
-		// Create collector
-		const collector = modalRetry.createMessageComponentCollector({
-			max: 1,
-			time: 1000 * 60 * 5,
-		})
-
-		// Add a listener to the collector
-		collector?.on('collect', async (i) => {
-			await this.createModal(modal, i, msgInt, channel, member, client);
-			return;
-		})
-
-		// On collector end, remove all buttons
-		collector?.on('end', (collected, reason) => {
-			interaction.editReply({ components: [] });
+		/*
+		
+		await interaction.reply({
+			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ], fetchReply: true 
+		}).then((embed) => {
+			this.createCollector(currentSetup, embed, msgInt, channel, member, client);
 		});
+		
+		*/
+
+		// Doing it manually - Modals are fickle things, and using the usual methods kind of breaks everything!
+		await interaction.reply({
+			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ], fetchReply: true 
+		}).then((embed) => {
+			// Create collector
+			const collector = embed.createMessageComponentCollector({
+				max: 1,
+				time: 1000 * 60 * 5,
+			})
+	
+			// Add a listener to the collector
+			collector?.on('collect', async (i) => {
+				await this.createModal(modal, i, msgInt, currentSetup, channel, member, client);
+				return;
+			})
+	
+			// On collector end, remove all buttons
+			collector?.on('end', (collected, reason) => {
+				interaction.editReply({ components: [] });
+			});
+		});
+
 	}
 	
     async createErrorEmbed(reason) {
