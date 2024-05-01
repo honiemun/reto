@@ -1,11 +1,13 @@
 const { Guild, GuildMember, ButtonStyle } = require("discord.js");
-const Setup = require("../classes/setup")
+const Setup = require("../classes/setup");
+const Personalisation = require("../classes/personalisation");
 
 // Schema
 const guildSchema = require('../schemas/guild');
 
 // Data
 const reactablePacks = require('./reactablePacks');
+const retoEmojis = require('./retoEmojis');
 const emojiList = ['pin', 'plus', 'minus'];
 
 // TO-DO: Functions should be async whereever possible
@@ -71,7 +73,7 @@ Want to customise Reto to the fullest?
 Use the Advanced wizard to make the bot your own!
 
 - Choose if you want the default **Plus** and/or **Minus** Reactables.
-- Create an optional \`#best-of\` channel, and send messages to it using a **Pin** Reactable.
+- Create an optional \`#best-of\` channel, and send messages to it using an amount of **Karma** or a **Pin** Reactable.
 - Set up your own server-specific Karma.
 - Send a confirmation message or reaction each time someone uses a Reactable.`
                 },
@@ -185,7 +187,10 @@ All of these Reactables are optional, and you can customize their functionality 
             description: `
 > The **Plus** reactable adds \`+1\` to the Karma of anyone you react to.
 
-Select an emoji from the list below to create this Reactable.`
+Select an emoji from the list below to create this Reactable.`,
+            footer: {
+                text: "[1/2] Plus and Minus"
+            }
         },
         components: [
             {
@@ -268,7 +273,10 @@ Select an emoji from the list below to create this Reactable.`
             description: `
 > The **Minus** reactable adds \`-1\` to the Karma of anyone you react to.
 
-Select an emoji from the list below to create this Reactable.`
+Select an emoji from the list below to create this Reactable.`,
+            footer: {
+                text: "[2/2] Plus and Minus"
+            }
         },
         components: [
             {
@@ -351,14 +359,17 @@ Select an emoji from the list below to create this Reactable.`
             description: `
 With Reto, you can send extra-special messages to a special, _Pinnable Channel_, by using a special Reactable or after it passing a Karma Amount.
 
-Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel below.`
+Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel below.`,
+            footer: {
+                text: "[1/4] Pinning"
+            }
         },
         components: [
             {
                 id: "pinChannelSkip",
                 label: "Skip",
                 style: ButtonStyle.Secondary,
-                next: "publicServer",
+                next: "karmaName",
                 disabled: false
             }
         ],
@@ -376,7 +387,7 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                         guilds.push({
                             label: "#" + channel.name,
                             value: channel.id,
-                            next: "pinReactable"
+                            next: "pinThreshold"
                         })
                     }
                 });
@@ -388,122 +399,43 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                     label: "Create a new channel (#best-of)",
                     value: "createBestOf",
                     emoji: "✨",
-                    next: "pinReactable"
+                    next: "pinThreshold"
                 }
             ],
             function: function(components, guild) {
-                Setup.setPinnableChannel(components, guild); }
+                Setup.setPinnableChannel(components, guild);
+            }
         },
         
-    },
-    {
-        id: "pinReactable",
-        embed: {
-            color: 0,
-            title: "Setting up the Pin reactable",
-            description: `
-> The **Pin** reactable immediately sends a message to the Pinnable Channel you've assigned.
-
-Select an emoji from the list below to create this Reactable.`
-        },
-        components: [
-            {
-                id: "pinSkip",
-                label: "Skip",
-                style: ButtonStyle.Secondary,
-                next: "publicServer",
-                disabled: false
-            }
-        ],
-        selector: {
-            id: "pinReactable",
-            placeholder: "Select a Pin Emoji",
-            minValues: 1,
-            populate: function (client, guildId) {
-                // Fetch emoji
-
-                const guild = client.guilds.cache.get(guildId);
-                let emojis = [];
-
-                guild.emojis.cache.forEach((emoji) => {
-                    if (emojiList.includes(emoji.name)) return;
-                    emojis.push({
-                        label: ":" + emoji.name + ":",
-                        value: emoji.id,
-                        emoji: "<:" + emoji.name + ":" + emoji.id + ">",
-                        next: "pinThreshold"
-                    })
-                });
-
-                return emojis.slice(0, 18);
-            },
-            options: [
-                {
-                    label: "Reto (recommended)",
-                    value: "reto",
-                    emoji: reactablePacks.reto.emoji.pin,
-                    next: "pinThreshold"
-                },
-                {
-                    label: "Star",
-                    value: "⭐",
-                    emoji: "⭐",
-                    next: "pinThreshold"
-                },
-                {
-                    label: "Glowing Star",
-                    value: "\uD83C\uDF1F",
-                    emoji: "\uD83C\uDF1F",
-                    next: "pinThreshold"
-                },
-                {
-                    label: "Pin",
-                    value: "\uD83D\uDCCC",
-                    emoji: "\uD83D\uDCCC",
-                    next: "pinThreshold"
-                },
-                {
-                    label: "Round Pin",
-                    value: "\uD83D\uDCCD",
-                    emoji: "\uD83D\uDCCD",
-                    next: "pinThreshold"
-                },
-                {
-                    label: "Reddit",
-                    value: "reddit",
-                    emoji: reactablePacks.reddit.emoji.pin,
-                    next: "pinThreshold"
-                },
-            ],
-            function: function(components, guild) { Setup.createCustomReactable("pin", components, guild); }
-        }
-
     },
     {
         id: "pinThreshold",
         embed: {
             color: 0,
-            title: "Create a Pinning Threshold",
+            title: "Create a Pin Threshold",
             description: `
-With a Pinning Threshold, any member of your server can use your Karma-giving Reactables to send messages to the Pinnable Channel you've created.
+With a Pin Threshold, a message will be sent to the Pinnable Channel you've created after it's gained a certain amount of Karma.
 
-This is similar to _Starboard_ functions in other bots.`
+This is similar to _Starboard_ functions in other bots.`,
+            footer: {
+                text: "[2/4] Pinning"
+            }
         },
         components: [
             {
                 id: "setThreshold",
                 label: "Set a Threshold",
                 style: ButtonStyle.Primary,
-                next: "pinReactableRoles",
+                next: "pinReactable",
                 disabled: false,
                 modal: {
                     id: "thresholdModal",
                     title: "Set a Threshold",
-                    next: "pinReactableRoles",
+                    next: "pinReactable",
                     inputs: [
                         {
                             id: "threshold",
-                            label: "Pinning Threshold",
+                            label: "Pin Threshold",
                             placeholder: "How much Karma is needed to pin a message?",
                             required: true,
                             longForm: false,
@@ -523,6 +455,91 @@ This is similar to _Starboard_ functions in other bots.`
         ],
     },
     {
+        id: "pinReactable",
+        embed: {
+            color: 0,
+            title: "Setting up the Pin reactable",
+            description: `
+> The **Pin** reactable immediately sends a message to the Pinnable Channel you've assigned.
+
+Select an emoji from the list below to create this Reactable.`,
+            footer: {
+                text: "[3/4] Pinning"
+            }
+        },
+        components: [
+            {
+                id: "pinSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "karmaName",
+                disabled: false
+            }
+        ],
+        selector: {
+            id: "pinReactable",
+            placeholder: "Select a Pin Emoji",
+            minValues: 1,
+            populate: function (client, guildId) {
+                // Fetch emoji
+
+                const guild = client.guilds.cache.get(guildId);
+                let emojis = [];
+
+                guild.emojis.cache.forEach((emoji) => {
+                    if (emojiList.includes(emoji.name)) return;
+                    emojis.push({
+                        label: ":" + emoji.name + ":",
+                        value: emoji.id,
+                        emoji: "<:" + emoji.name + ":" + emoji.id + ">",
+                        next: "pinReactableRoles"
+                    })
+                });
+
+                return emojis.slice(0, 18);
+            },
+            options: [
+                {
+                    label: "Reto (recommended)",
+                    value: "reto",
+                    emoji: reactablePacks.reto.emoji.pin,
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Star",
+                    value: "⭐",
+                    emoji: "⭐",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Glowing Star",
+                    value: "\uD83C\uDF1F",
+                    emoji: "\uD83C\uDF1F",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Pin",
+                    value: "\uD83D\uDCCC",
+                    emoji: "\uD83D\uDCCC",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Round Pin",
+                    value: "\uD83D\uDCCD",
+                    emoji: "\uD83D\uDCCD",
+                    next: "pinReactableRoles"
+                },
+                {
+                    label: "Reddit",
+                    value: "reddit",
+                    emoji: reactablePacks.reddit.emoji.pin,
+                    next: "pinReactableRoles"
+                },
+            ],
+            function: function(components, guild) { Setup.createCustomReactable("pin", components, guild); }
+        }
+    },
+    {
         id: "pinReactableRoles",
         embed: {
             color: 0,
@@ -530,14 +547,17 @@ This is similar to _Starboard_ functions in other bots.`
             description: `
 With the Pin Reactable, any person can send any message to the Pinnable Channel. It's recommended you set it up so only people with high server roles have access to it.
 
-Do you want to lock the Pin Reactable to a specific role?`
+Do you want to lock the Pin Reactable to a specific role?`,
+            footer: {
+                text: "[4/4] Pinning"
+            }
         },
         components: [
             {
                 id: "pinRoleSkip",
                 label: "Don't add a role lock",
                 style: ButtonStyle.Secondary,
-                next: "publicServer",
+                next: "karmaName",
                 disabled: false
             }
         ],
@@ -556,7 +576,7 @@ Do you want to lock the Pin Reactable to a specific role?`
                         roles.push({
                             label: "@" + role.name,
                             value: role.id,
-                            next: "publicServer"
+                            next: "karmaName"
                         })
                     }
                 });
@@ -570,10 +590,115 @@ Do you want to lock the Pin Reactable to a specific role?`
                     label: "Create a new role (@Curator)",
                     value: "createCurator",
                     emoji: "✨",
-                    next: "publicServer"
+                    next: "karmaName"
                 }
             ],
             function: function(components, guild, member) { Setup.setRoleLock(components, guild, member); }
+        }
+    },
+    {
+        id: "karmaName",
+        embed: {
+            color: 0,
+            title: "Set your server's Karma Name",
+            description: `
+Every server has their own Karma counter! Feel free to change how this server's Karma is displayed.
+
+You can also skip this step, and we'll use your server's name as the default.`,
+            footer: {
+                text: "[1/2] Karma"
+            }
+        },
+        components: [
+            {
+                id: "setKarmaName",
+                label: "Rename",
+                style: ButtonStyle.Primary,
+                next: "karmaEmoji",
+                disabled: false,
+                modal: {
+                    id: "karmaNameModal",
+                    title: "Set a Karma Name",
+                    next: "karmaEmoji",
+                    inputs: [
+                        {
+                            id: "karmaName",
+                            label: "Name",
+                            placeholder: "What do you want to name this server's Karma?",
+                            required: true,
+                            longForm: false
+                        }
+                    ],
+                },
+                function: function(components, guild) { Personalisation.changeGuildKarmaName(guild.id, components.getTextInputValue('karmaName')) }
+            },
+            {
+                id: "karmaNameSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "publicServer",
+                disabled: false
+            },
+        ],
+    },
+    {
+        id: "karmaEmoji",
+        embed: {
+            color: 0,
+            title: "Set your server's Karma Emoji",
+            description: `
+Alongside your Karma's name, we also use an Emoji as a short-hand icon.
+
+Select an emoji from your server from the list below, or skip this step to use the default.
+You can also use Discord default emoji after the Setup using \`/karma emoji set\`.`,
+            footer: {
+                text: "[2/2] Karma"
+            }
+        },
+        components: [
+            {
+                id: "karmaEmojiSkip",
+                label: "Skip",
+                style: ButtonStyle.Secondary,
+                next: "publicServer",
+                disabled: false
+            }
+        ],
+        selector: {
+            id: "karmaReactable",
+            placeholder: "Select a Karma Emoji",
+            minValues: 1,
+            populate: function (client, guildId) {
+                // Fetch emoji
+
+                const guild = client.guilds.cache.get(guildId);
+                let emojis = [];
+
+                guild.emojis.cache.forEach((emoji) => {
+                    if (emojiList.includes(emoji.name)) return;
+                    emojis.push({
+                        label: ":" + emoji.name + ":",
+                        value: emoji.id,
+                        emoji: "<:" + emoji.name + ":" + emoji.id + ">",
+                        next: "publicServer"
+                    })
+                });
+
+                return emojis.slice(0, 18);
+            },
+            options: [
+                {
+                    label: "Reto",
+                    value: "reto",
+                    emoji: retoEmojis.karmaEmoji,
+                    next: "publicServer"
+                }
+            ],
+            function: function(components, guild) {
+                let karmaEmoji = components[0];
+                if (karmaEmoji == "reto") karmaEmoji = null;
+                Personalisation.changeGuildKarmaEmoji(guild.id, components[0]);
+            }
         }
     },
     {
@@ -585,6 +710,9 @@ Do you want to lock the Pin Reactable to a specific role?`
 With Reto, you can find the top-voted messages in every Public server the bot is in using \`/discover\` - and check out the Global Post Leaderboards to see the best messages throughout all Discord!
 
 If you'd like the best posts from this server to be featured for anyone to find, you can set it as **Public**. If this is a private server, you might want to opt-out and set it as **Private**.`,
+            footer: {
+                text: "[1/2] Server setup"
+            }
         },
         components: [
             {
@@ -612,6 +740,9 @@ If you'd like the best posts from this server to be featured for anyone to find,
 Reto is constantly being updated with new commands and features!
 
 If you'd like to hear what's new in Reto *(once a month, don't worry!)*, consider **Subscribing** to hear the latest news in your Pinnable Channel. Otherwise, we'll send minimal updates whenever there's critical information or major Events.`,
+            footer: {
+                text: "[2/2] Server setup"
+            }
         },
         components: [
             {

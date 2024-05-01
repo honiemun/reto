@@ -4,6 +4,7 @@ const { ChannelType, PermissionsBitField } = require('discord.js');
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
 const autoreactSchema = require('../schemas/autoreact');
+const pinThresholdSchema = require('../schemas/pinThreshold');
 
 // Data
 const defaultReactables = require('../data/defaultReactables');
@@ -130,19 +131,20 @@ class Setup {
 
     async setKarmaThreshold (fields, guild) {
 
-        console.log("setting up karma threshold");
-        const reactable = this.SetupCache[guild.id].pin;
+        const pinnableChannel = this.SetupCache[guild.id].channel;
 
-        return await reactableSchema.findOneAndUpdate(
+        console.log(fields.getTextInputValue('threshold'));
+        return await pinThresholdSchema.findOneAndUpdate(
             {
-                _id: reactable._id
+                guildId: guild.id,
+                channelId: pinnableChannel
             },
             {
                 $set: {
-                    karmaThreshold: fields.getTextInputValue('threshold')
+                    karma: fields.getTextInputValue('threshold')
                 }
             },
-            { upsert: false }
+            { upsert: true }
         ).exec();
     }
     

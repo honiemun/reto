@@ -19,6 +19,9 @@ module.exports = {
 	],
 
 	options: [
+        // TO-DO: Check if this should go in Reactable instead,
+        // in preparation for Pin Thresholds, which are decoupled from Reactables.
+        // /reactable threshold
         {
             name: "amount",
             description: "Sets the amount of reactions needed on a reactable to pin a message. [Reto Gold]",
