@@ -50,20 +50,15 @@ class Profile {
         
         let embed = {
             "title": username,
-            "description": '`' + user.username + '`',
+            "description": '`@' + user.username + '`',
             "thumbnail": {
                 "url":  user.avatarURL({ format: "png" })
             },
             "fields": [
                 {
-                    "name": "*Karma*",
+                    "name": "Karma",
                     "value": "** **",
                     "inline": false
-                },
-                {
-                    "name": retoEmojis.karmaEmoji + " Global Karma",
-                    "value": '```' + globalKarma + '```',
-                    "inline": true
                 }
             ]
         }
@@ -102,6 +97,7 @@ class Profile {
             const guildKarmaData = await Personalisation.getGuildKarmaData(member.guild)
             const localKarma = memberDatabase && memberDatabase.karma != undefined ? memberDatabase.karma : "0"
             
+            // Guild Karma
             embed.fields.push({
                 "name": guildKarmaData.emoji + ' ' + guildKarmaData.name,
                 "value": "```" + localKarma + "```",
@@ -109,19 +105,21 @@ class Profile {
             })
         }
 
+        embed.fields.push({
+                "name": retoEmojis.karmaEmoji + " Global Karma",
+                "value": '```' + globalKarma + '```',
+                "inline": true
+        })
+
         // Rankings
         globalRanking = userDatabase && userDatabase.ranking != undefined ? userDatabase.ranking : "N/A"
         embed.fields.push({
-            "name": "*Rank*",
+            "name": "Rank",
             "value": "** **",
             "inline": false
-        },
-        {
-            "name": '🌐 Global Rank',
-            "value": "```" + globalRanking + "```",
-            "inline": true
         })
         
+        // Guild Rank
         if (isOnGuild) {
             localRanking = memberDatabase && memberDatabase.ranking != undefined ? memberDatabase.ranking : "N/A"
             embed.fields.push({
@@ -131,10 +129,17 @@ class Profile {
             })
         }
 
+        // Global Rank
+        embed.fields.push({
+            "name": '🌐 Global Rank',
+            "value": "```" + globalRanking + "```",
+            "inline": true
+        })
+
         // Badges
 
         embed.fields.push({
-            "name": "*Badges*",
+            "name": "Badges",
             "value": "** **",
             "inline": false
         })

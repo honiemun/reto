@@ -20,6 +20,7 @@ module.exports = [
         karmaAwarded: 0,
         isBestOf: true,
         sendsToChannel: '',
+        reactionThreshold: 1,
         lockedBehindRoles: [],
     }
 ]

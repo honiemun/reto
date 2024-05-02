@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { CommandType } = require("wokcommands");
+const reactableSchema = require("../../schemas/reactable");
 
 module.exports = {
 	category: 'Testing',

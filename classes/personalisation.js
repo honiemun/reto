@@ -7,6 +7,7 @@ const Parsing = require("../classes/parsing");
 // Schemas
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
+const pinThresholdSchema = require('../schemas/pinThreshold');
 
 class Personalisation {
 
@@ -116,6 +117,11 @@ class Personalisation {
       })
       .exec();
 
+      const pinThresholdDocument = await pinThresholdSchema.find({
+        guildId: guild.id
+      })
+      .exec();
+
       const guildKarma = await this.getGuildKarmaData(guild)
 
       let embed = {
@@ -125,6 +131,7 @@ class Personalisation {
           "fields": []
       }
 
+      // Reactables
       for (const reactable of reactableDocument) {
         let tutorial = []
 
@@ -164,8 +171,21 @@ class Personalisation {
         })
       }
 
-      // TO-DO: Support for Democracy Mode
-      //                    Awardable Roles
+      // Pin Thresholds
+      let thresholdTutorial = []
+      for (const pinThreshold of pinThresholdDocument) {
+        if (!pinThreshold.channelId || !pinThreshold.karma) return;
+        thresholdTutorial.push("- Messages with `" + (pinThreshold.karma<0?"":"+") + pinThreshold.karma + "` " + guildKarma.emoji + " will be sent to the <#" + pinThreshold.channelId + "> channel!");
+      }
+
+      if (thresholdTutorial.length) {
+        embed.fields.push({
+          "name": guildKarma.emoji + " " + guildKarma.name,
+          "value": thresholdTutorial.join("\n")
+        })
+      }
+
+      // TO-DO: Support for Awardable Roles
 
       // Everything else
       embed.fields.push({

@@ -5,6 +5,7 @@ const messageSchema = require('../schemas/message');
 const pinnedEmbedSchema = require('../schemas/pinnedEmbed');
 const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
+const pinThresholdSchema = require('../schemas/pinThreshold');
 
 // Classes
 const ReactionCheck = require("./reactionCheck")
@@ -44,12 +45,25 @@ class Pin {
         const karmaString    = await this.getKarmaTotalString(message, messageDocument);
         
         // Get the channel to send/edit the message into
-        const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, isPositive, isChainUpdate);
+        const reactionCount = await this.getReactionCount(reactable, message);
+        const pinThresholds = await pinThresholdSchema.find({
+            guildId: message.guildId
+        }).exec();
+        const matchingThreshold = await this.getMatchingPinThreshold(pinThresholds, message, messageDocument, true);
+
+        const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, reactionCount, pinThresholds, isPositive, isChainUpdate);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
-            // Delete embeds
-            if (!isPositive) {
+            // Delete embeds, if the Reactable's Reaction Threshold is not met
+            // or if the Pin Threshold is lesser or greater than the current Karma amount
+            if (reactable.sendsToChannel) {
+                console.log(reactable.reactionThreshold);
+                console.log(reactionCount);
+            }
+            if (!isPositive &&
+                (reactable.sendsToChannel && reactable.reactionThreshold < reactionCount ||
+                matchingThreshold)) {
                 this.deletePinnedEmbed(iterableChannel, client);
                 continue;
             }
@@ -107,7 +121,8 @@ class Pin {
         await databaseMessage.deleteOne();
 
         // Delete all pinned messages (database and Discord)
-        const iterableChannels = await this.getIterableChannels(message, databaseMessage, false, false, false);
+        //const reactionCount = await this.getReactionCount(reactable, message);
+        const iterableChannels = await this.getIterableChannels(message, databaseMessage, false, false, false, false, false);
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
@@ -116,21 +131,12 @@ class Pin {
 
     }
 
-    async getIterableChannels(message, dbMessage, reactable, isPositive, isChainUpdate = false) {
+    async getIterableChannels(message, dbMessage, reactable, reactionCount, pinThresholds, isPositive, isChainUpdate = false) {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
-        let iterableChannels = [];
-        
-        // Add to list if message has enough reactions
-        let reactionCount = 0;
+        let matchingThreshold = null; 
+        if (pinThresholds) matchingThreshold = await this.getMatchingPinThreshold(pinThresholds, message, dbMessage);
 
-        if (reactable) {
-            for (const emojiId of reactable.emojiIds) {
-                // TO-DO: What happens if it's not in cache?!
-                const reaction = message.reactions.cache.get(emojiId)
-                if (!reaction) continue;
-                reactionCount += reaction.count;
-            }
-        }
+        let iterableChannels = [];
 
         // Update pinned messages
         if (pinnedMessages.length > 0) {
@@ -145,10 +151,19 @@ class Pin {
             }
         }
         
-        // Create new message
+        // Create new message [if this is a Channel-sending Reactable]
         else if (reactable.sendsToChannel && reactionCount >= reactable.reactionThreshold) {
             iterableChannels.push({
                 id: reactable.sendsToChannel,
+                embed: "",
+                edit: false
+            });
+        }
+
+        // Create new message [if a Pin Threshold is passed]
+        else if (matchingThreshold) {
+            iterableChannels.push({
+                id: matchingThreshold.channelId,
                 embed: "",
                 edit: false
             });
@@ -565,6 +580,54 @@ class Pin {
         }
 
         return fields;
+    }
+
+    async getReactionCount (reactable, message) {
+        // Add to list if message has enough reactions
+        let reactionCount = 0;
+
+        if (reactable) {
+            for (const emojiId of reactable.emojiIds) {
+                // TO-DO: What happens if it's not in cache?!
+                const reaction = message.reactions.cache.get(emojiId)
+                if (!reaction) continue;
+                reactionCount += reaction.count;
+            }
+        }
+
+        return reactionCount;
+    }
+
+    async getMatchingPinThreshold (pinThresholds, message, dbMessage, isLesserOrGreater = false) {
+        if (!dbMessage) return;
+
+        let matchingThreshold = null;
+        if (!isLesserOrGreater) matchingThreshold = pinThresholds.find(threshold => threshold.karma === dbMessage.karma);
+
+        else {
+            // Used to determine if a message has more or less Karma than the Pin Threshold.
+            // This is important because the amount of Karma in a Threshold can be positive or negative!
+            matchingThreshold = pinThresholds.find(threshold => {
+                if (dbMessage.karma > 0 && dbMessage.karma < threshold.karma) {
+                    return true;
+                } else if (dbMessage.karma < 0 && dbMessage.karma > threshold.karma) {
+                    return true;
+                }
+                
+                return false;
+            });
+        }
+
+        return matchingThreshold;
+    }
+
+    async deletePinThreshold (channel) {
+		await pinThresholdSchema.deleteMany(
+			{
+				channelId: channel.id,
+				guildId: channel.guild.id
+			},
+		).exec();
     }
 }
 

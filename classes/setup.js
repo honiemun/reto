@@ -133,7 +133,6 @@ class Setup {
 
         const pinnableChannel = this.SetupCache[guild.id].channel;
 
-        console.log(fields.getTextInputValue('threshold'));
         return await pinThresholdSchema.findOneAndUpdate(
             {
                 guildId: guild.id,
@@ -317,9 +316,6 @@ class Setup {
             lockedBehindRoles: emoji.lockedBehindRoles
         });
 
-        console.log(emojiIds);
-        console.log(reactable);
-
         // Save to cache
         await this.saveToSetupCache(reactableType, reactable, guild);
     }
@@ -330,7 +326,6 @@ class Setup {
         }
 
         this.SetupCache[guild.id][key] = value;
-        console.log(this.SetupCache); // TO-DO: Remove !!
     }
     
     async assignRoleToUser (role, member) {

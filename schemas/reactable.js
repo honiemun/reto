@@ -36,7 +36,7 @@ const reactableSchema = new mongoose.Schema({
 		type: String,
 		required: false
 	},
-
+	
 	// If sendsToChannel is set, this determines how many reactions are needed to send this message.
 	reactionThreshold: {
 		type: Number,

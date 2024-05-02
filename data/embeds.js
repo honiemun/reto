@@ -63,7 +63,9 @@ Please, take a moment to read through our Privacy Policy! (Don't worry, it's not
         embed: {
             color: 0,
             title: "Choose your setup type:",
-            description: "To get started, pick out what kind of setup process you'd like.",
+            description: `
+To get started, pick out what kind of setup process you'd like.
+*(All these features can be modified later down the line.)*`,
             fields: [
                 {
                     "name": "Advanced setup",
@@ -87,9 +89,7 @@ This will create for you:
 - A ` + reactablePacks.reto.emoji.plus + ` **plus** and ` + reactablePacks.reto.emoji.minus + ` **minus** emoji. Anyone can vote on their favourite messages with these!
 - A ` + reactablePacks.reto.emoji.pin + ` **pin** emoji that will send whatever post is reacted to it to a newly created \`#best-of\` channel.
 - A \`@Curator\` role - people with this role can use the **pin** emoji to send messages to the \`#best-of\` channel.
-- Sets up confirmations as a Reaction.
-
-*(All these features can be modified later down the line.)*`
+- Sets up confirmations as a Reaction.`
                 // TO-DO: Re-implement "[...] and/or a Pinnable Threshold." on Advanced setup
                 }
             ]
@@ -678,7 +678,7 @@ You can also use Discord default emoji after the Setup using \`/karma emoji set\
                     if (emojiList.includes(emoji.name)) return;
                     emojis.push({
                         label: ":" + emoji.name + ":",
-                        value: emoji.id,
+                        value: "<:" + emoji.name + ":" + emoji.id + ">",
                         emoji: "<:" + emoji.name + ":" + emoji.id + ">",
                         next: "publicServer"
                     })
