@@ -2,6 +2,7 @@ const { CommandType } = require("wokcommands");
 const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
+const Pin = require("../../classes/pin");
 const Reactable = require("../../classes/reactable");
 
 module.exports = {
@@ -62,6 +63,53 @@ module.exports = {
                     type: ApplicationCommandOptionType.Subcommand
                 }
             ]
+        },
+        {
+            name: "threshold",
+            description: "Set rules to make Karma totals pin a message!",
+            type: ApplicationCommandOptionType.SubcommandGroup,
+
+            options: [
+                {
+                    name: "list",
+                    description: "See the Pin Thresholds currently in use in your server.",
+                    type: ApplicationCommandOptionType.Subcommand,
+                },
+                {
+                    name: "edit",
+                    description: "Edit or create Pin Thresholds for a channel.",
+                    type: ApplicationCommandOptionType.Subcommand,
+                    
+                    options: [
+                        {
+                            name: "channel",
+                            description: "The channel that the reacted messages will be sent to.",
+                            required: true,
+                            type: ApplicationCommandOptionType.Channel
+                        },
+                        {
+                            name: "karma",
+                            description: "The threshold of Karma needed to pin a message.",
+                            required: true,
+                            type: ApplicationCommandOptionType.Number
+                        }
+                    ]
+                },
+                {
+                    name: "delete",
+                    description: "Remove previously set Pin Thresholds off your server.",
+                    type: ApplicationCommandOptionType.Subcommand,
+                    
+                    options: [
+                        {
+                            name: "channel",
+                            description: "The channel that you want to delete the Pin Thresholds from.",
+                            required: true,
+                            type: ApplicationCommandOptionType.Channel
+                        }
+                    ]
+                }
+            ]
         }
 	],
     
@@ -73,13 +121,15 @@ module.exports = {
         
         switch (cmdGroup) {
             case "channel":
-                await Reactable.updateReactablePinChannel(interaction, member, cmd)
+                await Reactable.updateReactablePinChannel(interaction, member, cmd);
                 break;
-                
+            case "threshold":
+                await Pin.pinThresholdSettings(interaction, member, cmd);
+                break;
             default:
                 switch (cmd) {
                     case "amount":
-                        await Reactable.updateReactablePinAmount(interaction, member)
+                        await Reactable.updateReactablePinAmount(interaction, member);
                         break;
                 }
                 break;

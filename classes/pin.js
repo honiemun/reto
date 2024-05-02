@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 // Schemas
 const messageSchema = require('../schemas/message');
@@ -10,6 +10,7 @@ const pinThresholdSchema = require('../schemas/pinThreshold');
 // Classes
 const ReactionCheck = require("./reactionCheck")
 const Personalisation = require("./personalisation");
+const Embed = require("./embed");
 
 // Data
 const retoEmojis = require('../data/retoEmojis');
@@ -598,6 +599,112 @@ class Pin {
         return reactionCount;
     }
 
+    async pinThresholdSettings (interaction, member, cmd) {
+        switch (cmd) {
+            case "edit":
+                await this.editPinThreshold(interaction);
+                break;
+            case "delete":
+                await this.deletePinThresholdWithMessage(interaction);
+                break;
+            case "list":
+                await this.getPinThresholdList(interaction);
+                break;
+        }
+    }
+
+    async getPinThresholdList (interaction) {
+        const pinThresholds = await pinThresholdSchema.find({
+            guildId: interaction.guild.id
+        }).exec();
+        
+        const guildKarmaData = await Personalisation.getGuildKarmaData(interaction.guild);
+
+        if (!pinThresholds.length) {
+            const error = await Embed.createErrorEmbed("There are no Pin Thresholds for this server! You can set some in `/setup`, or manually, through `/pin threshold edit`.");
+            interaction.editReply({ embeds: [error] });
+			return;
+        }
+
+		let embed = {
+			title: "Pin Thresholds for " + interaction.guild.name,
+			description: "These are the Pin Thresholds for this server. You can edit them using `/pin threshold edit`.\n",
+			fields: []
+		}
+
+        let channels = [];
+        let karma = [];
+        
+        for (const threshold of pinThresholds) {
+            channels.push("<#" + threshold.channelId + ">");
+            karma.push(guildKarmaData.emoji + " `" + (threshold.karma<0?"":"+") + threshold.karma + "`");
+        }
+
+        
+        embed.fields.push({
+            name: "Channel" + (channels.length > 1 ? "s" : ""),
+            value: channels.join("\n"),
+            inline: true
+        }, {
+            name: guildKarmaData.name + " required",
+            value: karma.join("\n"),
+            inline: true
+        })
+            
+        await interaction.editReply({ embeds: [embed] });
+    }
+
+    async editPinThreshold (interaction) {
+        const channel = interaction.options.getChannel("channel");
+        const karma = interaction.options.getNumber("karma");
+        const guildKarmaData = await Personalisation.getGuildKarmaData(interaction.guild);
+
+        await pinThresholdSchema.findOneAndUpdate(
+			{
+				guildId: interaction.guild.id,
+				channelId: channel.id
+			},
+			{
+				$set: {
+                    karma: karma,
+				},
+			},
+			{ upsert: true }
+        ).exec().then(async (updatedPinThreshold) => {
+            // This assumes that we only ever edit one Pin Threshold per channel.
+            // Maybe we'll wanna change that in the future?
+            const pinThresholdStatus = updatedPinThreshold ? "edited" : "created";
+
+            const deletePinThresholdEmbed = new EmbedBuilder()
+                .setTitle("The Pin Threshold has been " + pinThresholdStatus + "!")
+                .setDescription(`
+Any messages that reach ` + guildKarmaData.emoji + " `" + (karma<0?"":"+") + karma + "`" + ` will now be sent to the <#` + channel.id + `> channel.
+Check your server's current Pin Thresholds with \`/pin threshold list\`.`);
+
+            interaction.editReply({ embeds: [ deletePinThresholdEmbed ] });
+        });
+    }
+
+    async deletePinThresholdWithMessage (interaction) {
+        const channel = interaction.options.getChannel("channel");
+
+        await this.deletePinThreshold(channel).then(async (deletedPinThreshold) => {
+            if (deletedPinThreshold.deletedCount == 0) {
+                const error = await Embed.createErrorEmbed("There are no Pin Thresholds set for that channel!");
+                interaction.editReply({ embeds: [error] });
+                return;
+            }
+
+            const deletePinThresholdEmbed = new EmbedBuilder()
+                .setTitle("The Pin Threshold has been deleted!")
+                .setDescription(`
+Keep in mind we've deleted any Pin Threshold that was set to be sent to <#` + channel.id + `>.
+If you need to check what your current Pin Thresholds are, use \`/pin threshold list\`.`);
+
+            interaction.editReply({ embeds: [ deletePinThresholdEmbed ] });
+        });
+    }
+
     async getMatchingPinThreshold (pinThresholds, message, dbMessage, isLesserOrGreater = false) {
         if (!dbMessage) return;
 
@@ -622,7 +729,7 @@ class Pin {
     }
 
     async deletePinThreshold (channel) {
-		await pinThresholdSchema.deleteMany(
+		return await pinThresholdSchema.deleteMany(
 			{
 				channelId: channel.id,
 				guildId: channel.guild.id
