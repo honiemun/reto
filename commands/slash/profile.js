@@ -26,17 +26,14 @@ module.exports = {
 		if (interaction.options.getUser("user")) {
 			user = interaction.options.getUser("user"); // Specified an User
 		} else if (member) {
-			user = member;							 // You're in a guild
+			user = member;							 	// You're in a guild
 		} else {
-			user = interaction.user;				 // You're on DMs
+			user = interaction.user;				 	// You're on DMs
 		}
 
 		if (user == null) return; // TO-DO: Throw an error!
 		
 
-		await Profile.fetchProfileEmbed(user, member, instance, interaction).then((embed) => {
-			if (!embed) return;
-			return interaction.editReply({embeds: [ embed ]})
-		});
+		return await Profile.fetchProfile(user, member, instance, interaction, false);
 	},
 }

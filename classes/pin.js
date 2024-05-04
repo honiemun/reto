@@ -11,6 +11,7 @@ const pinThresholdSchema = require('../schemas/pinThreshold');
 const ReactionCheck = require("./reactionCheck")
 const Personalisation = require("./personalisation");
 const Embed = require("./embed");
+const Privacy = require("./privacy");
 
 // Data
 const retoEmojis = require('../data/retoEmojis');
@@ -50,6 +51,7 @@ class Pin {
         const pinThresholds = await pinThresholdSchema.find({
             guildId: message.guildId
         }).exec();
+        const pinThreshold = await this.getMatchingPinThreshold(pinThresholds, message, messageDocument);
         const matchingThreshold = await this.getMatchingPinThreshold(pinThresholds, message, messageDocument, true);
 
         const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, reactionCount, pinThresholds, isPositive, isChainUpdate);
@@ -61,11 +63,12 @@ class Pin {
             if (reactable.sendsToChannel) {
                 console.log(reactable.reactionThreshold);
                 console.log(reactionCount);
+                console.log((reactionCount < reactable.reactionThreshold) ? true : false);
             }
             if (!isPositive &&
-                (reactable.sendsToChannel && reactable.reactionThreshold < reactionCount ||
+                (reactable.sendsToChannel && reactionCount < reactable.reactionThreshold && !pinThreshold ||
                 matchingThreshold)) {
-                this.deletePinnedEmbed(iterableChannel, client);
+                Privacy.deletePinnedEmbed(iterableChannel, client);
                 continue;
             }
 
@@ -127,7 +130,7 @@ class Pin {
         if (!iterableChannels) return;
 
         for (const iterableChannel of iterableChannels) {
-            this.deletePinnedEmbed(iterableChannel, client);
+            Privacy.deletePinnedEmbed(iterableChannel, client);
         }
 
     }
@@ -173,6 +176,7 @@ class Pin {
         return iterableChannels;
     }
     
+    /*
     async deletePinnedEmbed(iterableChannel, client) {
         client.channels.fetch(iterableChannel.id).then(channel => {
             try {
@@ -186,6 +190,8 @@ class Pin {
             }).exec();
         });
     }
+     */
+
     async generateMessageEmbed(message, replyPreview = false) {
         // Generate default message embed
         let messageEmbed = {
@@ -226,8 +232,8 @@ class Pin {
             pinnedEmbedId: sentEmbed.id,
             channelId: sentEmbed.channel.id,
             message: messageDb._id
-        }).save().then((pinnedEmbed) => {
-            messageSchema.findOneAndUpdate(
+        }).save().then(async (pinnedEmbed) => {
+            await messageSchema.findOneAndUpdate(
                 { messageId: messageDb.messageId },
                 { $push: { 'pinnedEmbeds': pinnedEmbed._id } },
                 { upsert: true, new: true }

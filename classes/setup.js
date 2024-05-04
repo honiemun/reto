@@ -176,16 +176,6 @@ class Setup {
         ).exec();
     }
     
-    async setPublicServer (guild, enable) {
-        const update = await guildSchema.findOneAndUpdate(
-            { guildId: guild.id },
-            { $set : { public : enable } },
-            { upsert: false }
-        ).exec();
-        
-        return update;
-    }
-    
     async setNewsletterSubscription (guild, enable) {
         const update = await guildSchema.findOneAndUpdate(
             { guildId: guild.id },

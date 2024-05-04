@@ -1,4 +1,4 @@
-const { GuildMember, User, EmbedBuilder } = require("discord.js");
+const { GuildMember, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require("discord.js");
 
 const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
@@ -15,13 +15,39 @@ class Profile {
         Profile._instance = this;
     }
 
-    async fetchProfileEmbed(author, member, instance, interaction) {
+    async fetchProfile(author, member, instance, interaction, hasBadges) {
+        console.log(hasBadges);
+        const embed = await this.fetchProfileEmbed(author, member, instance, interaction, hasBadges);
+        
+        // TO-DO: Hide button if there's no badges
+        const badgeButton = new ButtonBuilder()
+            .setLabel(hasBadges ? "Hide Badges" : "Show Badges")
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId(hasBadges ? "hide" : "show");
+        
+        const profileEmbed = await interaction.editReply({
+            embeds: [ embed ],
+            components: [ new ActionRowBuilder().addComponents(badgeButton) ],
+            fetchReply: true
+        });
+        
+        // Create collector (Badge toggle)
+		const time = 1000 * 60 * 5; // 5 minutes
+        const collector = profileEmbed.createMessageComponentCollector({ max: 1, time });
+
+		collector.on('collect', async i => {
+            i.deferUpdate();
+            await this.fetchProfile(author, member, instance, interaction, i.customId === "show");
+		});
+    }
+
+    async fetchProfileEmbed(author, member, instance, interaction, hasBadges) {
         if (author == null) return;
 
         const isOnGuild = interaction.guild;
         const isAuthorOrUser = author instanceof GuildMember;
-        const user = isAuthorOrUser ? author.user : author
-        const username = isAuthorOrUser ? author.nickname : author.username
+        const user = isAuthorOrUser ? author.user : author;
+        const username = isAuthorOrUser ? author.nickname || author.user.globalName : author.globalName;
         
 		const userQuery = await userSchema.aggregate([
             {
@@ -137,19 +163,62 @@ class Profile {
         })
 
         // Badges
+        if (hasBadges) {
+            const badges = await this.getFullBadgeView(member, user, username, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild);
+            for (const badge of badges) { embed.fields.push(badge); }
+        } else {
+            const badges = await this.getBadges(member, user, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild);
+            if (badges.length) {
+                embed.fields.push({
+                    "name": "Badges",
+                    "value": badges.join(""),
+                    "inline": false
+                })
+            }
+        }
+        return embed
+    }
 
-        embed.fields.push({
+    // TO-DO: Split all this logic into its own Badges function!
+    async getBadges (member, user, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild) {
+        let badges = [];
+
+        if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) badges.push("🧑‍💻");
+
+        if (globalRanking <= 10) {
+            const globalMedal = await this.getMedalBadge(globalRanking, instance, interaction, "", true);
+            badges.push(globalMedal.name);
+        }
+        if (isOnGuild && localRanking <= 10) {
+            const localMedal = await this.getMedalBadge(globalRanking, instance, interaction, member.guild.name, true);
+            badges.push(localMedal.name);
+        }
+
+        if (userDatabase.earlySupporter) badges.push("<:retoclassic:1093680765637775371>");
+
+        return badges;
+    }
+
+    async getFullBadgeView (member, user, username, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild) {
+        let embed = [];
+
+        embed.push({
             "name": "Badges",
             "value": "** **",
             "inline": false
         })
         
-        if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) { embed.fields.push(await this.getProgrammerBadge(instance, interaction)); }
-        if (globalRanking <= 10) { embed.fields.push(await this.getMedalBadge(globalRanking, instance, interaction)); }
-        if (isOnGuild && localRanking <= 10) { embed.fields.push(await this.getMedalBadge(localRanking, instance, interaction, member.guild.name)); }
-        if (userDatabase.earlySupporter) { embed.fields.push(await this.getEarlySupporterBadge(instance, interaction)); }
+        if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) embed.push(await this.getProgrammerBadge(instance, interaction));
+        if (globalRanking <= 10) embed.push(await this.getMedalBadge(globalRanking, instance, interaction));
+        if (isOnGuild && localRanking <= 10) embed.push(await this.getMedalBadge(localRanking, instance, interaction, member.guild.name));
+        if (userDatabase.earlySupporter) embed.push(await this.getEarlySupporterBadge(instance, interaction));
 
-        return embed
+        // If no badges, return some dummy text
+        if (embed.length == 1) {
+            embed[0].value = "> _Looks like " + username + " doesn't have any badges yet!_";
+        }
+
+        return embed;
     }
 
     async getProgrammerBadge (instance, interaction) {
@@ -160,7 +229,7 @@ class Profile {
         }
     }
 
-    async getMedalBadge (rank, instance, interaction, serverName = "") {
+    async getMedalBadge (rank, instance, interaction, serverName = "", emoji = false) {
         let badge;
         let name;
         let description;
@@ -188,7 +257,7 @@ class Profile {
         description = "For ranking no. " + rank + " on " + serverNameDescription + "leaderboard!"
 
         return {
-            "name": badge + " " + serverName + " " + name,
+            "name": emoji ? badge : badge + " " + serverName + " " + name,
             "value": "> " + description,
             "inline": false
         }

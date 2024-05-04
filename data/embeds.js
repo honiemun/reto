@@ -1,6 +1,9 @@
 const { Guild, GuildMember, ButtonStyle } = require("discord.js");
+
+// Classes
 const Setup = require("../classes/setup");
 const Personalisation = require("../classes/personalisation");
+const Privacy = require("../classes/privacy");
 
 // Schema
 const guildSchema = require('../schemas/guild');
@@ -720,14 +723,14 @@ If you'd like the best posts from this server to be featured for anyone to find,
                 label: "Set server as Public",
                 next: "newsletter",
                 style: ButtonStyle.Primary,
-                function: function(guild) { Setup.setPublicServer(guild, true); }
+                function: function(guild) { Privacy.setPublicGuild(guild, true); }
             },
             {
                 id: "serverPrivate",
                 label: "Set server as Private",
                 next: "newsletter",
                 style: ButtonStyle.Secondary,
-                function: function(guild) { Setup.setPublicServer(guild, false); }
+                function: function(guild) { Privacy.setPublicGuild(guild, false); }
             }
         ]
     },

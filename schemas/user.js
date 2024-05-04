@@ -29,6 +29,13 @@ const userSchema = new mongoose.Schema({
 		required: true,
 		default: true
 	},
+	
+	// Determines if the user's messages can be seen in public-related commands, such as /discover.
+	public: {
+		type: Boolean,
+		required: true,
+		default: true
+	},
 
 	// Whether this user was part of Reto Legacy (2018-2023).
 	earlySupporter: {

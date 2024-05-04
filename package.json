@@ -11,7 +11,7 @@
     "wokcommands": "latest"
   },
   "name": "retool",
-  "version": "2.0.0-beta4",
+  "version": "2.0.0-beta5",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

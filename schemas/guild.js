@@ -44,7 +44,7 @@ const guildSchema = new mongoose.Schema({
 		required: false
 	},
 
-	// Determines if the guild can be seen in public-related commands, such as Global Leaderboards.
+	// Determines if the guild can be seen in public-related commands, such as /discover.
 	public: {
 		type: Boolean,
 		required: false,
