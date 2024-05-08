@@ -224,8 +224,6 @@ class Port {
                 { $set : { 
                     messageId: message.msgid,
                     userId: message.username,
-                    // TO-DO: Channel ID (real!)
-                    channelId: "0",
                     guildId: message.servers,
                     karma: message.points
                 }},

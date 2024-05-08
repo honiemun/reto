@@ -5,7 +5,7 @@ const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.j
 const Debug = require("../../classes/debug");
 
 module.exports = {
-	category: 'Personalisation',
+	category: 'Debug',
 	description: 'Debug tools for Slash Commands.',
 
 	type: CommandType.SLASH,

@@ -32,7 +32,7 @@ class Profile {
         });
         
         // Create collector (Badge toggle)
-		const time = 1000 * 60 * 5; // 5 minutes
+		const time = 1000 * 60 * 30; // 30 minutes
         const collector = profileEmbed.createMessageComponentCollector({ max: 1, time });
 
 		collector.on('collect', async i => {

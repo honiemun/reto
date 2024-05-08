@@ -198,6 +198,15 @@ class Formatting {
             return '';
         }
     }
+
+    async formatTime(seconds) {
+        const time = new Date(seconds * 1000).toISOString();
+        const days = Math.floor(seconds / (3600 * 24));
+        const daysFormatted = days.toString().padStart(2, '0');
+        const timeFormatted = time.substr(11, 8); // Extract time part HH:MM:SS
+    
+        return `${daysFormatted}:${timeFormatted}`;
+    }
 }
 
 module.exports = new Formatting();

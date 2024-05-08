@@ -51,6 +51,6 @@ const messageSchema = new mongoose.Schema({
 		ref: "pinnedEmbed"
 	}],
 	
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("message", messageSchema);
