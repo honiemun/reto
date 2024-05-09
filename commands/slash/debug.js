@@ -22,7 +22,8 @@ module.exports = {
 	],
     
 	callback: async ({ interaction }) => {
-		interaction.deferReply({ fetchReply: true });
+		interaction.deferReply();
+        interaction.deleteReply();
 
         const cmd = interaction.options.getSubcommand();
         

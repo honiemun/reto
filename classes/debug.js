@@ -42,11 +42,9 @@ class Debug {
     }
 
     async fillChannelsInMessages(interaction) {
-        let channelMessage = interaction;
-
         // Get list of guilds the bot is on
         let clientGuilds = interaction.client.guilds.cache.map(g => g.id);
-        const messageDocument = await messageSchema.aggregate([
+        let messageDocument = await messageSchema.aggregate([
             {
                 $match: {
                     "guildId": {
@@ -57,21 +55,23 @@ class Debug {
                         {"channelId": "0"}
                     ]
                 }
-            }
+            },
         ]).exec();
 
         let guildCache = {};
         let averageTimePerMessage = 0;
-        let missingMessages = messageDocument.length; // Amt. messages that haven't been processed
+
         let messageCount    = messageDocument.length; // Amt. messages that are left to finish
         let totalMessages   = messageDocument.length; // Total amt. of messages (unchanged)
-        let filledMessages  = 0;
 
-        await interaction.editReply({ embeds: [ new EmbedBuilder()
+        let missingMessages = 0; // Amt. messages that haven't been processed
+        let filledMessages  = 0; // Amt. messages that have been processed
+
+        let channelMessage = await interaction.channel.send({ embeds: [ new EmbedBuilder()
                 .setColor("Yellow")
                 .setTitle("⏳ Finding channels...")
                 .setDescription("Adding channels to " + messageDocument.length + " messages.")
-                .setFooter({ text: "ETA: Unknown | Avg.: Unknown" })
+                .setFooter({ text: "ETA: Unknown | Avg.: Unknown | To update: 0" })
             ]
         });
 
@@ -79,70 +79,83 @@ class Debug {
         // - Store the Channels in cache so we don't have to constantly get them
         // - Order the messageDocument by guild ID
         // - Delete any messages that we can't find a channel for (optional)
+        let updates = []; // Array to hold bulk update operations
+        let lastUpdate = 0; // How many updates were before the current one
+        let fetchPromises = []; // Array to hold fetch promises for parallel execution
+    
         for (let message of messageDocument) {
-            // Find a channel with the message and guild ID
             let guild = guildCache[message.guildId] || interaction.client.guilds.cache.get(message.guildId);
             if (!guild) continue;
-            if (!guildCache[message.guildId]) guildCache[message.guildId] = guild;
-            
+            if (!guildCache[message.guildId]) guildCache[message.guildId] = guild; // Save guild data in cache
             let messageStartTime = Date.now();
+    
             for (let channel of guild.channels.cache.values()) {
                 if (channel.type != 0) continue; // Only Text Channels
-
-                try {
-                    await channel.messages.fetch(message.messageId).then(async (fetchedMessage) => {
-                        console.log("🕵️ Found message from ".gray + fetchedMessage.author.username.green + " in #".gray + channel.name.gray);
-                        
-                        await messageSchema.findOneAndUpdate(
-                            { messageId: message.messageId },
-                            { $set: { channelId: channel.id } }
-                        ).exec();
-
-                        filledMessages++;
-                        missingMessages--;
+    
+                fetchPromises.push(channel.messages.fetch(message.messageId).then(fetchedMessage => {
+                    updates.push({
+                        updateOne: {
+                            filter: { messageId: message.messageId },
+                            update: { $set: { channelId: channel.id } }
+                        }
                     });
-                } catch (error) {
-                    // console.log("❌ Couldn't find message in #".gray + channel.name.gray);
+
+                    filledMessages++;
+                    console.log("(".green + messageCount + "/".green + totalMessages + ") ".green + "Updating message from ".gray + fetchedMessage.author.username.green + " in channel ".gray + channel.name.green);
+                }).catch(error => {
+                    // Discord errors
+                }));
+    
+                if (fetchPromises.length >= 100) {
+                    await Promise.all(fetchPromises);
+                    fetchPromises = [];
                 }
             }
 
-            // Calculate average time per message and estimate remaining time
-            let elapsedTime = Date.now() - messageStartTime;
-            let footerText;
-
-            if (filledMessages > 0) {
-                averageTimePerMessage = ((averageTimePerMessage * (filledMessages - 1)) + elapsedTime) / filledMessages;
-                let estimatedTimeRemaining = Math.round(averageTimePerMessage * (totalMessages - filledMessages) / 1000);
-                let formattedTime = await Formatting.formatTime(estimatedTimeRemaining);
-                footerText = `ETA: ${formattedTime}s | Avg.: ${Math.round(averageTimePerMessage / 1000)}s`;
-            }
-
+            await Promise.all(fetchPromises);
             messageCount--;
-            if (messageCount == 0) continue;
             
-            try {
-                await channelMessage.editReply({ embeds: [ new EmbedBuilder()
-                        .setColor("Yellow")
-                        .setTitle("⏳ Finding channels...")
-                        .setDescription("Adding channels to " + messageCount + " messages.")
-                        .setFooter({ text: footerText || "ETA: Unknown | Avg.: Unknown" })
-                    ]
-                });
-            } catch (e) {
-                // More than 15 mins. passed
-                channelMessage.deleteReply();
-                channelMessage = await interaction.channel.send({ embeds: [ new EmbedBuilder()
-                        .setColor("Yellow")
-                        .setTitle("⏳ Finding channels...")
-                        .setDescription("Adding channels to " + messageCount + " messages.")
-                        .setFooter({ text: footerText || "ETA: Unknown | Avg.: Unknown" })
-                    ]
-                });
+            if (updates.length > lastUpdate) {
+                // New message found (save this to update later!)
+                lastUpdate++;
+
+                // Calculate average time per message and estimate remaining time
+                let elapsedTime = Date.now() - messageStartTime;
+                let footerText;
+
+                if (filledMessages > 0) {
+                    averageTimePerMessage = ((averageTimePerMessage * (filledMessages - 1)) + elapsedTime) / filledMessages;
+                    let estimatedTimeRemaining = Math.round(averageTimePerMessage * (totalMessages - filledMessages) / 1000);
+                    let formattedTime = await Formatting.formatTime(estimatedTimeRemaining);
+                    footerText = `ETA: ${formattedTime}s | Avg.: ${Math.round(averageTimePerMessage / 1000)}s | To update: ${updates.length}`;
+                }
+
+                if (messageCount == 0) continue;
+                
+                try {
+                    await channelMessage.edit({ embeds: [ new EmbedBuilder()
+                            .setColor("Yellow")
+                            .setTitle("⏳ Finding channels...")
+                            .setDescription("Adding channels to " + messageCount + " messages.")
+                            .setFooter({ text: footerText || "ETA: Unknown | Avg.: Unknown | To update: 0" })
+                        ]
+                    });
+                } catch (e) {
+                    // More than 15 mins. passed
+                    console.log("⏳ Error when updating embed: ".red + e);
+                }
+            } else {
+                // No new messages found
+                // (maybe we should delete these messages, anyways)
+                missingMessages++;
             }
         }
 
+        // Update remaining messages
+        await messageSchema.bulkWrite(updates);
+
         
-        await channelMessage.editReply({ embeds: [ new EmbedBuilder()
+        await channelMessage.edit({ embeds: [ new EmbedBuilder()
             .setColor("Green")
             .setTitle("🕵️ Channels found!")
             .setDescription("We added a matching channel to " + filledMessages + " messages _(and found " + missingMessages + " messages without a channel that Reto doesn't have access to.)_")
