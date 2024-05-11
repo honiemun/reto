@@ -135,6 +135,10 @@ class Pin {
 
     }
 
+    async deleteMessagesFromChannel (channel) {
+        await messageSchema.deleteMany({ channelId: channel.id }).exec();
+    }
+
     async getIterableChannels(message, dbMessage, reactable, reactionCount, pinThresholds, isPositive, isChainUpdate = false) {
         const pinnedMessages = await this.getAttachedPinnedMessages(dbMessage);
         let matchingThreshold = null; 
@@ -175,29 +179,13 @@ class Pin {
 
         return iterableChannels;
     }
-    
-    /*
-    async deletePinnedEmbed(iterableChannel, client) {
-        client.channels.fetch(iterableChannel.id).then(channel => {
-            try {
-                channel.messages.delete(iterableChannel.embed);
-            } catch (e) {
-                console.log("❌ Couldn't delete pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
-            }
-
-            pinnedEmbedSchema.deleteMany({
-                pinnedEmbedId: iterableChannel.embed
-            }).exec();
-        });
-    }
-     */
 
     async generateMessageEmbed(message, replyPreview = false) {
         // Generate default message embed
         let messageEmbed = {
             url: "https://retobot.com", // Necessary for multiple image support
             description: "** **",
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(message.createdTimestamp).toISOString(),
             fields: []
         };
 

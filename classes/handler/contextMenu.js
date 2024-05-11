@@ -99,7 +99,7 @@ class ContextMenu {
 						{ body: globalCommands },
 					);
 					
-					console.log("Refreshed ".gray + globalData.length + " context menu commands".gray);
+					console.log("🪄  Refreshed ".gray + globalData.length + " context menu commands".gray);
 				}
 				
 				if (guildCommands.length) {
@@ -108,7 +108,7 @@ class ContextMenu {
 						{ body: guildCommands },
 					);
 					
-					console.log("Refreshed ".gray + guildData.length + " test-only context menu commands".gray);
+					console.log("🪄  Refreshed ".gray + guildData.length + " test-only context menu commands".gray);
 				}
 			} catch (error) {
 				console.error("Error while registering context menu commands: ", error);

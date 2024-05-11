@@ -31,8 +31,8 @@ edit your users' Server Karma, and unlock the whole suite of personalization com
 
 - **First-in-line Access**
 Use Reto's upcoming new commands early with *Reto Feature Drops*.
-New features every month through 2024 - brand new ones you can use
-before anyone else, plus side-features that remain exclusive to Gold members.`);
+New features every month through the end of 2025 - brand new ones you can use
+before anyone else, and side-features that'll remain exclusive to Gold members.`);
         
         const row = new ActionRowBuilder()
         .addComponents(

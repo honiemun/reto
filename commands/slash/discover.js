@@ -113,12 +113,11 @@ module.exports = {
     
 	callback: async ({ interaction, member }) => {
 		await interaction.deferReply();
-
         const cmd = interaction.options.getSubcommand();
         
         switch (cmd) {
             case "server":
-                await Discover.generate(interaction, member);
+                await Discover.loadDiscovery(interaction, member);
                 break;
             case "global":
                 console.log("You're not supposed to be here.")

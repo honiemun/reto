@@ -5,6 +5,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const figlet = require("figlet");
 const colors = require("colors");
+const gradient = require('gradient-string');
 const pack = require('./package.json');
 
 const contextMenu = require('./classes/handler/contextMenu.js')
@@ -31,8 +32,8 @@ client.on("ready", async () => {
 	// Generate boot-up code
 	let serverCount = client.guilds.cache.size;
 
-	figlet("                 retool", { font: "Ogre" }, function (err, data) {
-		console.log(data.red)
+	figlet("                 retool", { font: "Ogre" }, function (err, figlet) {
+		console.log(gradient('pink', 'purple')(figlet));
 		console.log(pack.version.underline + " | " + "A reaction bot for the modern era".gray + " | " + "👥 Live in ".gray + serverCount + " servers".gray)
 		console.log("🔗 https://discord.com/oauth2/authorize?client_id=".gray + process.env.CLIENT_ID.gray + "&permissions=".gray +  process.env.PERMISSIONS.gray + "&scope=bot%20applications.commands".gray)
 	})

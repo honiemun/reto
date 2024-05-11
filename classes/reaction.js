@@ -125,7 +125,14 @@ class Reaction {
         const reactableName = reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1);
         const reactableAmount = " (" + (karmaToAward<0?"":"+") + karmaToAward + ")"
         const reactPrefix = isPositive ? "" : "un"
-        console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray);
+
+        if (reactable.sendsToChannel) {
+            console.log('⭐ ' + message.author.username.yellow + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.yellow.bold + reactableAmount.gray);
+        } else if (karmaToAward > 0) {
+            console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray);
+        } else {
+            console.log('💜 ' + message.author.username.magenta + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.magenta.bold + reactableAmount.gray);
+        }
     }
 
     async checkMemberCanReact(member, reactable) {
