@@ -80,6 +80,7 @@ class Debug {
         // - Order the messageDocument by guild ID
         // - Delete any messages that we can't find a channel for (optional)
         let updates = []; // Array to hold bulk update operations
+        let deletions = []; // Array to hold bulk delete operations
         let lastUpdate = 0; // How many updates were before the current one
         let fetchPromises = []; // Array to hold fetch promises for parallel execution
     
@@ -87,18 +88,23 @@ class Debug {
             let guild = guildCache[message.guildId] || interaction.client.guilds.cache.get(message.guildId);
             if (!guild) continue;
             if (!guildCache[message.guildId]) guildCache[message.guildId] = guild; // Save guild data in cache
+            deletions.push(message.messageId);
             let messageStartTime = Date.now();
     
             for (let channel of guild.channels.cache.values()) {
                 if (channel.type != 0) continue; // Only Text Channels
     
                 fetchPromises.push(channel.messages.fetch(message.messageId).then(fetchedMessage => {
+                    // Add to update queue
                     updates.push({
                         updateOne: {
                             filter: { messageId: message.messageId },
                             update: { $set: { channelId: channel.id } }
                         }
                     });
+
+                    // Remove from deletion queue
+                    deletions.splice(deletions.indexOf(message.messageId), 1); 
 
                     filledMessages++;
                     console.log("(".green + messageCount + "/".green + totalMessages + ") ".green + "Updating message from ".gray + fetchedMessage.author.username.green + " in channel ".gray + channel.name.green);
@@ -153,6 +159,9 @@ class Debug {
 
         // Update remaining messages
         await messageSchema.bulkWrite(updates);
+
+        // Delete non-existing messages
+        await messageSchema.deleteMany({ messageId: { $in: deletions }});
 
         
         await channelMessage.edit({ embeds: [ new EmbedBuilder()

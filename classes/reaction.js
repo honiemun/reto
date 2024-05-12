@@ -121,17 +121,17 @@ class Reaction {
         }).exec();
     }
 
-    async sendReactionToConsole(message, reactingUser, reactable, karmaToAward, isPositive) {
-        const reactableName = reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1);
+    async sendReactionToConsole(message, reactingUser, reactable, karmaToAward, isPositive, isDiscovery = false) {
+        const reactableName = reactable ? reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1) : "Global Reaction";
         const reactableAmount = " (" + (karmaToAward<0?"":"+") + karmaToAward + ")"
         const reactPrefix = isPositive ? "" : "un"
 
-        if (reactable.sendsToChannel) {
-            console.log('⭐ ' + message.author.username.yellow + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.yellow.bold + reactableAmount.gray);
+        if (reactable && reactable.sendsToChannel) {
+            console.log('⭐ ' + message.author.username.yellow + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.yellow.bold + reactableAmount.gray + (isDiscovery ? " (via Discover)".gray : ""));
         } else if (karmaToAward > 0) {
-            console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray);
+            console.log('💕 ' + message.author.username.red + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.red.bold + reactableAmount.gray + (isDiscovery ? " (via Discover)".gray : ""));
         } else {
-            console.log('💜 ' + message.author.username.magenta + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.magenta.bold + reactableAmount.gray);
+            console.log('💜 ' + message.author.username.magenta + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.magenta.bold + reactableAmount.gray + (isDiscovery ? " (via Discover)".gray : ""));
         }
     }
 

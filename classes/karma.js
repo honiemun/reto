@@ -14,17 +14,19 @@ class Karma {
         Karma._instance = this;
     }
 
-	async awardKarmaToUser (karmaToAward, user, message) {
+	async awardKarmaToUser (karmaToAward, user, message, globalReaction = false) {
 		// Update the message's karma
 		// TO-DO: Check for user's canStoreMessages permission first
-		await messageSchema.findOneAndUpdate(
-			{ messageId: message.id },
-			{
-				$set: { 'userId': user.id, 'guildId': message.guildId, 'channelId': message.channel.id },
-				$inc : { 'karma' : karmaToAward }
-			},
-			{ upsert: true }
-		).exec();
+		if (!globalReaction) {
+			await messageSchema.findOneAndUpdate(
+				{ messageId: message.id },
+				{
+					$set: { 'userId': user.id, 'guildId': message.guildId, 'channelId': message.channel.id },
+					$inc : { 'karma' : karmaToAward }
+				},
+				{ upsert: true }
+			).exec();
+		}
 		
 		// Don't execute the following if the karma equals zero
 		if (karmaToAward == 0) return;
@@ -37,11 +39,13 @@ class Karma {
 		).exec();
 	
 		// Update the member's karma on the specified guild
-		await memberSchema.findOneAndUpdate(
-			{ userId: user.id, guildId: message.guildId },
-			{ $inc : { 'karma' : karmaToAward } },
-			{ upsert: true }
-		).exec();
+		if (!globalReaction) {
+			await memberSchema.findOneAndUpdate(
+				{ userId: user.id, guildId: message.guildId },
+				{ $inc : { 'karma' : karmaToAward } },
+				{ upsert: true }
+			).exec();
+		}
 	}
 
 	async sendKarmaNotification (message, user, guildDocument, reactable, isPositive) {

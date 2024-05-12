@@ -1,3 +1,4 @@
+// Dependencies
 const { EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require('discord.js');
 
 // Data
@@ -8,7 +9,10 @@ const messageSchema = require('../schemas/message');
 const reactableSchema = require('../schemas/reactable');
 
 // Classes
-const Pin = require("../classes/pin");
+const Pin = require("./pin");
+const Reaction = require("./reaction");
+const ReactionCheck = require("./reactionCheck");
+const Karma = require("./karma");
 
 class Discover {
 
@@ -21,8 +25,9 @@ class Discover {
 
     // TO-DO for later
     // - Make another query if we run out of messages (or make random selection infinite)
-    // - Add Reacting to messages
-    // - Unrelated-ish: Add message deletion on /debug channels-in-messages
+    // - Add Post Leaderboard rankings (by Karma)
+    // - Add "Skip after Reaction" optional function
+    // - Modify No Messages to show "Either (USER) hasn't used Reto" if filter is by Member
 
     async loadDiscovery (interaction, member, isGlobal = false) {
 		// Loading screen
@@ -57,7 +62,7 @@ class Discover {
     }
 
     async generateDiscoveryMessage (interaction, message, messageData, member, messages, emoji, toDelete, isGlobal = false, page = 0) {
-        console.log("Message found by " + message.author.username);
+        console.log("🚀 Showing ".gray + interaction.user.username + " a message by ".gray + message.author.username + " (page ".gray + (page + 1) + ")".gray);
 
         // Message
         const messageEmbed = await Pin.generateMessageEmbed(message);
@@ -67,14 +72,15 @@ class Discover {
 
         const reply = await interaction.editReply({ content: messageKarma, embeds: messageEmbed, components: [buttons] });
 
-        // Collector
-        await this.generateDiscoveryCollector(reply, interaction, member, messages, emoji, toDelete, isGlobal, page);
-
         // Delete messages
         if (toDelete.length > 0) {
             console.log("🗑️  Deleting".gray + toDelete.length + " invalid messages...".gray);
-            await messageSchema.deleteMany({ messageId: { $in: toDelete } });
+            await messageSchema.deleteMany({ messageId: { $in: toDelete } }); // Asynchronous?
+            toDelete = [];
         }
+
+        // Collector
+        await this.generateDiscoveryCollector(reply, interaction, member, message, messages, emoji, toDelete, isGlobal, page);
     }
 
     async generateDiscoveryButtons (message, isGlobal, page, emoji) {
@@ -130,7 +136,7 @@ class Discover {
         return row;
     }
 
-    async generateDiscoveryCollector(reply, interaction, member, messages, emoji, toDelete, isGlobal, page) {
+    async generateDiscoveryCollector(reply, interaction, member, message, messages, emoji, toDelete, isGlobal, page) {
         // TO-DO: Collectors are so general that we should probably create a generalized one?
         // Practically copied beat for beat from createChainButtonCollector (chain.js)
 
@@ -144,14 +150,19 @@ class Discover {
 
             if (!newInt) return;
             await newInt.deferUpdate();
-    
-            console.log(page);
+
             switch (newInt.customId) {
                 case 'prev':
                     await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, page - 1);
                     break;
                 case 'next':
                     await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, page + 1);
+                    break;
+                case 'plus':
+                    await this.reactToMessage(1, message, interaction, member, messages, emoji, toDelete, isGlobal, page);
+                    break;
+                case 'minus':
+                    await this.reactToMessage(-1, message, interaction, member, messages, emoji, toDelete, isGlobal, page);
                     break;
                 default:
                     interaction.editReply({ components: [] });
@@ -225,6 +236,56 @@ class Discover {
             pin: reactables.find((reactable) => reactable.name === "pin").emoji ||
                  reactablePacks.reto.emoji.pin
         }
+    }
+
+    async reactToMessage (amount, message, interaction, member, messages, emoji, toDelete, isGlobal, page) {
+        let isPositive = true;
+        
+        const reactable = await reactableSchema.findOne({
+            guildId: message.guild.id,
+            karmaAwarded: amount,
+            globalKarma: true
+        });
+
+        const previouslyReacted = await ReactionCheck.checkIfPreviouslyReacted(
+            message,
+            interaction.user,
+            reactable ? reactable : undefined,
+            reactable ? false : true
+        );
+
+        if (previouslyReacted) isPositive = false;
+
+        await Reaction.sendReactionToConsole(
+            message, // No message.author
+            interaction.user,
+            reactable ? reactable : false,
+            amount,
+            true,
+            true
+        );
+
+        // Store reaction, award Karma
+        const karmaToAward = isPositive
+            ? amount
+            : amount * -1;
+    
+        const savedReaction = await Reaction.saveOrDeleteReaction(message, interaction.user, reactable, isPositive);
+        console.log(savedReaction);
+        if (!savedReaction) return;
+
+        await Karma.awardKarmaToUser(
+            karmaToAward,
+            message.author,
+            message,
+            isGlobal // or if there's no reactable?
+        );
+
+        // Continue to next message
+        // TO-DO: Consider just updating the current message (Tiktok-style) instead of skipping it (Tinder-style)
+        const updatedMessage = messages.findIndex(messageData => messageData.messageId === message.id);
+        messages[updatedMessage].karma = messages[updatedMessage].karma + karmaToAward;
+        await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, page + 1);
     }
 
     async storeMissingMessages (error, messageData, interaction, member, messages, emoji, toDelete, isGlobal, page) {

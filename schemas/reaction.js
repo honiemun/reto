@@ -22,9 +22,18 @@ const reactionSchema = new mongoose.Schema({
 	},
 
 	// The id from the reactable that has been used on this message.
+	// Required for any Reaction that is not a Global Reaction.
 	reactableId: {
 		type: Schema.Types.ObjectId,
-		required: true
+		required: false
+	},
+
+	// Whether this is a Global Reaction, used in Discover or other functions
+	// that have built-in Reactables. Only used when reactableId doesn't apply.
+	globalReaction: {
+		type: Boolean,
+		required: false,
+		default: false
 	}
 });
 

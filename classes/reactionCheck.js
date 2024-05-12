@@ -13,12 +13,16 @@ class ReactionCheck {
         ReactionCheck._instance = this;
     }
 
-    async checkIfPreviouslyReacted(message, reactingUser, reactable) {
-        const reactions = await reactionSchema.find({
+    async checkIfPreviouslyReacted(message, reactingUser, reactable, globalReactable = false) {
+        let query = {
             messageId: message.id,
             userId: reactingUser.id,
-            reactableId: reactable._id
-        }).exec();
+        }
+
+        if (reactable) query.reactableId = reactable._id;
+        if (globalReactable) query.globalReacion = true;
+
+        const reactions = await reactionSchema.find(query).exec();
 
         return reactions.length;
     }
