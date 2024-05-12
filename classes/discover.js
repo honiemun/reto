@@ -23,12 +23,6 @@ class Discover {
         Discover._instance = this;
     }
 
-    // TO-DO for later
-    // - Make another query if we run out of messages (or make random selection infinite)
-    // - Add Post Leaderboard rankings (by Karma)
-    // - Add "Skip after Reaction" optional function
-    // - Modify No Messages to show "Either (USER) hasn't used Reto" if filter is by Member
-
     async loadDiscovery (interaction, member, isGlobal = false) {
 		// Loading screen
 		await interaction.editReply({ embeds: [new EmbedBuilder()
@@ -49,7 +43,7 @@ class Discover {
 
     async findMessage (interaction, member, messages, emoji, toDelete, isGlobal = false, page = 0) {
         const messageData = messages[page];
-        if (!messageData) return await this.noMessages(interaction);
+        if (!messageData) return await this.noMessages(interaction, member, messages, emoji, toDelete, isGlobal, page);
 
         const channel = interaction.guild.channels.cache.get(messageData.channelId);
         if (!channel) return await this.storeMissingMessages("channel", messageData, interaction, member, messages, emoji, toDelete, isGlobal, page);
@@ -63,14 +57,16 @@ class Discover {
 
     async generateDiscoveryMessage (interaction, message, messageData, member, messages, emoji, toDelete, isGlobal = false, page = 0) {
         console.log("🚀 Showing ".gray + interaction.user.username + " a message by ".gray + message.author.username + " (page ".gray + (page + 1) + ")".gray);
-
+        const sortInput = interaction.options.getString("sort");
+        
         // Message
         const messageEmbed = await Pin.generateMessageEmbed(message);
         const messageKarma = await Pin.getKarmaTotalString(message, messageData);
+        const messageRanking = await this.getRankingString(sortInput, page);
 
-        const buttons = await this.generateDiscoveryButtons(message, isGlobal, page, emoji);
+        const buttons = await this.generateDiscoveryButtons(message, messages, isGlobal, page, emoji);
 
-        const reply = await interaction.editReply({ content: messageKarma, embeds: messageEmbed, components: [buttons] });
+        const reply = await interaction.editReply({ content: sortInput == "karma" ? messageRanking + "  |  " + messageKarma : messageKarma, embeds: messageEmbed, components: [buttons] });
 
         // Delete messages
         if (toDelete.length > 0) {
@@ -83,7 +79,7 @@ class Discover {
         await this.generateDiscoveryCollector(reply, interaction, member, message, messages, emoji, toDelete, isGlobal, page);
     }
 
-    async generateDiscoveryButtons (message, isGlobal, page, emoji) {
+    async generateDiscoveryButtons (message, messages, isGlobal, page, emoji) {
         const row = new ActionRowBuilder();
 
         row.addComponents(
@@ -114,6 +110,8 @@ class Discover {
                 .setEmoji("➡️")
                 .setStyle("Secondary")
                 .setCustomId("next")
+                // May not work on Random sort if there are any missing messages
+                //.setDisabled(page >= messages.length - 1)
         );
 
         if (isGlobal) {
@@ -178,7 +176,7 @@ class Discover {
         });
     }
 
-    async getMessages (interaction, member, isGlobal) {
+    async getMessages (interaction, member, isGlobal, ommisions = []) {
         let match = {};
         let sorting = {};
 
@@ -189,6 +187,7 @@ class Discover {
         // Member/guild lookup
         !isGlobal ? match.guildId = member.guild.id : match.karma = { $gt: 5 }; // Messages with >5 Karma
         if (userInput) match.userId = userInput.id;
+        if (ommisions.length > 0) match.messageId = { $nin: ommisions }; // Omit specified messages
 
         // Make sure we have a channel, too
         match.channelId = {$exists: true}
@@ -196,7 +195,7 @@ class Discover {
         // Sorting
         switch (sortInput) {
             case "random":
-                sorting.$sample = { size: 100 };    // Arbitrary, we gotta make it so it's infinite later
+                sorting.$sample = { size: 100 };   // Arbitrary number
                 break;
             case "karma":
                 sorting.$sort = { karma: -1 };     // Descending (highest to lowest)
@@ -208,7 +207,7 @@ class Discover {
                 sorting.$sort = { createdAt: 1 };  // Ascending (lowest to highest)
                 break;
             default:
-                sorting.$sample = { size: 100 };    // Random
+                sorting.$sample = { size: 100 };   // Random
                 break;
         }
 
@@ -261,7 +260,7 @@ class Discover {
             interaction.user,
             reactable ? reactable : false,
             amount,
-            true,
+            isPositive,
             true
         );
 
@@ -285,7 +284,9 @@ class Discover {
         // TO-DO: Consider just updating the current message (Tiktok-style) instead of skipping it (Tinder-style)
         const updatedMessage = messages.findIndex(messageData => messageData.messageId === message.id);
         messages[updatedMessage].karma = messages[updatedMessage].karma + karmaToAward;
-        await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, page + 1);
+
+        let skipReact = interaction.options.getBoolean("skipReact") || false;
+        await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, skipReact ? page + 1 : page);
     }
 
     async storeMissingMessages (error, messageData, interaction, member, messages, emoji, toDelete, isGlobal, page) {
@@ -313,14 +314,50 @@ class Discover {
         }
     }
 
-    async noMessages (interaction) {
-        // TO-DO: Do another
-        // If we ran out of messages
-        await interaction.editReply({ content: "", components: [],embeds: [new EmbedBuilder()
-            .setColor("Red")
-            .setTitle("🚀 We couldn't find a message!")
-            .setDescription(`
-Either your server is very new to Reto (in which case, get reacting!), or you've seen all stored messages on your Server.`)] });
+    async noMessages (interaction, member, messages, emoji, toDelete, isGlobal, page) {
+        const ommisions = messages.map(messageData => messageData.messageId);
+        const newMessages = await this.getMessages(interaction, member, isGlobal, ommisions);
+
+        let userData;
+        const userInput = isGlobal ?  interaction.options.getUser("user") : interaction.options.getUser("member");
+        if (userInput) userData = await interaction.guild.members.fetch(userInput.id);
+
+        if (newMessages.length == 0) {
+            // TO-DO: Do another
+            // If we ran out of messages
+            await interaction.editReply({ content: "", components: [],embeds: [new EmbedBuilder()
+                .setColor("Red")
+                .setTitle("🚀 We couldn't find a message!")
+                .setDescription(`
+Either ` + (userInput ? userData.guild.nickname || userData.user.globalName || userData.user.username + ` is new to Reto` : `your server is very new to Reto _(in which case, get reacting!)_`) + `, or you've seen all stored messages on your Server.`)] });
+        } else {
+            messages.push(...newMessages);
+            await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, page + 1);
+        }
+    }
+
+    async getRankingString (sortInput, page) {
+        if (sortInput != "karma") return;
+        // If we're sorting By Karma, then page = rank
+        // If we ever integrate this with any other kind of view this would not work properly
+        let badge;
+        
+        switch (page + 1) {
+            case 3:
+                badge = "🥉";
+                break;
+            case 2:
+                badge = "🥈";
+                break;
+            case 1:
+                badge = "🥇";
+                break;
+            default:
+                badge = "🏅";
+                break;
+        }
+
+        return badge + " **" + (page + 1) + "**";
     }
 }
 

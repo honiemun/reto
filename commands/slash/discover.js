@@ -10,12 +10,9 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: true,
-    testOnly: true,
+    testOnly: false,
 
 	options: [
-        // TO-DO: Check if this should go in Reactable instead,
-        // in preparation for Pin Thresholds, which are decoupled from Reactables.
-        // /reactable threshold
         {
             name: "server",
             description: "Explore messages sent on this server!",
@@ -51,6 +48,18 @@ module.exports = {
                             value: "chronological"
                         }
 					]
+                },
+                {
+                    name: "member",
+                    description: "Show messages from a specific member.",
+                    required: false,
+                    type: ApplicationCommandOptionType.User
+                },
+                {
+                    name: "skip-react",
+                    description: "Whether to skip to the next message after reacting to it. False by default.",
+                    required: false,
+                    type: ApplicationCommandOptionType.Boolean
                 },
                 /*
                 {
@@ -90,12 +99,6 @@ module.exports = {
 					]
                 },
                 */
-                {
-                    name: "member",
-                    description: "Show messages from a specific member.",
-                    required: false,
-                    type: ApplicationCommandOptionType.User
-                },
             ],
         },
         /*
