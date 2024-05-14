@@ -10,7 +10,6 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: true,
-    testOnly: false,
 
 	options: [
         {
