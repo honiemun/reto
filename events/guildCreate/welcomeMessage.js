@@ -32,25 +32,6 @@ module.exports = async (guild) => {
                 },
             );
 
-            // TO-DO: Reimplement
-            /*
-            const retoLegacyId = process.env.RETO_LEGACY_ID;
-
-            const members = await guild.members.fetch();
-            for (const member of members) {
-                console.log(member);
-
-                if (member.id === retoLegacyId) {
-                    embed.addFields(
-                        {
-                            name: "⚠️ Wait, two Retos...?!",
-                            value: "It looks like you've also added the previous version of Reto to this server, **Reto Legacy.** To make sure that you don't have repeated messages, reactions, and other erratic messaes, we recommend that you kick <@" + retoLegacyId + "> out of this server before continuing.",
-                        }
-                    )
-                }
-            }
-            */
-
             messageSent = true;
             return await channel.send({ embeds: [embed], files: [file] });
 

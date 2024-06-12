@@ -1,4 +1,4 @@
-const { Guild, GuildMember, ButtonStyle } = require("discord.js");
+const { ButtonStyle } = require("discord.js");
 
 // Classes
 const Setup = require("../classes/setup");
