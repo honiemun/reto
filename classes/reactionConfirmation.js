@@ -86,7 +86,7 @@ class ReactionConfirmation {
 				.setColor("Green")
 				.setTitle("✔️ Reaction confirmations are updated!")
 				.setDescription(confirmationMessage)
-				.setFooter({ text: "Want some more control over your embed? Add modifiers! Read all about them with /modifierlist." })
+				.setFooter({ text: "Want some more control over your embed? Add modifiers! Read all about them with /modifiers." })
 			]});
 		});
     }

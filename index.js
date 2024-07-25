@@ -46,12 +46,8 @@ client.on("ready", async () => {
 		events: {
 			dir: path.join(__dirname, 'events')
 		},
-		testServers: [
-			'952707420700934195', // Retool Development
-		],
-		botOwners: [
-			'690962744454938734', // Honiemun
-		],
+		testServers: process.env.TEST_SERVERS.split(","),
+		botOwners: process.env.BOT_OWNERS.split(","),
 		disabledDefaultCommands: [
 			// TO-DO: See which of these are actually useful
 			WOK.DefaultCommands.ChannelCommand,

@@ -9,7 +9,7 @@ module.exports = {
 	description: 'Publish a news article on subscribed Reactable Channels.',
 
 	type: CommandType.SLASH,
-	guildOnly: false,
+	guildOnly: true,
     testOnly: true,
 
 	options: [
@@ -36,6 +36,12 @@ module.exports = {
             description: "The title of the URL displayed as a button on the news article. \"Learn more\" by default.",
             type: ApplicationCommandOptionType.String,
             required: false,
+        },
+        {
+            name: "override",
+            description: "Message is broadcasted to every server, regardless of sign-up to Newsletter. Use with caution!",
+            type: ApplicationCommandOptionType.Boolean,
+            required: false
         }
 	],
     

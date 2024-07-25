@@ -20,6 +20,18 @@ const newsSchema = new mongoose.Schema({
         required: true
     },
 
+	// The channel ID the message was sent on.
+    channelId: {
+        type: String,
+        required: true
+    },
+
+    // The guild ID the message was sent on.
+    guildId: {
+        type: String,
+        required: true
+    },
+
     // URL that's used as a button link alongside a news article.
     url: {
         type: String, // Links
@@ -37,12 +49,6 @@ const newsSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: true
-    },
-
-    // The message IDs of news articles that have already been broadcasted to a channel.
-    broadcastedIds: {
-        type: [String],
-        required: false
     },
 
     // The date the news article was created.

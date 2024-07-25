@@ -3,12 +3,15 @@ const { ButtonStyle, ActionRowBuilder, ButtonBuilder, PermissionsBitField } = re
 
 // Schemas
 const newsSchema = require('../schemas/news');
+const broadcastedNewsSchema = require('../schemas/broadcastedNews');
+
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
 
 // Classes
 const Embed = require("../classes/embed");
 const Pin = require("../classes/pin");
+const Scroll = require("../classes/scroll");
 
 class News {
     
@@ -34,9 +37,9 @@ class News {
         try {
             message = await interaction.channel.messages.fetch(messageId);
         } catch (e) {
-            // I have more error catching here than in customer facing parts. Honestly, we could port this to the Error class.
             let error;
 
+            // I have more error catching here than in customer facing parts. Honestly, we could port this to the Error class.
             switch (e.code) {
                 case 10008:
                     error = await Embed.createErrorEmbed("The message you're trying to turn into a news article doesn't exist, or isn't available on this channel/server.");
@@ -98,12 +101,12 @@ class News {
 		});
     }
 
-    async generateNewsEmbed (interaction, message) {
+    async generateNewsEmbed (interaction, message, article = {}, footer = true) {
         // Refactored version of Pin's generateMessageEmbed,
         // with some modifications for displaying news (and without Chain Messages).
         
         let messageEmbed = {
-            url: interaction.options.getString("url") || "https://retobot.com",
+            url: article.url || interaction.options ? interaction.options.getString("url") : "https://retobot.com" || "https://retobot.com",
             timestamp: new Date(message.createdTimestamp).toISOString(),
             fields: [],
             color: 0x202225,
@@ -112,35 +115,38 @@ class News {
                 icon_url: "https://retobot.com/favicon.png" // TO-DO: We shouldn't depend on retobot.com!
             },
             footer: {
-                text: "You're seeing this message because this server is subscribed to the Reto Newsletter."
+                text: footer ? "You're seeing this because the server is subscribed to the Reto Newsletter." : "Reto Newsletter"
             }
         };
 
         // Title
-        messageEmbed.title = interaction.options.getString("title");
+        messageEmbed.title = article.title || interaction.options.getString("title");
 
         // Content
         messageEmbed.description = message.content;
         
         // Images
-        // (offloading this logic to Pinning)
+        // One image
+        messageEmbed.image  = await Pin.setEmbedSingleImage(message);
+
+        // Multi-image
         let embedArray = await Pin.setEmbedImages(message, messageEmbed.url);
-        embedArray.unshift(messageEmbed)
+        embedArray.unshift(messageEmbed);
 
         return embedArray;
     }
 
     async publishNews(interaction, message) {
-        const news = await this.updateNews(interaction, message);
+        const news = await this.updateNewsDocument(interaction, message);
 
         return await interaction.editReply({
-            content: `Your news article, **${news.title}**, has been published to \`/news\`!\nYou can edit it later using the same \`${message.id}\` message ID.`,
+            content: `Your news article, **${news.title}**, has been published to \`/newsletter\`!`,
             embeds: [],
             components: []
         });
     }
 
-    async updateNews(interaction, message, broadcastedIds = []) {
+    async updateNewsDocument(interaction, message, broadcastedNews = []) {
         /*  Published news are stored into the database,
             and are accessible through /news.
             
@@ -152,40 +158,63 @@ class News {
             { $set : { 
                 published: true,
 
+                channelId: interaction.channel.id,
+                guildId: interaction.guild.id,
+
                 title: interaction.options.getString("title"),
                 url: interaction.options.getString("url"),
                 urlText: interaction.options.getString("url-title"),
-                
-                broadcastedIds: broadcastedIds
             }},
-            { upsert: true }
+            { upsert: true, new: true }
         ).exec();
+
+        if (broadcastedNews.length > 0) {
+            const bulkOps = broadcastedNews.map(broadcast => ({
+                updateOne: {
+                  filter: { newsId: news._id, guildId: broadcast.guildId },
+                  update: { $setOnInsert: { 
+                    newsId: news._id,
+                    messageId: broadcast.messageId,
+                    channelId: broadcast.channelId,
+                    guildId: broadcast.guildId
+                   } },
+                  upsert: true
+                }
+              }));
+          
+              const broadcasted = await broadcastedNewsSchema.bulkWrite(bulkOps);
+        }
         
         return news;
     }
 
     async broadcastNews (interaction, message, embeds, urlRow, client) {
-        let broadcastedIds = [];
-        const guilds = await this.findBroadcastChannels(client);
+        let broadcastedNews = [];
+        const guilds = await this.findBroadcastChannels(client, interaction.options.getBoolean("override"));
+      
+        for (const guildId of Object.keys(guilds)) { // for...of loop for async iteration
+          let channelId = guilds[guildId];
+          let broadcastedMessage = await this.sendNewsToGuild(guildId, channelId, embeds, urlRow, client);
+      
+          if (broadcastedMessage) {
+            broadcastedNews.push({
+              messageId: broadcastedMessage.id,
+              channelId: channelId,
+              guildId: guildId
+            });
+          }
+        }
 
-        Object.keys(guilds).forEach(async (guildId) => {
-            let channelId = guilds[guildId];
-
-            let broadcastedMessage = await this.sendNewsToGuild(guildId, channelId, embeds, urlRow, client);
-            if (broadcastedMessage) broadcastedIds.push(broadcastedMessage.id);
-        });
-
-        const news = await this.updateNews(interaction, message, broadcastedIds);
-
+        const news = await this.updateNewsDocument(interaction, message, broadcastedNews);
+        
         return await interaction.editReply({
-            // 
-            content: `Your news article, **${news.title}**, has been broadcast to ${broadcastedIds.length} servers!`,
+            content: `Your news article, **${news.title}**, has been broadcast to ${broadcastedNews.length} servers!`,
             embeds: [],
             components: []
         });
     }
 
-    async findBroadcastChannels (client) {
+    async findBroadcastChannels (client, override = false) {
         /*
         In order of priority:
         - Reactable with sendsToChannel (most amount of Karma wins)
@@ -194,37 +223,36 @@ class News {
         - Earliest channel which the bot has permission to send messages on */
         let broadcastChannels = {};
 
-        const guilds = await guildSchema.aggregate([
-            {
-                $match: { subscribedToNewsletter: true }
-            },
-            {
-                $lookup: {
-                    from: "reactables",
-                    pipeline: [{
-                        $match: {
-                            "sendsToChannel": { $exists: true }
-                        }
-                    }, {
-                        $sort: { "karmaAwarded": -1 }
-                    }],
-                    localField: "guildId",
-                    foreignField: "guildId",
-                    as: "reactables"
-                }
-            },
-            {
-                $lookup: {
-                    from: "pinthresholds",
-                    pipeline: [{
-                        $sort: { "karma": -1 }
-                    }],
-                    localField: "guildId",
-                    foreignField: "guildId",
-                    as: "pinthresholds"
-                }
+        const reactableLookup = {
+            $lookup: {
+                from: "reactables",
+                pipeline: [{
+                    $match: {
+                        "sendsToChannel": { $exists: true }
+                    }
+                }, {
+                    $sort: { "karmaAwarded": -1 }
+                }],
+                localField: "guildId",
+                foreignField: "guildId",
+                as: "reactables"
             }
-        ]).exec();
+        }
+
+        const thresholdLookup = {
+            $lookup: {
+                from: "pinthresholds",
+                pipeline: [{
+                    $sort: { "karma": -1 }
+                }],
+                localField: "guildId",
+                foreignField: "guildId",
+                as: "pinthresholds"
+            }
+        };
+
+        const guildLookup = override ? [reactableLookup, thresholdLookup] : [{$match: { subscribedToNewsletter: true }}, reactableLookup, thresholdLookup];
+        const guilds = await guildSchema.aggregate(guildLookup).exec();
 
         for (const guild of guilds) {
             
@@ -264,14 +292,15 @@ class News {
             if (firstValidChannel) broadcastChannels[guild.guildId] = firstValidChannel.id;
         }
 
+        console.log(broadcastChannels);
         return broadcastChannels;
     }
 
     async sendNewsToGuild (guildId, channelId, embeds, urlRow, client) {
-        const guild = client.guilds.cache.get(guildId);
+        const guild = await client.guilds.cache.get(guildId);
         if (!guild) return console.log("❌ Couldn't send news to guild! ".red + "(ID: ".gray + guildId + ")".gray);
 
-        const channel = guild.channels.cache.get(channelId);
+        const channel = await guild.channels.cache.get(channelId);
         if (!channel) return console.log("❌ Couldn't send news to guild! ".red + "(".gray + guild.name + ")".gray);
 
         try {
@@ -282,7 +311,54 @@ class News {
         }
     }
 
-    async showScrollableNews (interaction, member) {
+    async showScrollableNews (interaction, client) {
+        let deleteNews = [];
+
+        const news = await newsSchema.find({ published: true }).sort({ createdAt: -1 }).exec();
+        if (!news) {
+            const error = await Embed.createErrorEmbed("[There is no news.](https://pbs.twimg.com/media/DpJ513bXUAA0tBJ.jpg:large)"); // TODO: Send image locally
+            return await interaction.followUp({ embeds: [error] });
+        }
+
+        const content = [];
+
+        for (const article of news) {
+            // NOTE: We should do this at runtime, when clicking a button.
+            try {
+                // TO-DO: Cache the guild and channel so we don't have to do this for every message
+                const guild = await client.guilds.cache.get(article.guildId);
+                const channel = await guild.channels.cache.get(article.channelId);
+                const message = await channel.messages.fetch(article.messageId);
+
+                content.push(await this.formatEmbedsForScroll(await this.generateNewsEmbed(interaction, message, article, false), article));
+            } catch (e) {
+                console.log("❌ Couldn't find news! ".red + "(ID: ".gray + article.messageId.gray + ")".gray + "\n" + e.message);
+                deleteNews.push(article.messageId);
+            }
+        }
+
+        // Delete news that can't be fetched
+        if (deleteNews.length > 0) await newsSchema.deleteMany({ messageId: { $in: deleteNews } });
+
+        // Scroll through news
+        return await Scroll.createScrollableList(interaction, content, interaction.user.id);
+    }
+
+    async formatEmbedsForScroll(embeds, article) {
+        return {
+            embeds: embeds,
+            components: article.url ? [
+                { type: 'prev' },
+                {
+                    label: article.urlText || "Learn more",
+                    style: ButtonStyle.Link,
+                    url: article.url,
+                    customId: "url"
+                },
+                { type: 'post' }
+            ] : null,
+            message: "test"
+        }
     }
 
     async getUrlRow (url, urlText) {
@@ -295,6 +371,72 @@ class News {
                     .setStyle(ButtonStyle.Link)
                     .setURL(url)
             )
+    }
+
+    async findOfficialNewsArticle (message) {
+        // Just to optimize a little bit, so we don't make a database call on any edit,
+        // we're going to assume that the only servers that can create, update or delete
+        // news are development servers, and that only bot owners can edit them.
+        
+        const guilds = process.env.TEST_SERVERS.split(",");
+        const owners = process.env.BOT_OWNERS.split(",");
+        if (!guilds.includes(message.guildId) || !owners.includes(message.author.id)) return false;
+
+        const newsToUpdate = await newsSchema.findOne({ messageId: message.id });
+        if (!newsToUpdate) return false;
+
+        return newsToUpdate;
+    }
+
+    // Could be abstracted into a helper "find message by IDs" function
+    async fetchExistingNews (interaction, broadcast) {
+        try {
+            const guild = await interaction.client.guilds.cache.get(broadcast.guildId);
+            const channel = await guild.channels.cache.get(broadcast.channelId);
+            const message = await channel.messages.fetch(broadcast.messageId);
+
+            if (message) return message;
+            return false;
+        } catch (e) {
+            switch (e.code) {
+                case 10008:
+                    console.log("❌ News message was already deleted. ".gray + "(ID: ".gray + broadcast.messageId.gray + ")".gray);
+                    return false;
+                default:
+                    console.log("❌ Couldn't update news! ".red + "(ID: ".gray + broadcast.messageId.gray + ")".gray + "\n" + e.code + ": " + e.message);
+                    return false;
+            }
+        }
+    }
+
+    async updateNews (interaction, newMessage) {
+        const newsToUpdate = await this.findOfficialNewsArticle(newMessage);
+        if (!newsToUpdate) return false;
+        
+        const broadcasts = await broadcastedNewsSchema.find({ newsId: newsToUpdate._id });
+
+        for (const broadcast of broadcasts) {
+            await this.fetchExistingNews(interaction, broadcast).then(async (message) => {
+                if (!message) return;
+                console.log("🗞️  Updating news article on the".gray + message.guild.name + " guild...".gray);
+                await message.edit({ embeds: await this.generateNewsEmbed(interaction, newMessage, newsToUpdate, true) });
+            });
+        }
+    }
+
+    async deleteNews (interaction, message) {
+        const newsToDelete = await this.findOfficialNewsArticle(message);
+        if (!newsToDelete) return false;
+        
+        const broadcasts = await broadcastedNewsSchema.find({ newsId: newsToDelete._id });
+
+        for (const broadcast of broadcasts) {
+            await this.fetchExistingNews(interaction, broadcast).then(async (message) => {
+                if (!message) return;
+                console.log("🗞️  Deleting news article on the".gray + message.guild.name + " guild...".gray);
+                await message.delete();
+            });
+        }
     }
 }
 

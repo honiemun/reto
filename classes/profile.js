@@ -126,14 +126,14 @@ class Profile {
             // Guild Karma
             embed.fields.push({
                 "name": guildKarmaData.emoji + ' ' + guildKarmaData.name,
-                "value": "```" + localKarma + "```",
+                "value": "`" + localKarma + "`",
                 "inline": true
             })
         }
 
         embed.fields.push({
                 "name": retoEmojis.karmaEmoji + " Global Karma",
-                "value": '```' + globalKarma + '```',
+                "value": '`' + globalKarma + '`',
                 "inline": true
         })
 
@@ -150,7 +150,7 @@ class Profile {
             localRanking = memberDatabase && memberDatabase.ranking != undefined ? memberDatabase.ranking : "N/A"
             embed.fields.push({
                 "name": '✨ ' + member.guild.name + " Rank",
-                "value": "```" + localRanking + "```",
+                "value": "`" + localRanking + "`",
                 "inline": true
             })
         }
@@ -158,7 +158,7 @@ class Profile {
         // Global Rank
         embed.fields.push({
             "name": '🌐 Global Rank',
-            "value": "```" + globalRanking + "```",
+            "value": "`" + globalRanking + "`",
             "inline": true
         })
 

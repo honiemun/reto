@@ -1,6 +1,6 @@
 module.exports = {
-    karmaEmoji: '<:karma:862440157525180488>',
-    confirmationEmoji: '<:retoolconfirm:1059560587417354270>',
-    loadingEmoji: '<a:loading:660250625107296256>',
-    dottedLineEmoji: '<:dottedline:1180328794897256591>'
+    karmaEmoji: '<:karma:1265828472752963585>',
+    confirmationEmoji: '<a:retoolconfirm:1265827708865216665>',
+    loadingEmoji: '<a:loading:1265828678667993109>',
+    dottedLineEmoji: '<:dottedline:1265828864878317630>'
 }
