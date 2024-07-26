@@ -429,13 +429,20 @@ class News {
         if (!newsToDelete) return false;
         
         const broadcasts = await broadcastedNewsSchema.find({ newsId: newsToDelete._id });
+        let broadcastAmount = 0;
 
         for (const broadcast of broadcasts) {
             await this.fetchExistingNews(interaction, broadcast).then(async (message) => {
                 if (!message) return;
                 console.log("🗞️  Deleting news article on the".gray + message.guild.name + " guild...".gray);
                 await message.delete();
+                broadcastAmount++;
             });
+        }
+
+        if (broadcastAmount > 0) {
+            await newsSchema.deleteOne({ _id: newsToDelete._id });
+            await broadcastedNewsSchema.deleteMany({ newsId: newsToDelete._id });
         }
     }
 }
