@@ -77,7 +77,7 @@ class News {
                     .setCustomId('publish'),
             );
         
-        const embeds = await this.generateNewsEmbed(interaction, message);
+        const embeds = await this.generateNewsEmbed(interaction, message, {}, true, interaction.options.getBoolean("override"));
     
         const preview = await interaction.editReply({
             content: `This is your news post. What would you like to do?`,
@@ -101,7 +101,7 @@ class News {
 		});
     }
 
-    async generateNewsEmbed (interaction, message, article = {}, footer = true) {
+    async generateNewsEmbed (interaction, message, article = {}, footer = true, override = false) {
         // Refactored version of Pin's generateMessageEmbed,
         // with some modifications for displaying news (and without Chain Messages).
         
@@ -115,7 +115,10 @@ class News {
                 icon_url: "https://retobot.com/favicon.png" // TO-DO: We shouldn't depend on retobot.com!
             },
             footer: {
-                text: footer ? "You're seeing this because the server is subscribed to the Reto Newsletter." : "Reto Newsletter"
+                text:
+                    override ? "You're seeing this because it's a critical Reto announcement." : 
+                    footer ? "You're seeing this because the server is subscribed to the Reto Newsletter." :
+                    "Reto Newsletter"
             }
         };
 
@@ -257,13 +260,13 @@ class News {
         for (const guild of guilds) {
             
             // Reactable-sent channel
-            if (guild.reactables.length > 0) {
+            if (guild.reactables.length > 0 && client.channels.cache.has(guild.reactables[0].sendsToChannel)) {
                 broadcastChannels[guild.guildId] = guild.reactables[0].sendsToChannel;
                 continue;
             }
 
             // Pin Threshold channel
-            if (guild.pinthresholds.length > 0) {
+            if (guild.pinthresholds.length > 0 && client.channels.cache.has(guild.pinthresholds[0].channelId)) {
                 broadcastChannels[guild.guildId] = guild.pinthresholds[0].channelId;
                 continue;
             }
@@ -290,6 +293,7 @@ class News {
 
             // First accessible channel
             if (firstValidChannel) broadcastChannels[guild.guildId] = firstValidChannel.id;
+            console.log("Found any accessible channel for the guild " + guild.guildId + ": " + firstValidChannel.id);
         }
 
         console.log(broadcastChannels);
