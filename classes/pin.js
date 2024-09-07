@@ -281,7 +281,7 @@ class Pin {
                 }
             default:
                 const extraAuthors = authors.length - 1
-                const others = extraAuthors == 1 ? "other" : "others";
+                const others = extraAuthors == 1 ? " other" : " others";
                 return {
                     name: message.author.username + " (and " + extraAuthors + others + ")",
                     icon_url: avatarURL ? avatarURL : undefined
@@ -312,43 +312,41 @@ class Pin {
         };
     }
 
-    async setEmbedMessages (baseMessage, chain) {
+    async setEmbedMessages(baseMessage, chain) {
         let messageList = [];
-        let previousElement;
-
-        if (!chain) return messageList;
-        for (const [i, chainElement] of chain.entries()) {
-            previousElement = messageList[messageList.length - 1];
-
+    
+        // If the chain is empty, return an empty list
+        if (chain.length == 0) return messageList;
+    
+        for (const chainElement of chain) {
             const includes = await this.generateIncludesString(chainElement.message, true, false);
-            const content = includes ? chainElement.message.content + "\n_" + retoEmojis.dottedLineEmoji +  " " + includes + "_": chainElement.message.content;
-            
-            if (previousElement && previousElement.name == chainElement.message.author.username) {
-                // Copy same content to previous element
-                previousElement.value += "\n" + content;
-            } else {
-                // Create a new element
-                messageList.push({
-                    name: chainElement.message.author.username,
-                    value: content,
-                })
-            }
-        };
-
-        // TO-DO: This code structure is repeated.
-        // Fix this up, eventually.
-        if (previousElement && previousElement.name == baseMessage.author.username) {
-            // Copy same content to previous element
-            previousElement.value += "\n" + baseMessage.content;
-        } else {
-            // Create a new element
-            messageList.push({
-                name: baseMessage.author.username,
-                value: baseMessage.content,
-            })
+            const content = includes 
+                ? chainElement.message.content + "\n_" + retoEmojis.dottedLineEmoji + " " + includes + "_" 
+                : chainElement.message.content;
+    
+            // Use the new function to update the messageList
+            this.addOrMergeEmbedMessageElement(messageList, chainElement.message.author.username, content);
         }
-
+    
+        // Handle baseMessage using the same function
+        this.addOrMergeEmbedMessageElement(messageList, baseMessage.author.username, baseMessage.content);
+    
         return messageList;
+    }
+    
+    addOrMergeEmbedMessageElement(messageList, authorName, content) {
+        let previousElement = messageList[messageList.length - 1];
+    
+        if (previousElement && previousElement.name === authorName) {
+            // Append content to the previous element
+            previousElement.value += "\n" + content;
+        } else {
+            // Create a new element in messageList
+            messageList.push({
+                name: authorName,
+                value: content
+            });
+        }
     }
 
     async getMessageChain (message, previewMessage = false) {

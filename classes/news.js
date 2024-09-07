@@ -25,8 +25,6 @@ class News {
     async broadcast(interaction, client) {
         /*
         LIMITATIONS OF THE NEWS SYSTEM:
-        - IMPORTANT: Optional overriding of the Newsletter Subscribed check for major announcements (Retool Open Beta, Release)
-        - No way to currently edit a news article and have that edit reflected throughout servers.
         - News articles depend on a message ID, much like Pinning. If the message is deleted, the news article is inaccessible.
         - Depending on how Discord does images outside of servers, images on a News broadcast may not be available.
         - No validation on the URL field. Not strictly necessary, with it being a development tool.
@@ -107,7 +105,7 @@ class News {
         
         let messageEmbed = {
             url: article.url || interaction.options ? interaction.options.getString("url") : "https://retobot.com" || "https://retobot.com",
-            timestamp: new Date(message.createdTimestamp).toISOString(),
+            timestamp: new Date(article.createdAt || message.createdTimestamp).toISOString(),
             fields: [],
             color: 0x202225,
             author: {
