@@ -9,7 +9,6 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: false,
-	testOnly: true,
 
 	callback: async ({ user, message, interaction }) => {
 		await interaction.deferReply();

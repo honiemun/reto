@@ -18,7 +18,7 @@ module.exports = {
             name: "channels-in-messages",
             description: "Iterate through every message we've got access to, find the Channel ID, and save it.",
             type: ApplicationCommandOptionType.Subcommand
-        },
+        }
 	],
     
 	callback: async ({ interaction }) => {

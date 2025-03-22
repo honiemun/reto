@@ -16,7 +16,6 @@ class Profile {
     }
 
     async fetchProfile(author, member, instance, interaction, hasBadges) {
-        console.log(hasBadges);
         const embed = await this.fetchProfileEmbed(author, member, instance, interaction, hasBadges);
         
         // TO-DO: Hide button if there's no badges
@@ -70,13 +69,17 @@ class Profile {
         let localRanking;
         let globalRanking;
 
-        const globalKarma = userDatabase && userDatabase.globalKarma != undefined ? userDatabase.globalKarma : "0"
+        const globalKarma = userDatabase && userDatabase.globalKarma != undefined ? userDatabase.globalKarma : "0";
+
+        let description = '`@' + user.username + '`';
+        const badges = await this.getBadges(member, user, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild);
+        if (badges.length) description = description.concat(" " + badges.join(""));
 
         // Karma totals
-        
+
         let embed = {
             "title": username,
-            "description": '`@' + user.username + '`',
+            "description": description,
             "thumbnail": {
                 "url":  user.avatarURL({ format: "png" })
             },
@@ -166,16 +169,8 @@ class Profile {
         if (hasBadges) {
             const badges = await this.getFullBadgeView(member, user, username, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild);
             for (const badge of badges) { embed.fields.push(badge); }
-        } else {
-            const badges = await this.getBadges(member, user, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild);
-            if (badges.length) {
-                embed.fields.push({
-                    "name": "Badges",
-                    "value": badges.join(""),
-                    "inline": false
-                })
-            }
         }
+        
         return embed
     }
 
@@ -183,7 +178,7 @@ class Profile {
     async getBadges (member, user, userDatabase, instance, interaction, globalRanking, localRanking, isOnGuild) {
         let badges = [];
 
-        if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) badges.push("🧑‍💻");
+        if (process.env.BOT_OWNERS.split(",").includes(user.id)) badges.push("🧑‍💻");
 
         if (globalRanking <= 10) {
             const globalMedal = await this.getMedalBadge(globalRanking, instance, interaction, "", true);
@@ -208,7 +203,7 @@ class Profile {
             "inline": false
         })
         
-        if (JSON.parse(process.env.BOT_OWNERS).includes(user.id)) embed.push(await this.getProgrammerBadge(instance, interaction));
+        if (process.env.BOT_OWNERS.split(",").includes(user.id)) embed.push(await this.getProgrammerBadge(instance, interaction));
         if (globalRanking <= 10) embed.push(await this.getMedalBadge(globalRanking, instance, interaction));
         if (isOnGuild && localRanking <= 10) embed.push(await this.getMedalBadge(localRanking, instance, interaction, member.guild.name));
         if (userDatabase.earlySupporter) embed.push(await this.getEarlySupporterBadge(instance, interaction));

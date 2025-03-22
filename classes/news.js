@@ -382,7 +382,7 @@ class News {
         
         const guilds = process.env.TEST_SERVERS.split(",");
         const owners = process.env.BOT_OWNERS.split(",");
-        if (!guilds.includes(message.guildId) || !owners.includes(message.author.id)) return false;
+        if (!guilds.includes(message.guildId) || !message.author || !owners.includes(message.author.id)) return false;
 
         const newsToUpdate = await newsSchema.findOne({ messageId: message.id });
         if (!newsToUpdate) return false;

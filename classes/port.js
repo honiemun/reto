@@ -12,6 +12,7 @@ const userSchema = require('../schemas/user');
 const memberSchema = require('../schemas/member');
 const messageSchema = require('../schemas/message');
 const reactableSchema = require('../schemas/reactable');
+const reactionSchema = require('../schemas/reaction');
 
 // Classes
 const Embed = require("../classes/embed");
@@ -188,12 +189,16 @@ class Port {
 
             userSchema.findOneAndUpdate(
                 { userId: user.username },
-                { $set : { 
-                    userId: user.username,
-                    globalKarma: user.points,
-                    canStoreMessages: canStoreMessages,
-                    earlySupporter: true
-                }},
+                { 
+                    $set : { 
+                        userId: user.username,
+                        canStoreMessages: canStoreMessages,
+                        earlySupporter: true
+                    },
+                    $max : { 
+                        globalKarma: { $max: [ user.points, "$globalKarma" ] }
+                    }
+                },
                 { upsert: true }
             ).exec();
 
@@ -202,11 +207,15 @@ class Port {
                 memberSchema.findOneAndUpdate(
                     { guildId: memberServer,
                         userId: user.username },
-                    { $set : { 
-                        guildId: memberServer,
-                        userId: user.username,
-                        karma: memberServer in user ? user[memberServer] : 0
-                    }},
+                    {
+                        $set : { 
+                            guildId: memberServer,
+                            userId: user.username,
+                        },
+                        $max : {
+                            karma: { $max: [ memberServer in user ? user[memberServer] : 0, "$karma" ] }
+                        }
+                    },
                     { upsert: true }
                 ).exec();
             }
@@ -219,16 +228,26 @@ class Port {
             
             await this.generateImportEmbed("Message data", entry, imported.post, interaction, 25)
 
+            console.log(message.points);
+
+            // Message
             messageSchema.findOneAndUpdate(
                 { messageId: message.msgid },
-                { $set : { 
-                    messageId: message.msgid,
-                    userId: message.username,
-                    guildId: message.servers,
-                    karma: message.points
-                }},
+                {
+                    $set : { 
+                        messageId: message.msgid,
+                        userId: message.username,
+                        guildId: message.servers
+                    },
+                    $max : {
+                        karma: { $max: [ message.points, "$karma" ] }
+                    }
+                },
                 { upsert: true }
             ).exec();
+
+            // Reactions are not set, as we can't determine
+            // with which Reactable the person has reacted.
         }
     }
 

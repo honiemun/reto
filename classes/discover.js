@@ -56,9 +56,12 @@ class Discover {
     }
 
     async generateDiscoveryMessage (interaction, message, messageData, member, messages, emoji, toDelete, isGlobal = false, page = 0) {
-        console.log("🚀 Showing ".gray + interaction.user.username + " a message by ".gray + message.author.username + " (page ".gray + (page + 1) + ")".gray);
+        
         const sortInput = interaction.options.getString("sort");
         
+        console.log("🚀 Showing ".gray + interaction.user.username + " a message by ".gray + message.author.username + " (page ".gray + (page + 1) + ")".gray);
+        if (sortInput == "algorithm") console.log("🪙  Score: ".gray + messageData.score + " | Karma: ".gray + messageData.karma);
+
         // Message
         const messageEmbed = await Pin.generateMessageEmbed(message);
         const messageKarma = await Pin.getKarmaTotalString(message, messageData);
@@ -176,48 +179,92 @@ class Discover {
         });
     }
 
-    async getMessages (interaction, member, isGlobal, ommisions = []) {
+    async getMessages(interaction, member, isGlobal, ommisions = []) {
         let match = {};
-        let sorting = {};
-
+        let pipeline = [];
+    
         // Variables
-        const userInput = isGlobal ?  interaction.options.getUser("user") : interaction.options.getUser("member");
+        const userInput = isGlobal ? interaction.options.getUser("user") : interaction.options.getUser("member");
         const sortInput = interaction.options.getString("sort");
-
+    
         // Member/guild lookup
-        !isGlobal ? match.guildId = member.guild.id : match.karma = { $gt: 5 }; // Messages with >5 Karma
+        !isGlobal ? (match.guildId = member.guild.id) : (match.karma = { $gt: 5 }); // Messages with >5 Karma
         if (userInput) match.userId = userInput.id;
         if (ommisions.length > 0) match.messageId = { $nin: ommisions }; // Omit specified messages
-
+    
         // Make sure we have a channel, too
-        match.channelId = {$exists: true}
-
+        match.channelId = { $exists: true };
+    
+        // Add $match to the pipeline
+        pipeline.push({ $match: match });
+    
         // Sorting
         switch (sortInput) {
             case "random":
-                sorting.$sample = { size: 100 };   // Arbitrary number
+                pipeline.push({ $sample: { size: 100 } }); // Arbitrary number
                 break;
             case "karma":
-                sorting.$sort = { karma: -1 };     // Descending (highest to lowest)
+                pipeline.push({ $sort: { karma: -1 } }); // Descending (highest to lowest)
                 break;
             case "reverse-chronological":
-                sorting.$sort = { createdAt: -1 }; // Descending (highest to lowest)
+                pipeline.push({ $sort: { createdAt: -1 } }); // Descending (highest to lowest)
                 break;
             case "chronological":
-                sorting.$sort = { createdAt: 1 };  // Ascending (lowest to highest)
+                pipeline.push({ $sort: { createdAt: 1 } }); // Ascending (lowest to highest)
+                break;
+            case "algorithm":
+                pipeline = pipeline.concat(await this.getForYouMessages()); // "For You" sorting
                 break;
             default:
-                sorting.$sample = { size: 100 };   // Random
+                pipeline.push({ $sample: { size: 100 } }); // Random
                 break;
         }
-
+    
         // TO-DO: Censor (SFW/NSFW), Filter (Media, text, etc.)
-
-        return await messageSchema.aggregate([
-            { $match: match },
-            sorting
-        ]).exec();
+    
+        return await messageSchema.aggregate(pipeline).exec();
     }
+    
+    async getForYouMessages() {
+
+        // We want to test out something more similar to HackerNews' algorithm, which looks like this:
+        // rankingScore = pow(upvotes, 0.8) / pow(ageHours + 2, 1.8)
+    
+        const currentTime = Date.now(); // Current time in milliseconds (not seconds)
+        const karmaWeight = 0.8;
+        const ageWeight = 1.8;
+    
+        return [
+            {
+                // Calculate the age of the message in hours
+                $addFields: {
+                    ageHours: {
+                        $divide: [
+                            { $subtract: [currentTime, { $toLong: "$createdAt" }] },
+                            3600 * 1000  // Convert milliseconds to hours
+                        ]
+                    }
+                }
+            },
+            {
+                // Calculate the ranking score using HackerNews' algorithm:
+                // rankingScore = (max(karma, 0) ^ 0.8) / ((ageHours + 2) ^ 1.8)
+                $addFields: {
+                    rankingScore: {
+                        $divide: [
+                            { $pow: [ { $max: ["$karma", 0] }, karmaWeight ] },
+                            { $pow: [ { $add: ["$ageHours", 2] }, ageWeight ] }
+                        ]
+                    }
+                }
+            },
+            {
+                // Sort messages by the calculated ranking score in descending order
+                $sort: { rankingScore: -1 }
+            }
+        ];
+    }
+    
 
     async getDefaultReactableEmoji (interaction) {
         const reactables = await reactableSchema.find({

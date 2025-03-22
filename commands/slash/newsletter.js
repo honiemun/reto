@@ -2,7 +2,6 @@ const { CommandType } = require("wokcommands");
 
 // Classes
 const News = require("../../classes/news");
-const { testOnly } = require("./modifiers");
 
 // Schemas
 
@@ -12,7 +11,6 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: false,
-	testOnly: true,
     
 	callback: async ({ interaction, client }) => {
 		await interaction.deferReply();

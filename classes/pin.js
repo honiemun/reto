@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
 
 // Schemas
 const messageSchema = require('../schemas/message');
@@ -12,6 +12,7 @@ const ReactionCheck = require("./reactionCheck")
 const Personalisation = require("./personalisation");
 const Embed = require("./embed");
 const Privacy = require("./privacy");
+const SelectMessage = require("./selectMessage");
 
 // Data
 const retoEmojis = require('../data/retoEmojis');
@@ -38,33 +39,38 @@ class Pin {
             }
         }
 
-        // We use this multiple times, better call it at the beginning
-        const messageDocument = await messageSchema.findOne({
-            messageId: message.id
-        }).exec();
+        // Fetch the message for later use
+        const messageDocument   = await messageSchema.findOne({
+                                    messageId: message.id
+                                }).exec();
 
-        const embed          = await this.generateMessageEmbed(message);
-        const karmaString    = await this.getKarmaTotalString(message, messageDocument);
+        // Get the message embed, and amount of Karma
+        const embed             = await this.generateMessageEmbed(message);
+        const karmaString       = await this.getKarmaTotalString(message, messageDocument);
         
-        // Get the channel to send/edit the message into
-        const reactionCount = await this.getReactionCount(reactable, message);
-        const pinThresholds = await pinThresholdSchema.find({
+        // Get the message's reaction count
+        const reactionCount     = await this.getReactionCount(reactable, message);
+        
+        // Get the pin thresholds
+        const pinThresholds     = await pinThresholdSchema.find({
             guildId: message.guildId
         }).exec();
-        const pinThreshold = await this.getMatchingPinThreshold(pinThresholds, message, messageDocument);
+        const pinThreshold      = await this.getMatchingPinThreshold(pinThresholds, message, messageDocument);
         const matchingThreshold = await this.getMatchingPinThreshold(pinThresholds, message, messageDocument, true);
 
-        const iterableChannels = await this.getIterableChannels(message, messageDocument, reactable, reactionCount, pinThresholds, isPositive, isChainUpdate);
+        // Get the channels to send/edit the message into
+        const iterableChannels  = await this.getIterableChannels(message, messageDocument, reactable, reactionCount, pinThresholds, isPositive, isChainUpdate);
         if (!iterableChannels) return;
+
+        // Get the videos from the message
+        const videos            = await this.getVideosFromMessage(message);
+
+        // Select the message for up to one hour, in case Add to Chain needs to be used
+        if (user) await SelectMessage.selectMessage(user, message);
 
         for (const iterableChannel of iterableChannels) {
             // Delete embeds, if the Reactable's Reaction Threshold is not met
             // or if the Pin Threshold is lesser or greater than the current Karma amount
-            if (reactable.sendsToChannel) {
-                console.log(reactable.reactionThreshold);
-                console.log(reactionCount);
-                console.log((reactionCount < reactable.reactionThreshold) ? true : false);
-            }
             if (!isPositive &&
                 (reactable.sendsToChannel && reactionCount < reactable.reactionThreshold && !pinThreshold ||
                 matchingThreshold)) {
@@ -86,13 +92,13 @@ class Pin {
                 // Send or edit message.
                 // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
                 if (!iterableChannel.edit) {
-                    channel.send({ content: karmaString, embeds: embed, components: [row] }).then((sentEmbed) => {
+                    channel.send({ content: karmaString, embeds: embed, components: [row], files: videos }).then((sentEmbed) => {
                         this.storePinnedEmbed(sentEmbed, messageDocument);
                     })
                 } else {
                     channel.messages.fetch(iterableChannel.embed).then((pinnedMessage) => {
                         try {
-                            pinnedMessage.edit({ content: karmaString, embeds: embed, components: [row] })
+                            pinnedMessage.edit({ content: karmaString, embeds: embed, components: [row], files: videos })
                         } catch (e) {
                             console.log("❌ Couldn't edit pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
                         }
@@ -727,6 +733,20 @@ If you need to check what your current Pin Thresholds are, use \`/pin threshold 
 				guildId: channel.guild.id
 			},
 		).exec();
+    }
+
+    async getVideosFromMessage (message) {
+        const videoAttachments = [];
+        const attachments = message.attachments.values();
+        if (!attachments) return;
+        
+        for (const attachment of attachments) {
+            if (attachment.url.includes(".mp4")) {
+                videoAttachments.push(new AttachmentBuilder(attachment.url, { name: attachment.name }));
+            }
+        }
+
+        return videoAttachments;
     }
 }
 

@@ -11,6 +11,7 @@ module.exports = {
 	type: CommandType.SLASH,
 	guildOnly: true,
     testOnly: true,
+    ownerOnly: true,
 
 	options: [
         {

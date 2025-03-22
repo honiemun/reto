@@ -3,6 +3,7 @@ const { ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
 const Discover = require("../../classes/discover");
+const { testOnly } = require("./commands");
 
 module.exports = {
 	category: 'Discover',
@@ -24,12 +25,6 @@ module.exports = {
 					required: false,
 					type: ApplicationCommandOptionType.String,
 					choices: [
-                        /*
-						{
-							name: "For You (default)",
-							value: "algorithm"
-						},
-                        */
 						{
 							name: "Random (default)",
 							value: "random"
@@ -37,6 +32,10 @@ module.exports = {
 						{
 							name: "By Karma",
 							value: "karma"
+						},
+						{
+							name: "For You (experimental)",
+							value: "algorithm"
 						},
 						{
 							name: "Newest",
@@ -103,7 +102,7 @@ module.exports = {
         /*
         {
             name: "global",
-            description: "Sets the amount of reactions needed on a reactable to pin a message. [Reto Gold]",
+            description: "Explore messages sent all around Discord!",
             type: ApplicationCommandOptionType.Subcommand,
 
             options: [
