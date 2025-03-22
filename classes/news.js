@@ -313,38 +313,74 @@ class News {
         }
     }
 
-    async showScrollableNews (interaction, client) {
-        let deleteNews = [];
-
-        const news = await newsSchema.find({ published: true }).sort({ createdAt: -1 }).exec();
-        if (!news) {
-            const error = await Embed.createErrorEmbed("[There is no news.](https://pbs.twimg.com/media/DpJ513bXUAA0tBJ.jpg:large)"); // TODO: Send image locally
-            return await interaction.followUp({ embeds: [error] });
-        }
-
-        const content = [];
-
-        for (const article of news) {
-            // NOTE: We should do this at runtime, when clicking a button.
+    async showScrollableNews(interaction, client) {
+        // This helper function fetches a batch of 5 news articles from the database,
+        // starting at the given skip amount.
+        const fetchBatch = async (skip, limit = 5) => {
+          const articles = await newsSchema
+            .find({ published: true })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .exec();
+      
+          let batchContent = [];
+          let cachedGuilds = new Map();
+          let cachedChannels = new Map();
+      
+          for (const article of articles) {
             try {
-                // TO-DO: Cache the guild and channel so we don't have to do this for every message
-                const guild = await client.guilds.cache.get(article.guildId);
-                const channel = await guild.channels.cache.get(article.channelId);
-                const message = await channel.messages.fetch(article.messageId);
-
-                content.push(await this.formatEmbedsForScroll(await this.generateNewsEmbed(interaction, message, article, false), article));
+              // Retrieve guild from cache or fetch it
+              let guild;
+              if (cachedGuilds.has(article.guildId)) {
+                guild = cachedGuilds.get(article.guildId);
+              } else {
+                guild = client.guilds.cache.get(article.guildId);
+                if (!guild) throw new Error("Guild not found");
+                cachedGuilds.set(article.guildId, guild);
+              }
+      
+              // Retrieve channel from cache or fetch it
+              let channel;
+              if (cachedChannels.has(article.channelId)) {
+                channel = cachedChannels.get(article.channelId);
+              } else {
+                channel = guild.channels.cache.get(article.channelId);
+                if (!channel) throw new Error("Channel not found");
+                cachedChannels.set(article.channelId, channel);
+              }
+      
+              const message = await channel.messages.fetch(article.messageId);
+              const newsEmbed = await this.generateNewsEmbed(interaction, message, article, false);
+              const formatted = await this.formatEmbedsForScroll(newsEmbed, article);
+              batchContent.push(formatted);
             } catch (e) {
-                console.log("❌ Couldn't find news! ".red + "(ID: ".gray + article.messageId.gray + ")".gray + "\n" + e.message);
-                deleteNews.push(article.messageId);
+              console.log("❌ Couldn't find news! (ID: " + article.messageId + ")\n" + e.message);
+              // Optionally mark for deletion or ignore the article
             }
+          }
+          return batchContent;
+        };
+      
+        // Initially load the first batch.
+        let content = await fetchBatch(0, 5);
+      
+        if (content.length === 0) {
+          const error = await Embed.createErrorEmbed("There is no news.");
+          return await interaction.followUp({ embeds: [error] });
         }
-
-        // Delete news that can't be fetched
-        if (deleteNews.length > 0) await newsSchema.deleteMany({ messageId: { $in: deleteNews } });
-
-        // Scroll through news
-        return await Scroll.createScrollableList(interaction, content, interaction.user.id);
-    }
+      
+        // Define a callback to fetch additional pages.
+        const fetchMoreCallback = async (currentCount) => {
+          // currentCount is the number of items already loaded.
+          const nextBatch = await fetchBatch(currentCount, 5);
+          return nextBatch; // could be empty if no more news
+        };
+      
+        // Pass the fetchMoreCallback into our scroll function.
+        return await Scroll.createScrollableList(interaction, content, interaction.user.id, fetchMoreCallback);
+      }
+      
 
     async formatEmbedsForScroll(embeds, article) {
         return {

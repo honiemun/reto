@@ -11,16 +11,13 @@ class Scroll {
         Scroll._instance = this;
     }
 
-    async createScrollableList(interaction, content, userId) {
-        /* TO-DO:
-         - Do we need the concept of Pages?
-         - Figure out how to fetch content at runtime from a function
-         - And how to reload this content once we've ran out of messages to send
-         */
+    async createScrollableList(interaction, content, userId, fetchMoreCallback = false) {
+        // pages mapping for each user; this could be stored externally if needed.
         let pages = {};
         pages[userId] = pages[userId] || 0;
         let page = pages[userId];
     
+        // Function to update the displayed page.
         const updatePage = async (newPage) => {
             pages[userId] = newPage;
             const embeds = content[newPage].embeds;
@@ -38,17 +35,15 @@ class Scroll {
         const components = content[page].components || [{ type: 'prev' }, { type: 'post' }];
         const message = content[page].message;
     
-        let collector;
-    
-        const filter = (i) => i.user.id === userId;
-        const time = 1000 * 60 * 5;
-    
         const sentEmbed = await interaction.editReply({
             embeds: embeds,
             components: [await this.getScrollRow(components, page, content)]
         });
     
-        collector = sentEmbed.createMessageComponentCollector({ filter, time });
+        const filter = (i) => i.user.id === userId;
+        const time = 1000 * 60 * 5; // 5 minutes
+    
+        const collector = sentEmbed.createMessageComponentCollector({ filter, time });
     
         collector.on('collect', async (i) => {
             if (!i) { return; }
@@ -59,10 +54,18 @@ class Scroll {
     
             if (i.customId === 'prev_embed' && page > 0) {
                 page--;
-            } else if (i.customId === 'next_embed' && page < content.length - 1) {
-                page++;
+            } else if (i.customId === 'next_embed') {
+                // If we're on the second-to-last page (and we have a callback function) try to load more content
+                if (page === content.length - 2 && fetchMoreCallback != false) {
+                    const moreContent = await fetchMoreCallback(content.length);
+                    if (moreContent && moreContent.length > 0) {
+                        content.push(...moreContent);
+                    }
+                }
+                if (page < content.length - 1) {
+                    page++;
+                }
             }
-    
             await updatePage(page);
         });
     
@@ -71,6 +74,7 @@ class Scroll {
             interaction.editReply({ components: [] });
         });
     }
+    
     
     async getScrollRow(components, page, content) {
         const row = new ActionRowBuilder();

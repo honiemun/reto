@@ -3,7 +3,6 @@ const { ApplicationCommandOptionType } = require("discord.js");
 
 // Classes
 const Discover = require("../../classes/discover");
-const { testOnly } = require("./commands");
 
 module.exports = {
 	category: 'Discover',
