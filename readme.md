@@ -7,7 +7,7 @@
 ### Retool
 This is the Github repository for **Retool**, the codename for the v2 rewrite of the Reto Discord bot. The old version is available on [this repo](https://github.com/honiemun/reto-legacy).
 
-Reto was developed from 2022 to 2024. No further major updates are planned, but its code is open source if you wish to tinker with it.
+Reto was developed from 2022 to 2024. No further major updates are planned, but its code is open source if you wish to tinker with it. The code is provided "as-is", and the Reto development team can not guarantee prolonged support.
 
 ### Installation
 
@@ -28,7 +28,7 @@ TO-DO: Move this to the documentation.
 To restore the database from a back-up through Docker:
 
 ```
-docker cp mongodb_backups/250523 reto-mongo:/restore
+docker cp mongodb_backups/[number] reto-mongo:/restore
 
 docker exec -it reto-mongo mongorestore \
   --drop \
