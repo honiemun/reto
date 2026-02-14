@@ -11,13 +11,13 @@ Reto was developed from 2022 to 2024. No further major updates are planned, but 
 
 ### Installation
 
-## Local
+#### Local
 
 Clone to your local machine, install all dependencies using `npm i .` and run the development version with `npm run dev`.
 
 You may need to create a `.env` file with your [app token and secret](https://discord.com/developers/applications), along with other optional features.
 
-## Docker
+#### Docker
 
 Run `docker compose up -d --build` on a computer running Docker. You can read the log output using `docker logs reto-bot`.
 
