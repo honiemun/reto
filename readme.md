@@ -14,6 +14,23 @@ Clone to your local machine, install all dependencies using `npm i .` and run th
 
 You may need to create a `.env` file with your [app token and secret](https://discord.com/developers/applications), along with other optional features.
 
+### Backup retrieval and database migration
+
+TO-DO: Move this to the documentation.
+
+To restore the database from a back-up through Docker:
+
+```
+docker cp mongodb_backups/250523 reto-mongo:/restore
+
+docker exec -it reto-mongo mongorestore \
+  --drop \
+  -u [MONGODB USERNAME] \
+  -p '[MONGODB PASSWORD]' \
+  --authenticationDatabase admin \
+  /restore
+```
+
 ### Invite links
 A temporal [invite link](https://discord.com/oauth2/authorize?client_id=900470229845561385&permissions=293400341584&scope=bot%20applications.commands) for the Retool Open Beta is available. The permissions may not be accurate.
 

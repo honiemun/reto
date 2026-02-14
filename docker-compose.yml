@@ -1,0 +1,27 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: reto-mongo
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+  reto:
+    build: .
+    container_name: reto-bot
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    env_file:
+      - .env
+    command: node index.js
+
+volumes:
+  mongo-data:
