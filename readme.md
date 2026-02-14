@@ -7,12 +7,19 @@
 ### Retool
 This is the Github repository for **Retool**, the codename for the v2 rewrite of the Reto Discord bot. The old version is available on [this repo](https://github.com/honiemun/reto-legacy).
 
-Currently, Retool is **closed source**. This may change in the future.
+Reto was developed from 2022 to 2024. No further major updates are planned, but its code is open source if you wish to tinker with it.
 
 ### Installation
+
+## Local
+
 Clone to your local machine, install all dependencies using `npm i .` and run the development version with `npm run dev`.
 
 You may need to create a `.env` file with your [app token and secret](https://discord.com/developers/applications), along with other optional features.
+
+## Docker
+
+Run `docker compose up -d --build` on a computer running Docker. You can read the log output using `docker logs reto-bot`.
 
 ### Backup retrieval and database migration
 
