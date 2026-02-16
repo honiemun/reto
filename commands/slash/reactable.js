@@ -88,7 +88,7 @@ module.exports = {
 	],
 
     autocomplete: async (command, argument, interaction) => {
-        // autocompleting the emoji to remove, we need to return the emojis currently in the Reactable as options
+        // Autocompleting the emoji to remove, we need to return the emojis currently in the Reactable as options
         if (argument === "emoji" && interaction.options.getSubcommand() === "remove") {
             const reactableName = interaction.options.getString("reactable");
             const reactable = await Autocomplete.autocompleteValidate("reactable", {guildId: interaction.guild.id}, reactableName, interaction);
@@ -97,8 +97,15 @@ module.exports = {
                 return [];
             }
 
-            // Return current emojis as autocomplete suggestions
-            return reactable.emojiIds.map(emoji => emoji.toString());
+            // Extract emoji name from ID and return as {name, value}
+            return reactable.emojiIds.map(emojiId => {
+                const emojiMatch = emojiId.match(/:(\w+):/);
+                const emojiName = emojiMatch ? emojiMatch[1] : emojiId;
+                return {
+                    name: `:${emojiName}:`,
+                    value: emojiId
+                };
+            });
         }
 
         // Otherwise autocomplete the reactable
