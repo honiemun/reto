@@ -40,7 +40,7 @@ class GuildKarma {
         
             await interaction.editReply({ embeds: [ new EmbedBuilder()
                 .setColor("Green")
-                .setTitle("✔️ Server Karma updated!")
+                .setTitle("✅ Server Karma updated!")
                 .setDescription(confirmationMessage)
         ] });
         
@@ -66,7 +66,7 @@ class GuildKarma {
 		
         return interaction.editReply({embeds: [ new EmbedBuilder()
             .setColor("Green")
-            .setTitle("✔️ Server Karma changed!")
+            .setTitle("✅ Server Karma changed!")
             .setDescription(confirmationMessage)
 		]});
     }

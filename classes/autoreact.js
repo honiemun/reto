@@ -76,7 +76,7 @@ class Autoreact {
 
 			await interaction.editReply({ embeds: [ new EmbedBuilder()
 				.setColor("Green")
-				.setTitle("✔️ Autoreact settings updated!")
+				.setTitle("✅ Autoreact settings updated!")
 				.setDescription("Any messages on the <#" + channel + "> channel that include " + typesToText + " will now be auto-reacted with a **" + reactableName + "** reactable.")
 				.setFooter({ text: "You can edit this using the same command, or delete this rule with /autoreact delete." })
 			], components: []});
@@ -104,7 +104,7 @@ class Autoreact {
 
 		await interaction.editReply({ embeds: [ new EmbedBuilder()
 			.setColor("Green")
-			.setTitle("✔️ Autoreact rule deleted!")
+			.setTitle("✅ Autoreact rule deleted!")
 			.setDescription("Any messages on the <#" + channel + "> channel will no longer be auto-reacted with **" + reactableName + "**.")
 		], components: []});
 

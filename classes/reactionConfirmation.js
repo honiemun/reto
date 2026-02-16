@@ -23,7 +23,7 @@ class ReactionConfirmation {
 
         return interaction.editReply({embeds: [ new EmbedBuilder()
             .setColor("Green")
-            .setTitle("✔️ Reaction confirmations are updated!")
+            .setTitle("✅ Reaction confirmations are updated!")
             .setDescription("This server will now use **" + interaction.options.getString("mode") + "s** to reply to reacted messages.")
             .setFooter({ text: "You can change how the embeds look with /reactionconfirmationembed!" })
         ] });
@@ -84,7 +84,7 @@ class ReactionConfirmation {
 
 			await i.reply({ embeds: [ new EmbedBuilder()
 				.setColor("Green")
-				.setTitle("✔️ Reaction confirmations are updated!")
+				.setTitle("✅ Reaction confirmations are updated!")
 				.setDescription(confirmationMessage)
 				.setFooter({ text: "Want some more control over your embed? Add modifiers! Read all about them with /modifiers." })
 			]});

@@ -52,7 +52,7 @@ class Reactable {
 
 			await i.reply({ embeds: [ new EmbedBuilder()
 				.setColor("Green")
-				.setTitle("✔️ Reactable updated!")
+				.setTitle("✅ Reactable updated!")
 				.setDescription("You'll now need " + interaction.options.getNumber("amount") + reactionPlural + " (or more) to pin a message with this reactable.")
 			]});
 		});
@@ -104,7 +104,7 @@ class Reactable {
 
 			await i.reply({ embeds: [ new EmbedBuilder()
 				.setColor("Green")
-				.setTitle("✔️ " + updateMessage + " updated!")
+				.setTitle("✅ " + updateMessage + " updated!")
 				.setDescription(confirmMessage)
 			]});
         });
@@ -124,7 +124,7 @@ class Reactable {
             
 			await interaction.editReply({ embeds: [ new EmbedBuilder()
 				.setColor("Green")
-				.setTitle("✔️ Default emoji updated!")
+				.setTitle("✅ Default emoji updated!")
 				.setDescription("The new emoji shown as the default for **" + reactableName + "** is now " + emoji + ".")
 			], components: []});
 		});
@@ -172,13 +172,17 @@ class Reactable {
             { $set: { emojiIds: reactable.emojiIds } }
         ).exec();
 
-        const updatedEmojisText = reactable.emojiIds.join(" ");
+        // Convert all emoji IDs to their proper emoji strings for display
+        const displayEmojis = await Promise.all(
+            reactable.emojiIds.map(id => Parsing.emoji(id, interaction.guild))
+        );
+        const updatedEmojisText = displayEmojis.join(" ");
 
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
                     .setColor("Green")
-                    .setTitle("✔️ Emoji added!")
+                    .setTitle("✅ Emoji added!")
                     .setDescription("Added " + emoji + " to **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
             ]
         });
@@ -208,15 +212,19 @@ class Reactable {
             { $set: { emojiIds: reactable.emojiIds } }
         ).exec();
 
+        // Convert all emoji IDs to their proper emoji strings for display
+        const displayEmojis = await Promise.all(
+            reactable.emojiIds.map(id => Parsing.emoji(id, interaction.guild))
+        );
         const updatedEmojisText = reactable.emojiIds.length > 0 
-            ? reactable.emojiIds.join(" ")
+            ? displayEmojis.join(" ")
             : "No emojis assigned";
 
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
                     .setColor("Green")
-                    .setTitle("✔️ Emoji removed!")
+                    .setTitle("✅ Emoji removed!")
                     .setDescription("Removed " + emoji + " from **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
             ]
         });

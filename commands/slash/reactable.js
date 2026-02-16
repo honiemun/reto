@@ -98,10 +98,7 @@ module.exports = {
             }
 
             // Return current emojis as autocomplete suggestions
-            return reactable.emojiIds.map(emoji => ({
-                name: emoji,
-                value: emoji
-            }));
+            return reactable.emojiIds.map(emoji => emoji.toString());
         }
 
         // Otherwise autocomplete the reactable
