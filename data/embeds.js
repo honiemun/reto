@@ -28,7 +28,7 @@ module.exports = [
 Please, take a moment to read through our Privacy Policy! (Don't worry, it's not written in dense legalese.)
 
 *The short of it:*
-- Whenever someone reacts to a message you sent, Reto keeps logs of its contents for up to 30 days.
+- Whenever someone reacts to a message you sent, Reto will keep a reference to it on its servers.
 - Reto keeps track of the servers both you and it are in.
 - If the server is set to Public, other people may see the messages you sent that have been reacted to over a vote threshold.
 - You can delete or receive a copy of your data at any time!`
@@ -74,26 +74,21 @@ To get started, pick out what kind of setup process you'd like.
                     "name": "Advanced setup",
                     "inline": true,
                     "value": `
-Want to customise Reto to the fullest?
-Use the Advanced wizard to make the bot your own!
+Want to customise Reto to the fullest? Use the Advanced wizard to make the bot your own!
 
 - Choose if you want the default **Plus** and/or **Minus** Reactables.
-- Create an optional \`#best-of\` channel, and send messages to it using an amount of **Karma** or a **Pin** Reactable.
-- Set up your own server-specific Karma.
-- Send a confirmation message or reaction each time someone uses a Reactable.`
+- Create an optional \`#best-of\` channel, and send messages to it using an amount of **Karma** or a special **Pin** Reactable.
+- Set up your own server-specific Karma.`
                 },
                 {
                     "name": "Quick setup",
                     "inline": true,
                     "value": `
-The default settings - get to the fun in no time!
-This will create for you:
+The default settings - get to the fun in no time! This will create for you:
 
 - A ` + reactablePacks.reto.emoji.plus + ` **plus** and ` + reactablePacks.reto.emoji.minus + ` **minus** emoji. Anyone can vote on their favourite messages with these!
 - A ` + reactablePacks.reto.emoji.pin + ` **pin** emoji that will send whatever post is reacted to it to a newly created \`#best-of\` channel.
-- A \`@Curator\` role - people with this role can use the **pin** emoji to send messages to the \`#best-of\` channel.
-- Sets up confirmations as a Reaction.`
-                // TO-DO: Re-implement "[...] and/or a Pinnable Threshold." on Advanced setup
+- A \`@Curator\` role - people with this role can use the **pin** emoji to send messages to the \`#best-of\` channel.`
                 }
             ]
         },
@@ -742,7 +737,7 @@ If you'd like the best posts from this server to be featured for anyone to find,
             description: `
 Reto is constantly being updated with new commands and features!
 
-If you'd like to hear what's new in Reto *(once a month, don't worry!)*, consider **Subscribing** to hear the latest news in your Pinnable Channel. Otherwise, we'll send minimal updates whenever there's critical information or major Events.`,
+If you'd like to hear what's new in Reto, consider **Subscribing** to hear the latest news in your Pinnable Channel. Otherwise, we'll send minimal updates whenever there's critical information or major Events.`,
             footer: {
                 text: "[2/2] Server setup"
             }
@@ -782,26 +777,10 @@ Thank you for using Reto!`,
                     "inline": false,
                     "value": "[Join the support server](" + process.env.SUPPORT_SERVER + ") if you've got any issues, to report bugs or suggest features!"
                 },
-                // TO-DO: Add Reto Gold
-                /*
-                {
-                    "name": "🌟 Go Beyond",
-                    "inline": false,
-                    "value": "If you enjoy Reto, consider becoming a **Reto Gold** member to gain exclusive access to more customization features and support Reto's development!"
-                }
-                */
             ]
         },
 
         components: [
-            /*
-            {
-                id: "retoGold",
-                label: "Go Gold",
-                style: ButtonStyle.Link,
-                url: "https://retobot.com/gold"
-            },
-            */
             {
                 id: "supportServer",
                 label: "Support server",

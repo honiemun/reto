@@ -20,14 +20,14 @@ module.exports = async (guild) => {
 
             const embed = new EmbedBuilder()
             .setTitle("Welcome to Reto!")
-            // TO-DO: Change after Open Beta
-            .setDescription("Thank you for inviting Retool to your server! The bot is currently in Beta - keep in mind that some features might be missing or broken. If anything goes awry, check out the `/support` server!")
+            // TO-DO: Change after full release
+            .setDescription("Thank you for inviting Reto to your server! Reactions, Karma, Starboard and more tools to make your community a fun place to be await. \n\nThe bot is currently in Open Beta - keep in mind that some features might be missing or broken. If anything goes awry, check out the `/support` server!")
             .setColor(brandingColors.brightPink)
             .setThumbnail('attachment://pfp.png')
             .addFields(
                 {
                     name: '✨ Before we get started...',
-                    value: "A **Server Moderator** needs to configure the bot! Use `/setup` to get everything ready - then afterwards, anyone can use `/guide` to find out what they can do with Reto.",
+                    value: "A **Server Moderator** needs to configure the bot! Use `/setup` to get everything ready - then afterwards, anyone can use `/guide` to find out what they can do with Reto on this server.",
                     inline: false
                 },
             );

@@ -39,12 +39,72 @@ module.exports = {
                             autocomplete: true,
                         }
                     ]
+                },
+                {
+                    name: "add",
+                    description: "Add a new emoji to a Reactable.",
+                    type: ApplicationCommandOptionType.Subcommand,
+        
+                    options: [
+                        {
+                            name: "reactable",
+                            description: "The reactable to add an emoji to.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        },
+                        {
+                            name: "emoji",
+                            description: "The emoji to add to this Reactable. Can be a custom or default emoji.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                        }
+                    ]
+                },
+                {
+                    name: "remove",
+                    description: "Remove an emoji from a Reactable.",
+                    type: ApplicationCommandOptionType.Subcommand,
+        
+                    options: [
+                        {
+                            name: "reactable",
+                            description: "The reactable to remove an emoji from.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        },
+                        {
+                            name: "emoji",
+                            description: "The emoji to remove from this Reactable. Can be a custom or default emoji.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        }
+                    ]
                 }
             ]
         }
 	],
 
     autocomplete: async (command, argument, interaction) => {
+        // autocompleting the emoji to remove, we need to return the emojis currently in the Reactable as options
+        if (argument === "emoji" && interaction.options.getSubcommand() === "remove") {
+            const reactableName = interaction.options.getString("reactable");
+            const reactable = await Autocomplete.autocompleteValidate("reactable", {guildId: interaction.guild.id}, reactableName, interaction);
+            
+            if (!reactable || !reactable.emojiIds || reactable.emojiIds.length === 0) {
+                return [];
+            }
+
+            // Return current emojis as autocomplete suggestions
+            return reactable.emojiIds.map(emoji => ({
+                name: emoji,
+                value: emoji
+            }));
+        }
+
+        // Otherwise autocomplete the reactable
         return await Autocomplete.autocomplete("reactable", {guildId: interaction.guild.id});
     },
     
@@ -63,6 +123,12 @@ module.exports = {
                 switch (cmd) {
                     case "default":
                         await Reactable.editDefaultEmoji(interaction, reactable);
+                        break;
+                    case "add":
+                        await Reactable.addEmoji(interaction, reactable);
+                        break;
+                    case "remove":
+                        await Reactable.removeEmoji(interaction, reactable);
                         break;
                 }
 

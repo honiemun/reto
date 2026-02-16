@@ -146,7 +146,103 @@ class Reactable {
             },
 			{ upsert: false }
 		).exec();
-      }
+    }
+
+    async addEmoji(interaction, reactable) {
+        const reactableName = interaction.options.getString("reactable").charAt(0).toUpperCase() + interaction.options.getString("reactable").slice(1);
+        
+        const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
+        
+        const modal = new ModalBuilder()
+            .setCustomId('addReactableEmojiModal')
+            .setTitle('Add emoji to ' + reactableName);
+
+        const emojiInput = new TextInputBuilder()
+            .setCustomId('emojiInput')
+            .setLabel('Enter emoji')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Paste emoji (custom or default)')
+            .setRequired(true);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(emojiInput));
+        await interaction.showModal(modal);
+
+        const modalSubmit = await interaction.awaitModalSubmit({ time: 3_600_000 }).catch(() => null);
+        if (!modalSubmit) return;
+
+        const emoji = modalSubmit.fields.getTextInputValue('emojiInput');
+
+        // Check if emoji is already in the list
+        if (reactable.emojiIds.includes(emoji)) {
+            return await modalSubmit.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Orange")
+                        .setTitle("⚠️ Emoji already exists")
+                        .setDescription("The emoji " + emoji + " is already part of this reactable.")
+                ],
+                ephemeral: true
+            });
+        }
+
+        // Add emoji to reactable
+        reactable.emojiIds.push(emoji);
+        
+        await reactableSchema.updateOne(
+            { _id: reactable._id },
+            { $set: { emojiIds: reactable.emojiIds } }
+        ).exec();
+
+        const updatedEmojisText = reactable.emojiIds.join(" ");
+
+        await modalSubmit.reply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("✔️ Emoji added!")
+                    .setDescription("Added " + emoji + " to **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
+            ],
+            ephemeral: true
+        });
+    }
+
+    async removeEmoji(interaction, reactable) {
+        const reactableName = interaction.options.getString("reactable").charAt(0).toUpperCase() + interaction.options.getString("reactable").slice(1);
+        const emoji = interaction.options.getString("emoji");
+
+        // Check if emoji exists in the list
+        if (!reactable.emojiIds.includes(emoji)) {
+            return await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Orange")
+                        .setTitle("⚠️ Emoji not found")
+                        .setDescription("The emoji " + emoji + " is not part of this reactable.")
+                ]
+            });
+        }
+
+        // Remove emoji from reactable
+        reactable.emojiIds = reactable.emojiIds.filter(e => e !== emoji);
+        
+        await reactableSchema.updateOne(
+            { _id: reactable._id },
+            { $set: { emojiIds: reactable.emojiIds } }
+        ).exec();
+
+        const updatedEmojisText = reactable.emojiIds.length > 0 
+            ? reactable.emojiIds.join(" ")
+            : "No emojis assigned";
+
+        await interaction.editReply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("✔️ Emoji removed!")
+                    .setDescription("Removed " + emoji + " from **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
+            ]
+        });
+    }
       
 }
 
