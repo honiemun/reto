@@ -359,6 +359,13 @@ class Reaction {
         if (!await this.checkMemberCanReact(member, reactable)) {
             return false;
         }
+        
+        // Locked Behind Channels
+        if (reactable.lockedBehindChannels && reactable.lockedBehindChannels.length > 0) {
+            if (!reactable.lockedBehindChannels.includes(message.channel.id)) {
+                return false;
+            }
+        }
 
         return true;
     }

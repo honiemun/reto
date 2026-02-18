@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require("discord.js");
 
 // Schemas
 const reactableSchema = require("../schemas/reactable");
@@ -21,6 +21,12 @@ class ReactableChecks {
             rolesText = reactable.lockedBehindRoles.map(roleId => `<@&${roleId}>`).join(", ");
         }
 
+        // Convert channel IDs to channel mentions if they exist
+        let channelsText = "None";
+        if (reactable.lockedBehindChannels && reactable.lockedBehindChannels.length > 0) {
+            channelsText = reactable.lockedBehindChannels.map(channelId => `<#${channelId}>`).join(", ");
+        }
+
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
@@ -30,7 +36,8 @@ class ReactableChecks {
                         { name: "Reaction Threshold", value: String(reactable.reactionThreshold || 0), inline: true },
                         { name: "Fires Once", value: reactable.firesOnce ? "✅ Yes" : "❌ No", inline: true },
                         { name: "Self React", value: reactable.selfReaction ? "✅ Yes" : "❌ No", inline: true },
-                        { name: "Locked Behind Roles", value: rolesText, inline: false }
+                        { name: "Locked Behind Roles", value: rolesText, inline: false },
+                        { name: "Locked Behind Channels", value: channelsText, inline: false }
                     )
             ]
         });
@@ -58,7 +65,11 @@ class ReactableChecks {
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Locked Behind Roles')
                     .setDescription('Require specific roles to use')
-                    .setValue('lockedBehindRoles')
+                    .setValue('lockedBehindRoles'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('Locked Behind Channels')
+                    .setDescription('Restrict to specific channels')
+                    .setValue('lockedBehindChannels')
             );
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
@@ -91,6 +102,9 @@ class ReactableChecks {
                     break;
                 case 'lockedBehindRoles':
                     await this.editLockedRoles(i, reactable, reactableName);
+                    break;
+                case 'lockedBehindChannels':
+                    await this.editLockedChannels(i, reactable, reactableName);
                     break;
             }
         });
@@ -419,6 +433,150 @@ class ReactableChecks {
                                 .setColor("Green")
                                 .setTitle("✅ Role Lock Reset")
                                 .setDescription(`Reset all role locks for **${reactableName}**. This reactable can now be used by anyone.`)
+                        ],
+                        components: []
+                    });
+                }
+            });
+
+            collector.on('end', (collected, reason) => {
+                if (reason !== 'restart' && reason !== 'reset') {
+                    interaction.message.edit({ components: [] }).catch(() => {});
+                }
+            });
+        };
+
+        // Setup initial collectors
+        setupCollectors();
+    }
+
+    async editLockedChannels(interaction, reactable, reactableName) {
+        const currentChannels = reactable.lockedBehindChannels || [];
+        const guild = interaction.guild;
+
+        // Helper function to build the interface
+        const buildInterface = () => {
+            // Get text-based channels from the guild, sorted by position
+            const allChannels = Array.from(guild.channels.cache
+                .filter(channel => 
+                    channel.type === ChannelType.GuildText ||
+                    channel.type === ChannelType.GuildAnnouncement
+                )
+                .sort((a, b) => a.position - b.position)
+                .values())
+                .slice(0, 25);
+
+            // Display currently locked channels
+            let currentChannelsText = currentChannels.length > 0
+                ? currentChannels.map(channelId => {
+                    const channel = guild.channels.cache.get(channelId);
+                    return channel ? `<#${channelId}>` : `Unknown Channel (${channelId})`;
+                }).join(", ")
+                : "None";
+
+            // Create select menu for adding channels
+            const selectMenu = new StringSelectMenuBuilder()
+                .setCustomId('channel_select_add')
+                .setPlaceholder('Select a channel to add')
+                .addOptions(
+                    ...allChannels.map(channel =>
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel(channel.name)
+                            .setValue(channel.id)
+                    )
+                );
+
+            const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+            const buttonRow = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('channel_reset')
+                        .setLabel('Reset All Channels')
+                        .setStyle(ButtonStyle.Danger)
+                );
+
+            return {
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Blue")
+                        .setTitle("Edit Locked Behind Channels")
+                        .setDescription(currentChannels.length === 0
+                            ? "No channels are currently locked. Select channels to restrict where this reactable can be used."
+                            : "Select a channel to add to the lock list, or reset all channels.")
+                        .addFields(
+                            { name: "Currently Locked Channels", value: currentChannelsText }
+                        )
+                ],
+                components: [selectRow, buttonRow]
+            };
+        };
+
+        // Initial response
+        await interaction.update(buildInterface());
+
+        // Create collectors
+        const setupCollectors = () => {
+            const filter = i =>
+                (i.customId === 'channel_select_add' || i.customId === 'channel_reset') &&
+                i.user.id === interaction.user.id;
+
+            const collector = interaction.message.createMessageComponentCollector({ filter, time: 60000 });
+
+            collector.on('collect', async i => {
+                if (i.customId === 'channel_select_add') {
+                    if (!i.isStringSelectMenu() || !i.values) return;
+
+                    const selectedChannelId = i.values[0];
+
+                    if (currentChannels.includes(selectedChannelId)) {
+                        return await i.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor("Orange")
+                                    .setTitle("⚠️ Channel already added")
+                                    .setDescription(`The channel <#${selectedChannelId}> is already in the lock list.`)
+                            ],
+                            ephemeral: true
+                        });
+                    }
+
+                    currentChannels.push(selectedChannelId);
+
+                    await reactableSchema.updateOne(
+                        { _id: reactable._id },
+                        { $set: { lockedBehindChannels: currentChannels } }
+                    ).exec();
+
+                    collector.stop('restart');
+                    await i.update(buildInterface());
+                    setupCollectors();
+
+                    await i.followUp({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Green")
+                                .setTitle("✅ Channel Added")
+                                .setDescription(`Added <#${selectedChannelId}> to the lock list for **${reactableName}**.`)
+                        ],
+                        ephemeral: true
+                    });
+
+                } else if (i.customId === 'channel_reset') {
+                    collector.stop('reset');
+
+                    await reactableSchema.updateOne(
+                        { _id: reactable._id },
+                        { $set: { lockedBehindChannels: [] } }
+                    ).exec();
+
+                    currentChannels.length = 0;
+
+                    await i.update({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Green")
+                                .setTitle("✅ Channel Lock Reset")
+                                .setDescription(`Reset all channel locks for **${reactableName}**. This reactable can now fire in any channel.`)
                         ],
                         components: []
                     });

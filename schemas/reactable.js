@@ -81,6 +81,12 @@ const reactableSchema = new mongoose.Schema({
 		type: Array,
 		required: false,
 	},
+
+	// An array of channel IDs this reactable can be used in.
+	lockedBehindChannels: {
+		type: Array,
+		required: false,
+	},
 	
 	/* ACTIONS
 	These are the actions that a Reactable can perform when activated. */
