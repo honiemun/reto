@@ -226,8 +226,8 @@ class ReactableChecks {
         const currentRoles = reactable.lockedBehindRoles || [];
         const guild = interaction.guild;
 
-        // Helper function to rebuild the interface
-        const rebuildInterface = async () => {
+        // Helper function to build the interface
+        const buildInterface = () => {
             // Get all roles from the guild (excluding @everyone)
             const allRoles = Array.from(guild.roles.cache
                 .filter(role => role.id !== guild.id)
@@ -265,7 +265,7 @@ class ReactableChecks {
                         .setStyle(ButtonStyle.Danger)
                 );
 
-            await interaction.editReply({
+            return {
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Green")
@@ -278,105 +278,83 @@ class ReactableChecks {
                         )
                 ],
                 components: [selectRow, buttonRow]
-            });
-
-            return { selectRow, buttonRow };
+            };
         };
 
-        // Initial interface
-        await rebuildInterface();
+        // Initial response
+        await interaction.update(buildInterface());
 
         // Create collectors
         const setupCollectors = () => {
-            const roleFilter = i => i.customId === 'role_select_add' && i.user.id === interaction.user.id;
-            const roleCollector = interaction.channel.createMessageComponentCollector({ roleFilter, time: 60000 });
+            const filter = i => 
+                (i.customId === 'role_select_add' || i.customId === 'role_reset') && 
+                i.user.id === interaction.user.id;
 
-            const resetFilter = i => i.customId === 'role_reset' && i.user.id === interaction.user.id;
-            const resetCollector = interaction.channel.createMessageComponentCollector({ resetFilter, time: 60000 });
+            const collector = interaction.message.createMessageComponentCollector({ filter, time: 60000 });
 
-            roleCollector.on('collect', async i => {
-                // Safety check - ensure this is actually a select menu interaction
-                if (!i.isStringSelectMenu() || !i.values) {
-                    return;
-                }
+            collector.on('collect', async i => {
+                if (i.customId === 'role_select_add') {
+                    if (!i.isStringSelectMenu() || !i.values) return;
 
-                const selectedRoleId = i.values[0];
-                const role = guild.roles.cache.get(selectedRoleId);
+                    const selectedRoleId = i.values[0];
 
-                // Check if role is already in the array
-                if (currentRoles.includes(selectedRoleId)) {
-                    return await i.reply({
+                    if (currentRoles.includes(selectedRoleId)) {
+                        return await i.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor("Orange")
+                                    .setTitle("⚠️ Role already locked")
+                                    .setDescription(`The role <@&${selectedRoleId}> is already in the lock list.`)
+                            ]
+                        });
+                    }
+
+                    currentRoles.push(selectedRoleId);
+
+                    await reactableSchema.updateOne(
+                        { _id: reactable._id },
+                        { $set: { lockedBehindRoles: currentRoles } }
+                    ).exec();
+
+                    collector.stop('restart');
+                    await i.update(buildInterface());
+                    setupCollectors();
+
+                    await i.followUp({
                         embeds: [
                             new EmbedBuilder()
-                                .setColor("Orange")
-                                .setTitle("⚠️ Role already locked")
-                                .setDescription(`The role <@&${selectedRoleId}> is already in the lock list.`)
+                                .setColor("Green")
+                                .setTitle("✅ Role Added")
+                                .setDescription(`Added <@&${selectedRoleId}> to the lock list for **${reactableName}**.`)
                         ],
                         ephemeral: true
                     });
-                }
 
-                // Add role to array
-                currentRoles.push(selectedRoleId);
-                
-                // Update database
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { lockedBehindRoles: currentRoles } }
-                ).exec();
+                } else if (i.customId === 'role_reset') {
+                    collector.stop('reset');
 
-                // Stop collectors before updating
-                roleCollector.stop();
-                resetCollector.stop();
+                    await reactableSchema.updateOne(
+                        { _id: reactable._id },
+                        { $set: { lockedBehindRoles: [] } }
+                    ).exec();
 
-                // Rebuild interface with updated roles
-                await rebuildInterface();
+                    currentRoles.length = 0;
 
-                // Setup new collectors
-                setupCollectors();
-
-                await i.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Role Added")
-                            .setDescription(`Added <@&${selectedRoleId}> to the lock list for **${reactableName}**.`)
-                    ]
-                });
-            });
-
-            resetCollector.on('collect', async i => {
-                // Stop role collector immediately
-                roleCollector.stop();
-
-                // Update database
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { lockedBehindRoles: [] } }
-                ).exec();
-
-                // Clear currentRoles array
-                currentRoles.length = 0;
-
-                await i.update({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Role Lock Reset")
-                            .setDescription(`Reset all role locks for **${reactableName}**. This reactable can now be used by anyone.`)
-                    ],
-                    components: []
-                });
-
-                // End the session after reset
-                resetCollector.stop();
-            });
-
-            roleCollector.on('end', collected => {
-                if (collected.size === 0 && resetCollector.endReason !== 'user') {
-                    interaction.editReply({
+                    await i.update({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Green")
+                                .setTitle("✅ Role Lock Reset")
+                                .setDescription(`Reset all role locks for **${reactableName}**. This reactable can now be used by anyone.`)
+                        ],
                         components: []
-                    }).catch(() => {});
+                    });
+                }
+            });
+
+            collector.on('end', (collected, reason) => {
+                if (reason !== 'restart' && reason !== 'reset') {
+                    interaction.message.edit({ components: [] }).catch(() => {});
                 }
             });
         };

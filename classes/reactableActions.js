@@ -22,15 +22,15 @@ class ReactableActions {
                     .setTitle("Actions for " + reactableName)
                     .addFields(
                         { name: "Karma Awarded", value: String(reactable.karmaAwarded || 0), inline: true },
-                        { name: "Deletes Message", value: reactable.deletesMessage ? "✅ Yes" : "❌ No", inline: true },
                         { name: "Sends To Channel", value: reactable.sendsToChannel ? "<#" + reactable.sendsToChannel + ">" : "None", inline: true },
-                        { name: "Custom Reply", value: reactable.reply ? "```\n" + reactable.reply + "\n```" : "None", inline: false },
-                        { name: "Timeout", value: String(reactable.timeout || 0) + " seconds", inline: true },
-                        { name: "Give Role to Writer", value: reactable.awardedRole ? "<@&" + reactable.awardedRole + ">" : "None", inline: true },
-                        { name: "Give Role to Reactor", value: reactable.reactorAwardedRole ? "<@&" + reactable.reactorAwardedRole + ">" : "None", inline: true },
                         { name: "React to Message", value: reactable.reactionEmoji ? reactable.reactionEmoji : "None", inline: true },
-                        { name: "Kicks User", value: reactable.kicksUser ? "✅ Yes" : "❌ No", inline: true },
-                        { name: "Bans User", value: reactable.bansUser ? "✅ Yes" : "❌ No", inline: true }
+                        { name: "Custom Reply", value: reactable.reply ? "```\n" + reactable.reply + "\n```" : "None", inline: false },
+                        { name: "Give Role to Author", value: reactable.awardedRole ? "<@&" + reactable.awardedRole + ">" : "None", inline: true },
+                        { name: "Give Role to Reactor", value: reactable.reactorAwardedRole ? "<@&" + reactable.reactorAwardedRole + ">" : "None", inline: true },
+                        { name: "Deletes Message", value: reactable.deletesMessage ? "✅ Yes" : "❌ No", inline: true },
+                        { name: "Timeout Author", value: String(reactable.timeout || 0) + " seconds", inline: true },
+                        { name: "Kicks Author", value: reactable.kicksUser ? "✅ Yes" : "❌ No", inline: true },
+                        { name: "Bans Author", value: reactable.bansUser ? "✅ Yes" : "❌ No", inline: true }
                     )
             ]
         });
@@ -60,11 +60,11 @@ class ReactableActions {
                     .setDescription('Custom message to reply with')
                     .setValue('reply'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Timeout')
+                    .setLabel('Timeout Author')
                     .setDescription('Timeout duration for message author')
                     .setValue('timeout'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Give Role to Writer')
+                    .setLabel('Give Role to Author')
                     .setDescription('Role to award to message author')
                     .setValue('awardedRole'),
                 new StringSelectMenuOptionBuilder()
@@ -76,11 +76,11 @@ class ReactableActions {
                     .setDescription('Emoji to react with')
                     .setValue('reactionEmoji'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Kicks User')
+                    .setLabel('Kicks Author')
                     .setDescription('Whether to kick the message author')
                     .setValue('kicksUser'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Bans User')
+                    .setLabel('Bans Author')
                     .setDescription('Whether to ban the message author')
                     .setValue('bansUser')
             );
@@ -408,7 +408,7 @@ class ReactableActions {
 
         const timeoutInput = new TextInputBuilder()
             .setCustomId('timeout_value')
-            .setLabel('Timeout Duration')
+            .setLabel('Timeout Author Duration')
             .setStyle(TextInputStyle.Short)
             .setPlaceholder('Enter timeout in seconds (0 to disable)')
             .setValue(String(currentValue));
@@ -445,7 +445,7 @@ class ReactableActions {
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Green")
-                        .setTitle("✅ Timeout Updated")
+                        .setTitle("✅ Timeout Author Updated")
                         .setDescription(`The **${reactableName}** reactable timeout has been **${statusText}**.`)
                 ]
             });
@@ -643,7 +643,7 @@ class ReactableActions {
             embeds: [
                 new EmbedBuilder()
                     .setColor("Green")
-                    .setTitle("Edit Give Role to Writer")
+                    .setTitle("Edit Give Role to Author")
                     .setDescription("Select which role to award to the original message author.")
                     .addFields(
                         { name: "Current Role", value: currentRoleText }
@@ -840,62 +840,93 @@ class ReactableActions {
     }
 
     async editReactionEmoji(interaction, reactable, reactableName) {
-        const modal = new ModalBuilder()
-            .setCustomId('reaction_emoji_modal')
-            .setTitle('Edit React to Message');
+        await interaction.update({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("Set Reaction Emoji")
+                    .setDescription("React to this message with the emoji you'd like to use, or press the button below to disable.")
+            ],
+            components: [
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('emoji_disable')
+                        .setLabel('Disable Reaction Emoji')
+                        .setStyle(ButtonStyle.Danger)
+                )
+            ]
+        });
 
-        const emojiInput = new TextInputBuilder()
-            .setCustomId('reaction_emoji_value')
-            .setLabel('React to Message')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Enter an emoji or emoji ID (leave empty to disable)')
-            .setMaxLength(100)
-            .setRequired(false)
-            .setValue(reactable.reactionEmoji || '');
+        let handled = false;
 
-        const actionRow = new ActionRowBuilder().addComponents(emojiInput);
-        modal.addComponents(actionRow);
+        // Listen for reactions on the message
+        const reactionCollector = interaction.message.createReactionCollector({ time: 60000 });
 
-        await interaction.showModal(modal);
+        reactionCollector.on('collect', async (reaction, user) => {
+            if (handled || user.id !== interaction.user.id) return;
+            handled = true;
 
-        try {
-            const submitted = await interaction.awaitModalSubmit({ time: 900000 });
-            const newValue = submitted.fields.getTextInputValue('reaction_emoji_value') || "";
-
-            if (!newValue || newValue.trim() === "") {
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { reactionEmoji: null } }
-                ).exec();
-
-                return await submitted.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ React to Message Disabled")
-                            .setDescription("The **" + reactableName + "** reactable will no longer react with an emoji.")
-                    ]
-                });
-            }
+            const emojiToSave = reaction.emoji.id || reaction.emoji.name;
 
             await reactableSchema.updateOne(
                 { _id: reactable._id },
-                { $set: { reactionEmoji: newValue } }
+                { $set: { reactionEmoji: emojiToSave } }
             ).exec();
 
-            await submitted.reply({
+            reactionCollector.stop();
+
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Green")
-                        .setTitle("✅ React to Message Updated")
-                        .setDescription("The **" + reactableName + "** reactable will now react with: " + newValue)
-                ]
+                        .setTitle("✅ Reaction Emoji Updated")
+                        .setDescription(`The **${reactableName}** reactable will now react with: ${reaction.emoji}`)
+                ],
+                components: []
+            }).catch(() => {});
+        });
+
+        // Listen for button clicks
+        const filter = i => i.customId === 'emoji_disable' && i.user.id === interaction.user.id;
+        const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
+
+        buttonCollector.on('collect', async i => {
+            if (handled) return;
+            handled = true;
+
+            await i.deferUpdate();
+
+            await reactableSchema.updateOne(
+                { _id: reactable._id },
+                { $set: { reactionEmoji: null } }
+            ).exec();
+
+            reactionCollector.stop();
+
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle("✅ Reaction Emoji Disabled")
+                        .setDescription("The **" + reactableName + "** reactable will no longer react with an emoji.")
+                ],
+                components: []
             });
-        } catch (error) {
-            if (error.code !== 'InteractionCollectorError') {
-                console.error('Error in react to message modal:', error);
+        });
+
+        reactionCollector.on('end', () => {
+            if (!handled) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Selection timed out")
+                            .setDescription("No emoji was selected.")
+                    ],
+                    components: []
+                }).catch(() => {});
             }
-        }
+        });
     }
 
     async editKicksUser(interaction, reactable, reactableName) {
@@ -917,7 +948,7 @@ class ReactableActions {
             embeds: [
                 new EmbedBuilder()
                     .setColor("Green")
-                    .setTitle("Edit Kicks User")
+                    .setTitle("Edit Kicks Author")
                     .setDescription("Should the original message author be kicked when this reactable is used?")
                     .addFields(
                         { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
@@ -941,7 +972,7 @@ class ReactableActions {
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Green")
-                        .setTitle("✅ Kicks User Updated")
+                        .setTitle("✅ Kicks Author Updated")
                         .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " kick the original message author.")
                         .setFooter({ text: "Make sure the bot has the Kick Members permission on this server before using this reactable." })
                 ],

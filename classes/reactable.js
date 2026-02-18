@@ -274,7 +274,7 @@ class Reactable {
                     new EmbedBuilder()
                         .setColor("Green")
                         .setTitle("✅ Reactable created!")
-                        .setDescription("Successfully created the **" + name + "** reactable with emoji " + emoji + ".\n\nYou can now customize it further using `/reactable emoji` commands.")
+                        .setDescription("Successfully created the **" + name + "** reactable with emoji " + emoji + ".\n\n- Reactables don't do much on their own, set up some actions to trigger when you react to a message with it by using `/reactable actions set`!\n- You can control who has access to this reactable by using `/reactable checks set`.\n- Want to add more emoji to this reactable? Use `/reactable emoji add`, or `/reactable emoji default` to set the default one.")
                 ]
             });
         } catch (error) {
