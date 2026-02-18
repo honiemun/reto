@@ -447,6 +447,7 @@ class ReactableActions {
                         .setColor("Green")
                         .setTitle("✅ Timeout Author Updated")
                         .setDescription(`The **${reactableName}** reactable timeout has been **${statusText}**.`)
+                        .setFooter({ text: "Make sure the bot has the Time Out Members permission on this server before using this reactable." })
                 ]
             });
         } catch (error) {
@@ -626,7 +627,7 @@ class ReactableActions {
         // Create disable button
         const disableButton = new ButtonBuilder()
             .setCustomId('role_disable')
-            .setLabel('Remove Award')
+            .setLabel('Remove Role')
             .setStyle(ButtonStyle.Danger)
             .setDisabled(reactable.awardedRole ? false : true);
 
@@ -690,7 +691,7 @@ class ReactableActions {
                     embeds: [
                         new EmbedBuilder()
                             .setColor("Green")
-                            .setTitle("✅ Award Removed")
+                            .setTitle("✅ Role Removed")
                             .setDescription(`The **${reactableName}** reactable will no longer award a role.`)
                     ],
                     components: []
@@ -752,7 +753,7 @@ class ReactableActions {
         // Create disable button
         const disableButton = new ButtonBuilder()
             .setCustomId('reactor_role_disable')
-            .setLabel('Remove Award')
+            .setLabel('Remove Role')
             .setStyle(ButtonStyle.Danger)
             .setDisabled(reactable.reactorAwardedRole ? false : true);
 
@@ -816,7 +817,7 @@ class ReactableActions {
                     embeds: [
                         new EmbedBuilder()
                             .setColor("Green")
-                            .setTitle("✅ Award Removed")
+                            .setTitle("✅ Role Removed")
                             .setDescription(`Reactors will no longer receive a role from the **${reactableName}** reactable.`)
                     ],
                     components: []

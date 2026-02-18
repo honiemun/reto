@@ -156,11 +156,8 @@ class Reaction {
             );
 
             // Delete the message
-            await this.deleteOriginalMessage(
-                message,
-                reactable,
-                isPositive
-            );
+            const messageWasDeleted = await this.deleteOriginalMessage(message, reactable, isPositive);
+            if (messageWasDeleted) break;
         }
     }
 
@@ -188,14 +185,16 @@ class Reaction {
         }).exec();
     }
 
-    async deleteOriginalMessage (message, reactable, isPositive) {
+    async deleteOriginalMessage(message, reactable, isPositive) {
         if (reactable.deletesMessage && isPositive) {
             try {
                 await message.delete();
+                return true;
             } catch (error) {
                 console.error("💔 Couldn't delete the message:", error);
             }
         }
+        return false;
     }
 
     async sendReactableReply (message, user, reactable, isPositive) {
@@ -350,8 +349,8 @@ class Reaction {
 
         // Fires Once
         if (reactable.firesOnce && isPositive) {
-            const hasAlreadyReacted = await ReactionCheck.checkIfPreviouslyReacted(message, member.user, reactable);
-            if (hasAlreadyReacted) {
+            const hasAlreadyFired = await ReactionCheck.checkIfReactableFired(message, reactable);
+            if (hasAlreadyFired) {
                 return false;
             }
         }

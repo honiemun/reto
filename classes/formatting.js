@@ -78,7 +78,7 @@ class Formatting {
         
         if (reactable) {
             rules.rn = reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1);
-            rules.re = this.emoji(reactable.emojiIds[0], guild);
+            rules.re = await this.emoji(reactable.emojiIds[0], guild);
             rules.rk = reactable.karmaAwarded;
             rules.p  = "<#" + reactable.sendsToChannel + ">";
         }
@@ -206,6 +206,20 @@ class Formatting {
         const timeFormatted = time.substr(11, 8); // Extract time part HH:MM:SS
     
         return `${daysFormatted}:${timeFormatted}`;
+    }
+
+    async emoji(emojiId, guild) {
+        if (!emojiId) return '';
+        
+        // If it's already a unicode emoji, return as-is
+        if (!guild) return emojiId;
+
+        // Look up custom emoji in guild
+        const customEmoji = guild.emojis.cache.get(emojiId);
+        if (customEmoji) return customEmoji.toString(); // Returns <:name:id> or <a:name:id>
+
+        // Fall back to returning the raw value (unicode emoji or unknown)
+        return emojiId;
     }
 }
 

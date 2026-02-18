@@ -72,10 +72,15 @@ class Karma {
 		} else {
 			const reactionEmoji = guildDocument.reactionConfirmationEmoji ? guildDocument.reactionConfirmationEmoji : retoEmojis.confirmationEmoji;
 			message.react(reactionEmoji).then((reaction) => {
-				setTimeout(() => {
-					reaction.remove();
+				setTimeout(async () => {
+					try {
+						await reaction.remove();
+					} catch (error) {
+						if (error.code === 10008) return; // Message was deleted (Action)
+						console.error("💔 Couldn't remove confirmation reaction:", error);
+					}
 				}, 2 * 1000);
-			})
+			});
 		}
 	}
 }

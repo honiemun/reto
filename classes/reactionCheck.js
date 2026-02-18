@@ -27,6 +27,15 @@ class ReactionCheck {
         return reactions.length;
     }
 
+    async checkIfReactableFired(message, reactable) {
+        const query = {
+            messageId: message.id,
+            reactableId: reactable._id
+        };
+        const reactions = await reactionSchema.find(query).exec();
+        return reactions.length > 0;
+    }
+
 }
 
 module.exports = new ReactionCheck();
