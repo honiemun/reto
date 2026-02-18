@@ -41,5 +41,5 @@ const emojiSets = {
     }
 };
 
-const env = process.env.DEBUG_MODE ? 'debug' : 'production';
+const env = JSON.parse(process.env.DEBUG_MODE) ? 'debug' : 'production';
 module.exports = emojiSets[env];
