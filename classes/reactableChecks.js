@@ -29,6 +29,7 @@ class ReactableChecks {
                     .addFields(
                         { name: "Reaction Threshold", value: String(reactable.reactionThreshold || 0), inline: true },
                         { name: "Fires Once", value: reactable.firesOnce ? "✅ Yes" : "❌ No", inline: true },
+                        { name: "Self React", value: reactable.selfReaction ? "✅ Yes" : "❌ No", inline: true },
                         { name: "Locked Behind Roles", value: rolesText, inline: false }
                     )
             ]
@@ -50,6 +51,10 @@ class ReactableChecks {
                     .setLabel('Fires Once')
                     .setDescription('Can only be used once per message')
                     .setValue('firesOnce'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('Self React')
+                    .setDescription('Allow users to react to their own messages')
+                    .setValue('selfReaction'),
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Locked Behind Roles')
                     .setDescription('Require specific roles to use')
@@ -80,6 +85,9 @@ class ReactableChecks {
                     break;
                 case 'firesOnce':
                     await this.editFiresOnce(i, reactable, reactableName);
+                    break;
+                case 'selfReaction':
+                    await this.editSelfReact(i, reactable, reactableName);
                     break;
                 case 'lockedBehindRoles':
                     await this.editLockedRoles(i, reactable, reactableName);
@@ -202,6 +210,71 @@ class ReactableChecks {
                         .setColor("Green")
                         .setTitle("✅ Fires Once Updated")
                         .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " fire only once per message.")
+                ],
+                components: []
+            });
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Selection timed out")
+                            .setDescription("No option was selected.")
+                    ],
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
+
+    async editSelfReact(interaction, reactable, reactableName) {
+        const currentValue = reactable.selfReaction || false;
+
+        const buttonRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('self_react_true')
+                    .setLabel('Enable')
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId('self_react_false')
+                    .setLabel('Disable')
+                    .setStyle(ButtonStyle.Danger)
+            );
+
+        await interaction.update({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Blue")
+                    .setTitle("Edit Self React")
+                    .setDescription("Should users be able to react to their own messages with this reactable?")
+                    .addFields(
+                        { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
+                    )
+            ],
+            components: [buttonRow]
+        });
+
+        const filter = i => (i.customId === 'self_react_true' || i.customId === 'self_react_false') && i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30000, max: 1 });
+
+        collector.on('collect', async i => {
+            const newValue = i.customId === 'self_react_true';
+
+            await reactableSchema.updateOne(
+                { _id: reactable._id },
+                { $set: { selfReaction: newValue } }
+            ).exec();
+
+            await i.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle("✅ Self React Updated")
+                        .setDescription("Users will " + (newValue ? "**now**" : "**no longer**") + " be able to react to their own messages with **" + reactableName + "**.")
                 ],
                 components: []
             });

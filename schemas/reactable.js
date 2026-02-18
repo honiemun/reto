@@ -55,6 +55,13 @@ const reactableSchema = new mongoose.Schema({
 	/* CHECKS
 	These are the tests that must run to determine whether this reactable will fire. */
 
+	// Whether users can react to their own messages with this reactable.
+	selfReaction: {
+		type: Boolean,
+		required: false,
+		default: false
+	},
+
 	// This determines how many reactions are needed to perform any actions.
 	reactionThreshold: {
 		type: Number,

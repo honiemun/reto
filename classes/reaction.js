@@ -60,7 +60,6 @@ class Reaction {
                 } else return reaction.message;
             })
             
-            if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
             if (!message.author) return;
             
             // Get the reaction count for this reactable
@@ -68,7 +67,7 @@ class Reaction {
 
             // CHECKS
             
-            const passesChecks = await this.reactablePassesChecks(message, member, reactable, reactionCount, isPositive);
+            const passesChecks = await this.reactablePassesChecks(message, member, reactable, reactionCount, isPositive, user);
             if (!passesChecks) return;
             
             // Send to console
@@ -332,10 +331,17 @@ class Reaction {
         }
     }
 
-    async reactablePassesChecks(message, member, reactable, reactionCount, isPositive) {
+    async reactablePassesChecks(message, member, reactable, reactionCount, isPositive, user) {
         /* CHECKS
         Validates whether a reactable passes all its check conditions before executing actions.
         Returns true only if the reactable passes all applicable checks. */
+
+        // Self Reaction
+        if (user.id === message.author.id) {
+            if (!reactable.selfReaction && !JSON.parse(process.env.DEBUG_MODE)) {
+                return false;
+            }
+        }
 
         // Reaction Threshold
         if (reactable.reactionThreshold && reactionCount < reactable.reactionThreshold) {
