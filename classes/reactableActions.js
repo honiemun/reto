@@ -25,7 +25,12 @@ class ReactableActions {
                         { name: "Deletes Message", value: reactable.deletesMessage ? "✅ Yes" : "❌ No", inline: true },
                         { name: "Sends To Channel", value: reactable.sendsToChannel ? "<#" + reactable.sendsToChannel + ">" : "None", inline: true },
                         { name: "Custom Reply", value: reactable.reply ? "```\n" + reactable.reply + "\n```" : "None", inline: false },
-                        { name: "Timeout", value: String(reactable.timeout || 0) + " seconds", inline: true }
+                        { name: "Timeout", value: String(reactable.timeout || 0) + " seconds", inline: true },
+                        { name: "Give Role to Writer", value: reactable.awardedRole ? "<@&" + reactable.awardedRole + ">" : "None", inline: true },
+                        { name: "Give Role to Reactor", value: reactable.reactorAwardedRole ? "<@&" + reactable.reactorAwardedRole + ">" : "None", inline: true },
+                        { name: "React to Message", value: reactable.reactionEmoji ? reactable.reactionEmoji : "None", inline: true },
+                        { name: "Kicks User", value: reactable.kicksUser ? "✅ Yes" : "❌ No", inline: true },
+                        { name: "Bans User", value: reactable.bansUser ? "✅ Yes" : "❌ No", inline: true }
                     )
             ]
         });
@@ -57,7 +62,27 @@ class ReactableActions {
                 new StringSelectMenuOptionBuilder()
                     .setLabel('Timeout')
                     .setDescription('Timeout duration for message author')
-                    .setValue('timeout')
+                    .setValue('timeout'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('Give Role to Writer')
+                    .setDescription('Role to award to message author')
+                    .setValue('awardedRole'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('Give Role to Reactor')
+                    .setDescription('Role to award to reactors')
+                    .setValue('reactorAwardedRole'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('React to Message')
+                    .setDescription('Emoji to react with')
+                    .setValue('reactionEmoji'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('Kicks User')
+                    .setDescription('Whether to kick the message author')
+                    .setValue('kicksUser'),
+                new StringSelectMenuOptionBuilder()
+                    .setLabel('Bans User')
+                    .setDescription('Whether to ban the message author')
+                    .setValue('bansUser')
             );
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
@@ -93,6 +118,21 @@ class ReactableActions {
                     break;
                 case 'timeout':
                     await this.editTimeout(i, reactable, reactableName);
+                    break;
+                case 'awardedRole':
+                    await this.editAwardedRole(i, reactable, reactableName);
+                    break;
+                case 'reactorAwardedRole':
+                    await this.editReactorAwardedRole(i, reactable, reactableName);
+                    break;
+                case 'reactionEmoji':
+                    await this.editReactionEmoji(i, reactable, reactableName);
+                    break;
+                case 'kicksUser':
+                    await this.editKicksUser(i, reactable, reactableName);
+                    break;
+                case 'bansUser':
+                    await this.editBansUser(i, reactable, reactableName);
                     break;
             }
         });
@@ -547,6 +587,449 @@ class ReactableActions {
         }
     }
 
+    async editAwardedRole(interaction, reactable, reactableName) {
+        const guild = interaction.guild;
+
+        // Get all roles from the guild (up to 25)
+        const allRoles = Array.from(guild.roles.cache
+            .sort((a, b) => b.position - a.position)
+            .values())
+            .filter(role => !role.managed && role.id !== guild.id)
+            .slice(0, 25);
+
+        if (allRoles.length === 0) {
+            return await interaction.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Red")
+                        .setTitle("❌ No roles available")
+                        .setDescription("There are no manageable roles on this server.")
+                ],
+                components: []
+            });
+        }
+
+        // Create select menu for roles
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId('role_select')
+            .setPlaceholder('Select a role to award to message author')
+            .addOptions(
+                ...allRoles.map(role =>
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel(role.name)
+                        .setValue(role.id)
+                )
+            );
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+
+        // Create disable button
+        const disableButton = new ButtonBuilder()
+            .setCustomId('role_disable')
+            .setLabel('Remove Award')
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(reactable.awardedRole ? false : true);
+
+        const buttonRow = new ActionRowBuilder().addComponents(disableButton);
+
+        // Display current role
+        let currentRoleText = "None";
+        if (reactable.awardedRole) {
+            const currentRole = guild.roles.cache.get(reactable.awardedRole);
+            currentRoleText = currentRole ? `<@&${reactable.awardedRole}>` : `Unknown Role (${reactable.awardedRole})`;
+        }
+
+        await interaction.update({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("Edit Give Role to Writer")
+                    .setDescription("Select which role to award to the original message author.")
+                    .addFields(
+                        { name: "Current Role", value: currentRoleText }
+                    )
+            ],
+            components: [selectRow, buttonRow]
+        });
+
+        let handled = false;
+
+        const filter = i => i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
+
+        collector.on('collect', async i => {
+            if (handled) return;
+            handled = true;
+
+            if (i.customId === 'role_select') {
+                const selectedRoleId = i.values[0];
+
+                await reactableSchema.updateOne(
+                    { _id: reactable._id },
+                    { $set: { awardedRole: selectedRoleId } }
+                ).exec();
+
+                await i.update({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Green")
+                            .setTitle("✅ Role Updated")
+                            .setDescription(`The **${reactableName}** reactable will now award the <@&${selectedRoleId}> role.`)
+                    ],
+                    components: []
+                });
+            } else if (i.customId === 'role_disable') {
+                await i.deferUpdate();
+
+                await reactableSchema.updateOne(
+                    { _id: reactable._id },
+                    { $set: { awardedRole: null } }
+                ).exec();
+
+                await interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Green")
+                            .setTitle("✅ Award Removed")
+                            .setDescription(`The **${reactableName}** reactable will no longer award a role.`)
+                    ],
+                    components: []
+                });
+            }
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0 && !handled) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Selection timed out")
+                            .setDescription("No role was selected.")
+                    ],
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
+
+    async editReactorAwardedRole(interaction, reactable, reactableName) {
+        const guild = interaction.guild;
+
+        // Get all roles from the guild (up to 25)
+        const allRoles = Array.from(guild.roles.cache
+            .sort((a, b) => b.position - a.position)
+            .values())
+            .filter(role => !role.managed && role.id !== guild.id)
+            .slice(0, 25);
+
+        if (allRoles.length === 0) {
+            return await interaction.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Red")
+                        .setTitle("❌ No roles available")
+                        .setDescription("There are no manageable roles on this server.")
+                ],
+                components: []
+            });
+        }
+
+        // Create select menu for roles
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId('reactor_role_select')
+            .setPlaceholder('Select a role to award to reactors')
+            .addOptions(
+                ...allRoles.map(role =>
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel(role.name)
+                        .setValue(role.id)
+                )
+            );
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+
+        // Create disable button
+        const disableButton = new ButtonBuilder()
+            .setCustomId('reactor_role_disable')
+            .setLabel('Remove Award')
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(reactable.reactorAwardedRole ? false : true);
+
+        const buttonRow = new ActionRowBuilder().addComponents(disableButton);
+
+        // Display current role
+        let currentRoleText = "None";
+        if (reactable.reactorAwardedRole) {
+            const currentRole = guild.roles.cache.get(reactable.reactorAwardedRole);
+            currentRoleText = currentRole ? `<@&${reactable.reactorAwardedRole}>` : `Unknown Role (${reactable.reactorAwardedRole})`;
+        }
+
+        await interaction.update({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("Edit Give Role to Reactor")
+                    .setDescription("Select which role to award to users who react with this reactable.")
+                    .addFields(
+                        { name: "Current Role", value: currentRoleText }
+                    )
+            ],
+            components: [selectRow, buttonRow]
+        });
+
+        let handled = false;
+
+        const filter = i => i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
+
+        collector.on('collect', async i => {
+            if (handled) return;
+            handled = true;
+
+            if (i.customId === 'reactor_role_select') {
+                const selectedRoleId = i.values[0];
+
+                await reactableSchema.updateOne(
+                    { _id: reactable._id },
+                    { $set: { reactorAwardedRole: selectedRoleId } }
+                ).exec();
+
+                await i.update({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Green")
+                            .setTitle("✅ Role Updated")
+                            .setDescription(`Reactors with the **${reactableName}** reactable will now receive the <@&${selectedRoleId}> role.`)
+                    ],
+                    components: []
+                });
+            } else if (i.customId === 'reactor_role_disable') {
+                await i.deferUpdate();
+
+                await reactableSchema.updateOne(
+                    { _id: reactable._id },
+                    { $set: { reactorAwardedRole: null } }
+                ).exec();
+
+                await interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Green")
+                            .setTitle("✅ Award Removed")
+                            .setDescription(`Reactors will no longer receive a role from the **${reactableName}** reactable.`)
+                    ],
+                    components: []
+                });
+            }
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0 && !handled) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Selection timed out")
+                            .setDescription("No role was selected.")
+                    ],
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
+
+    async editReactionEmoji(interaction, reactable, reactableName) {
+        const modal = new ModalBuilder()
+            .setCustomId('reaction_emoji_modal')
+            .setTitle('Edit React to Message');
+
+        const emojiInput = new TextInputBuilder()
+            .setCustomId('reaction_emoji_value')
+            .setLabel('React to Message')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Enter an emoji or emoji ID (leave empty to disable)')
+            .setMaxLength(100)
+            .setRequired(false)
+            .setValue(reactable.reactionEmoji || '');
+
+        const actionRow = new ActionRowBuilder().addComponents(emojiInput);
+        modal.addComponents(actionRow);
+
+        await interaction.showModal(modal);
+
+        try {
+            const submitted = await interaction.awaitModalSubmit({ time: 900000 });
+            const newValue = submitted.fields.getTextInputValue('reaction_emoji_value') || "";
+
+            if (!newValue || newValue.trim() === "") {
+                await reactableSchema.updateOne(
+                    { _id: reactable._id },
+                    { $set: { reactionEmoji: null } }
+                ).exec();
+
+                return await submitted.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Green")
+                            .setTitle("✅ React to Message Disabled")
+                            .setDescription("The **" + reactableName + "** reactable will no longer react with an emoji.")
+                    ]
+                });
+            }
+
+            await reactableSchema.updateOne(
+                { _id: reactable._id },
+                { $set: { reactionEmoji: newValue } }
+            ).exec();
+
+            await submitted.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle("✅ React to Message Updated")
+                        .setDescription("The **" + reactableName + "** reactable will now react with: " + newValue)
+                ]
+            });
+        } catch (error) {
+            if (error.code !== 'InteractionCollectorError') {
+                console.error('Error in react to message modal:', error);
+            }
+        }
+    }
+
+    async editKicksUser(interaction, reactable, reactableName) {
+        const currentValue = reactable.kicksUser || false;
+
+        const buttonRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('kicks_true')
+                    .setLabel('Enable')
+                    .setStyle(ButtonStyle.Danger),
+                new ButtonBuilder()
+                    .setCustomId('kicks_false')
+                    .setLabel('Disable')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        await interaction.update({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("Edit Kicks User")
+                    .setDescription("Should the original message author be kicked when this reactable is used?")
+                    .addFields(
+                        { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
+                    )
+            ],
+            components: [buttonRow]
+        });
+
+        const filter = i => (i.customId === 'kicks_true' || i.customId === 'kicks_false') && i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30000, max: 1 });
+
+        collector.on('collect', async i => {
+            const newValue = i.customId === 'kicks_true';
+
+            await reactableSchema.updateOne(
+                { _id: reactable._id },
+                { $set: { kicksUser: newValue } }
+            ).exec();
+
+            await i.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle("✅ Kicks User Updated")
+                        .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " kick the original message author.")
+                        .setFooter({ text: "Make sure the bot has the Kick Members permission on this server before using this reactable." })
+                ],
+                components: []
+            });
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Selection timed out")
+                            .setDescription("No option was selected.")
+                    ],
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
+
+    async editBansUser(interaction, reactable, reactableName) {
+        const currentValue = reactable.bansUser || false;
+
+        const buttonRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('bans_true')
+                    .setLabel('Enable')
+                    .setStyle(ButtonStyle.Danger),
+                new ButtonBuilder()
+                    .setCustomId('bans_false')
+                    .setLabel('Disable')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        await interaction.update({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("Edit Bans User")
+                    .setDescription("Should the original message author be banned when this reactable is used?")
+                    .addFields(
+                        { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
+                    )
+            ],
+            components: [buttonRow]
+        });
+
+        const filter = i => (i.customId === 'bans_true' || i.customId === 'bans_false') && i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30000, max: 1 });
+
+        collector.on('collect', async i => {
+            const newValue = i.customId === 'bans_true';
+
+            await reactableSchema.updateOne(
+                { _id: reactable._id },
+                { $set: { bansUser: newValue } }
+            ).exec();
+
+            await i.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle("✅ Bans User Updated")
+                        .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " ban the original message author.")
+                        .setFooter({ text: "Make sure the bot has the Ban Members permission on this server before using this reactable." })
+
+                ],
+                components: []
+            });
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Selection timed out")
+                            .setDescription("No option was selected.")
+                    ],
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
 }
 
 module.exports = new ReactableActions();

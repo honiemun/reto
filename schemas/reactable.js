@@ -111,6 +111,38 @@ const reactableSchema = new mongoose.Schema({
 		type: Number,
 		required: false,
 		default: 0
+	},
+
+	// ID of role to award to the original writer when the reactable is used.
+	awardedRole: {
+		type: String,
+		required: false
+	},
+
+	// ID of role to award to reactors when the reactable is used.
+	reactorAwardedRole: {
+		type: String,
+		required: false
+	},
+
+	// ID of emoji to react to this message with.
+	reactionEmoji: {
+		type: String,
+		required: false
+	},
+
+	// Whether this reactable should kick the original writer when used.
+	kicksUser: {
+		type: Boolean,
+		required: false,
+		default: false
+	},
+
+	// Whether this reactable should ban the original writer when used.
+	bansUser: {
+		type: Boolean,
+		required: false,
+		default: false
 	}
 });
 

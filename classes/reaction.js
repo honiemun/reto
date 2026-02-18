@@ -120,6 +120,42 @@ class Reaction {
                 isPositive
             );
 
+            // Award role to author
+            await this.awardRoleToAuthor(
+                message,
+                reactable,
+                isPositive
+            );
+
+            // Award role to reactors
+            await this.awardRoleToReactors(
+                user,
+                message.guild,
+                reactable,
+                isPositive
+            );
+
+            // React with emoji
+            await this.reactWithEmoji(
+                message,
+                reactable,
+                isPositive
+            );
+
+            // Kick user
+            await this.kickUser(
+                message,
+                reactable,
+                isPositive
+            );
+
+            // Ban user
+            await this.banUser(
+                message,
+                reactable,
+                isPositive
+            );
+
             // Delete the message
             await this.deleteOriginalMessage(
                 message,
@@ -190,6 +226,95 @@ class Reaction {
             await member.timeout(timeoutDurationMs, `Timed out by reactable: ${reactable.name}`);
         } catch (error) {
             console.error("💔 Couldn't apply timeout:", error);
+        }
+    }
+
+    async awardRoleToAuthor(message, reactable, isPositive) {
+        if (!reactable.awardedRole) return;
+
+        try {
+            const member = await message.guild.members.fetch(message.author.id);
+            const role = message.guild.roles.cache.get(reactable.awardedRole);
+
+            if (!role) {
+                console.error(`💔 Role ${reactable.awardedRole} not found`);
+                return;
+            }
+
+            if (isPositive) {
+                await member.roles.add(role, `Awarded by reactable: ${reactable.name}`);
+            } else {
+                await member.roles.remove(role, `Removed by reactable: ${reactable.name}`);
+            }
+        } catch (error) {
+            console.error("💔 Couldn't award role to author:", error);
+        }
+    }
+
+    async awardRoleToReactors(user, guild, reactable, isPositive) {
+        if (!reactable.reactorAwardedRole) return;
+
+        try {
+            const role = guild.roles.cache.get(reactable.reactorAwardedRole);
+
+            if (!role) {
+                console.error(`💔 Role ${reactable.reactorAwardedRole} not found`);
+                return;
+            }
+
+            const member = await guild.members.fetch(user.id);
+
+            if (isPositive) {
+                await member.roles.add(role, `Awarded by reactable: ${reactable.name}`);
+            } else {
+                await member.roles.remove(role, `Removed by reactable: ${reactable.name}`);
+            }
+        } catch (error) {
+            console.error("💔 Couldn't award role to reactor:", error);
+        }
+    }
+
+    async reactWithEmoji(message, reactable, isPositive) {
+        if (!reactable.reactionEmoji) return;
+
+        try {
+            if (isPositive) {
+                await message.react(reactable.reactionEmoji);
+            } else {
+                // Try to remove the reaction
+                const reactions = message.reactions.cache;
+                const emojiReaction = reactions.find(r =>
+                    r.emoji.name === reactable.reactionEmoji ||
+                    r.emoji.id === reactable.reactionEmoji
+                );
+
+                if (emojiReaction) {
+                    await emojiReaction.remove();
+                }
+            }
+        } catch (error) {
+            console.error("💔 Couldn't react with emoji:", error);
+        }
+    }
+
+    async kickUser(message, reactable, isPositive) {
+        if (!reactable.kicksUser || !isPositive) return;
+
+        try {
+            const member = await message.guild.members.fetch(message.author.id);
+            await member.kick(`Kicked by reactable: ${reactable.name}`);
+        } catch (error) {
+            console.error("💔 Couldn't kick user:", error);
+        }
+    }
+
+    async banUser(message, reactable, isPositive) {
+        if (!reactable.bansUser || !isPositive) return;
+
+        try {
+            await message.guild.members.ban(message.author.id, { reason: `Banned by reactable: ${reactable.name}` });
+        } catch (error) {
+            console.error("💔 Couldn't ban user:", error);
         }
     }
 
