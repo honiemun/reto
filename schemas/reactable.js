@@ -31,32 +31,6 @@ const reactableSchema = new mongoose.Schema({
 		required: true
 	},
 
-	// The ID of the channel this reactable sends a post to.
-	sendsToChannel: {
-		type: String,
-		required: false
-	},
-	
-	// If sendsToChannel is set, this determines how many reactions are needed to send this message.
-	reactionThreshold: {
-		type: Number,
-		required: false,
-		default: 0
-	},
-
-	// The amount of karma this reactable awards. Can be positive or negative.
-	karmaAwarded: {
-		type: Number,
-		required: false,
-		default: 0
-	},
-
-	// An array of the roles you need to use this reactable.
-	lockedBehindRoles: {
-		type: Array,
-		required: false,
-	},
-
 	// Determines if this reactable awards Karma on a global karma basis.
 	globalKarma: {
 		type: Boolean,
@@ -76,6 +50,67 @@ const reactableSchema = new mongoose.Schema({
 	reactionConfirmationDescription: {
 		type: String,
 		required: false
+	},
+	
+	/* CHECKS
+	These are the tests that must run to determine whether this reactable will fire. */
+
+	// This determines how many reactions are needed to perform any actions.
+	reactionThreshold: {
+		type: Number,
+		required: false,
+		default: 0
+	},
+
+	// Determines if this reactable can only be used once per message.
+	firesOnce: {
+		type: Boolean,
+		required: false,
+		default: false
+	},
+
+	// An array of the roles you need to use this reactable.
+	lockedBehindRoles: {
+		type: Array,
+		required: false,
+	},
+	
+	/* ACTIONS
+	These are the actions that a Reactable can perform when activated. */
+
+	// The ID of the channel this reactable sends a post to.
+	sendsToChannel: {
+		type: String,
+		required: false
+	},
+
+	// The amount of karma this reactable awards. Can be positive or negative.
+	karmaAwarded: {
+		type: Number,
+		required: false,
+		default: 0
+	},
+
+	// Determines if the original message should be deleted when this reactable is used.
+	deletesMessage: {
+		type: Boolean,
+		required: false,
+		default: false
+	},
+
+	// A custom message that the bot will reply with when the reactable is used.
+	// As messageConfirmation is a guild-wide setting, this allows you to have a custom message per Reactable
+	// if you still wish to keep other reactables like Karma as reaction-confirmations.
+	reply: {
+		type: String,
+		required: false
+	},
+
+	// Puts the original writer in timeout for X amount of time (in seconds).
+	timeout: {
+		type: Number,
+		required: false,
+		default: 0
 	}
 });
 

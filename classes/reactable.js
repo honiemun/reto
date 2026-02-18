@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const mongoose = require('mongoose');
 
 // Classes
@@ -6,6 +6,8 @@ const Personalisation = require("../classes/personalisation");
 const Embed = require("../classes/embed");
 const Parsing = require("../classes/parsing");
 const Premium = require("../classes/premium");
+const ReactableChecks = require("../classes/reactableChecks");
+const ReactableActions = require("../classes/reactableActions");
 
 // Schemas
 const guildSchema = require("../schemas/guild");
@@ -229,7 +231,164 @@ class Reactable {
             ]
         });
     }
-      
+
+    async createReactable(interaction) {
+        const name = interaction.options.getString("name").toLowerCase();
+        let emoji = interaction.options.getString("emoji");
+
+        // Extract emoji ID from format, or just use as-is if it's already an ID
+        const emojiMatch = emoji.match(/:(\d+)>/);
+        if (emojiMatch) {
+            emoji = emojiMatch[1];
+        }
+
+        // Check if reactable with this name already exists
+        const existingReactable = await reactableSchema.findOne({
+            guildId: interaction.guild.id,
+            name: name
+        }).exec();
+
+        if (existingReactable) {
+            return await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Orange")
+                        .setTitle("⚠️ Reactable already exists")
+                        .setDescription("A reactable named **" + name + "** already exists on this server.")
+                ]
+            });
+        }
+
+        // Create the new reactable
+        try {
+            const newReactable = new reactableSchema({
+                guildId: interaction.guild.id,
+                name: name,
+                emojiIds: [emoji]
+            });
+
+            await newReactable.save();
+
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle("✅ Reactable created!")
+                        .setDescription("Successfully created the **" + name + "** reactable with emoji " + emoji + ".\n\nYou can now customize it further using `/reactable emoji` commands.")
+                ]
+            });
+        } catch (error) {
+            console.error("💔 Error creating reactable:", error);
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Red")
+                        .setTitle("❌ Error creating reactable")
+                        .setDescription("There was an error creating the reactable. Please try again.")
+                ]
+            });
+        }
+    }
+
+    async deleteReactable(interaction) {
+        const reactableName = interaction.options.getString("reactable");
+        
+        const reactable = await reactableSchema.findOne({
+            guildId: interaction.guild.id,
+            name: reactableName.toLowerCase()
+        }).exec();
+
+        if (!reactable) {
+            return await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Orange")
+                        .setTitle("⚠️ Reactable not found")
+                        .setDescription("A reactable named **" + reactableName + "** wasn't found on this server.")
+                ]
+            });
+        }
+
+        // Create confirmation buttons
+        const confirmRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('confirm_delete')
+                    .setLabel('Delete')
+                    .setStyle(ButtonStyle.Danger),
+                new ButtonBuilder()
+                    .setCustomId('cancel_delete')
+                    .setLabel('Cancel')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        await interaction.editReply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Orange")
+                    .setTitle("⚠️ Confirm deletion")
+                    .setDescription("Are you sure you want to delete the **" + reactableName + "** reactable?\n\n**This will permanently delete all associated data including:**\n• All reactions stored for this reactable\n• All pinned messages sent by this reactable\n• All settings and configurations\n\nThis action cannot be undone.")
+            ],
+            components: [confirmRow]
+        });
+
+        // Create button collector
+        const filter = i => i.customId === 'confirm_delete' || i.customId === 'cancel_delete';
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
+
+        collector.on('collect', async i => {
+            if (i.customId === 'confirm_delete') {
+                try {
+                    await reactableSchema.deleteOne({ _id: reactable._id }).exec();
+
+                    await i.update({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Green")
+                                .setTitle("✅ Reactable deleted!")
+                                .setDescription("Successfully deleted the **" + reactableName + "** reactable.")
+                        ],
+                        components: []
+                    });
+                } catch (error) {
+                    console.error("💔 Error deleting reactable:", error);
+                    await i.update({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Red")
+                                .setTitle("❌ Error deleting reactable")
+                                .setDescription("There was an error deleting the reactable. Please try again.")
+                        ],
+                        components: []
+                    });
+                }
+            } else if (i.customId === 'cancel_delete') {
+                await i.update({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Blue")
+                            .setTitle("❌ Cancelled")
+                            .setDescription("Deletion cancelled. The **" + reactableName + "** reactable has not been deleted.")
+                    ],
+                    components: []
+                });
+            }
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0) {
+                interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Grey")
+                            .setTitle("⏱️ Confirmation timed out")
+                            .setDescription("The deletion request has expired. Please try again if you want to delete this reactable.")
+                    ],
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
 }
 
 module.exports = new Reactable();

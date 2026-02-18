@@ -4,6 +4,8 @@ const { PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.j
 // Classes
 const Autocomplete = require("../../classes/autocomplete");
 const Reactable = require("../../classes/reactable");
+const ReactableChecks = require("../../classes/reactableChecks");
+const ReactableActions = require("../../classes/reactableActions");
 
 // Schemas
 
@@ -13,12 +15,124 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: true,
+    testOnly: true,
 
     permissions: [
 		PermissionFlagsBits.ManageGuildExpressions
 	],
 
 	options: [
+        {
+            name: "create",
+            description: "Create a new Reactable.",
+            type: ApplicationCommandOptionType.Subcommand,
+
+            options: [
+                {
+                    name: "name",
+                    description: "The name of the new Reactable.",
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                },
+                {
+                    name: "emoji",
+                    description: "The emoji for this Reactable.",
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                }
+            ]
+        },
+        {
+            name: "delete",
+            description: "Delete a Reactable.",
+            type: ApplicationCommandOptionType.Subcommand,
+
+            options: [
+                {
+                    name: "reactable",
+                    description: "The reactable to delete.",
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                    autocomplete: true,
+                }
+            ]
+        },
+        {
+            name: "checks",
+            description: "Manage Reactable checks.",
+            type: ApplicationCommandOptionType.SubcommandGroup,
+
+            options: [
+                {
+                    name: "view",
+                    description: "View all checks for a Reactable.",
+                    type: ApplicationCommandOptionType.Subcommand,
+
+                    options: [
+                        {
+                            name: "reactable",
+                            description: "The reactable to view checks for.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        }
+                    ]
+                },
+                {
+                    name: "set",
+                    description: "Edit a Reactable's checks.",
+                    type: ApplicationCommandOptionType.Subcommand,
+
+                    options: [
+                        {
+                            name: "reactable",
+                            description: "The reactable to edit.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            name: "actions",
+            description: "Manage Reactable actions.",
+            type: ApplicationCommandOptionType.SubcommandGroup,
+
+            options: [
+                {
+                    name: "view",
+                    description: "View all actions for a Reactable.",
+                    type: ApplicationCommandOptionType.Subcommand,
+
+                    options: [
+                        {
+                            name: "reactable",
+                            description: "The reactable to view actions for.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        }
+                    ]
+                },
+                {
+                    name: "set",
+                    description: "Edit a Reactable's actions.",
+                    type: ApplicationCommandOptionType.Subcommand,
+
+                    options: [
+                        {
+                            name: "reactable",
+                            description: "The reactable to edit.",
+                            type: ApplicationCommandOptionType.String,
+                            required: true,
+                            autocomplete: true,
+                        }
+                    ]
+                }
+            ]
+        },
         {
             name: "emoji",
             description: "Modify a Reactable's emojis.",
@@ -118,12 +232,48 @@ module.exports = {
         const cmdGroup = interaction.options.getSubcommandGroup();
         const cmd = interaction.options.getSubcommand();
 
+        // Top-level subcommands
+        if (!cmdGroup) {
+            switch (cmd) {
+                case "create":
+                    await Reactable.createReactable(interaction);
+                    break;
+                case "delete":
+                    await Reactable.deleteReactable(interaction);
+                    break;
+                default:
+                    break;
+            }
+            return;
+        }
+
         const reactable = await Autocomplete.autocompleteValidate("reactable", {guildId: interaction.guild.id}, interaction.options.getString("reactable"), interaction);
         if (!reactable) return;
         
         switch (cmdGroup) {
-            case "emoji":
+            case "checks":
+                switch (cmd) {
+                    case "view":
+                        await ReactableChecks.viewChecks(interaction, reactable);
+                        break;
+                    case "set":
+                        await ReactableChecks.setChecks(interaction, reactable);
+                        break;
+                }
+                break;
 
+            case "actions":
+                switch (cmd) {
+                    case "view":
+                        await ReactableActions.viewActions(interaction, reactable);
+                        break;
+                    case "set":
+                        await ReactableActions.setActions(interaction, reactable);
+                        break;
+                }
+                break;
+
+            case "emoji":
                 switch (cmd) {
                     case "default":
                         await Reactable.editDefaultEmoji(interaction, reactable);
@@ -135,7 +285,6 @@ module.exports = {
                         await Reactable.removeEmoji(interaction, reactable);
                         break;
                 }
-
                 break;
             
             default:

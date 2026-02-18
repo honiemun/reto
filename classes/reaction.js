@@ -9,6 +9,7 @@ const reactionSchema = require('../schemas/reaction');
 const Pin = require("./pin");
 const Karma = require("./karma");
 const ReactionCheck = require("./reactionCheck");
+const Formatting = require("./formatting");
 
 class Reaction {
     
@@ -41,10 +42,8 @@ class Reaction {
 
             if (!reactableIsValid) continue;
             
-            // Check if user can use this Reactable
+            // Fetch member for checks
             const member = await reaction.message.guild.members.fetch(user.id);
-            const canReact = await this.checkMemberCanReact(member, reactable);
-            if (!canReact) return;
 
             const karmaToAward = isPositive
                 ? reactable.karmaAwarded
@@ -64,10 +63,13 @@ class Reaction {
             if (!JSON.parse(process.env.DEBUG_MODE) && user.id == message.author.id) return;
             if (!message.author) return;
             
-            // Check if the reaction isn't duplicated
-            const amountReacted = await ReactionCheck.checkIfPreviouslyReacted(message, user, reactable)
-            if (amountReacted && isPositive) return; // Exit if the message has been reacted (positive)
-            else if (amountReacted < 1 && !isPositive) return; // Exit if the message hasn't been reacted (negative)
+            // Get the reaction count for this reactable
+            const reactionCount = await this.getReactionCount(reactable, message);
+
+            // CHECKS
+            
+            const passesChecks = await this.reactablePassesChecks(message, member, reactable, reactionCount, isPositive);
+            if (!passesChecks) return;
             
             // Send to console
             await this.sendReactionToConsole(message, user, reactable, karmaToAward, isPositive)
@@ -75,6 +77,8 @@ class Reaction {
             // Store reaction
             const savedReaction = await this.saveOrDeleteReaction(message, user, reactable, isPositive);
             if (!savedReaction) return;
+
+            // ACTIONS
 
             // Award the karma total to user
             await Karma.awardKarmaToUser(
@@ -93,7 +97,35 @@ class Reaction {
             )
 
             // Send notification
-            await Karma.sendKarmaNotification(reaction.message, user, guildDocument, reactable, isPositive);
+            await Karma.sendKarmaNotification(
+                reaction.message,
+                user,
+                guildDocument,
+                reactable,
+                isPositive
+            );
+
+            // Send custom reply
+            await this.sendReactableReply(
+                message,
+                user,
+                reactable,
+                isPositive
+            );
+
+            // Apply timeout
+            await this.applyTimeout(
+                message,
+                reactable,
+                isPositive
+            );
+
+            // Delete the message
+            await this.deleteOriginalMessage(
+                message,
+                reactable,
+                isPositive
+            );
         }
     }
 
@@ -121,6 +153,46 @@ class Reaction {
         }).exec();
     }
 
+    async deleteOriginalMessage (message, reactable, isPositive) {
+        if (reactable.deletesMessage && isPositive) {
+            try {
+                await message.delete();
+            } catch (error) {
+                console.error("💔 Couldn't delete the message:", error);
+            }
+        }
+    }
+
+    async sendReactableReply (message, user, reactable, isPositive) {
+        if (!reactable.reply || !isPositive) return;
+        
+        try {
+            const formattedReply = await Formatting.format(reactable.reply, message, user, message.guild, reactable);
+            
+            await message.reply({
+                content: formattedReply,
+                allowedMentions: {
+                    users: [] // Disable pinging the original author
+                }
+            });
+        } catch (error) {
+            console.error("💔 Couldn't send reactable reply:", error);
+        }
+    }
+
+    async applyTimeout (message, reactable, isPositive) {
+        if (!reactable.timeout || reactable.timeout <= 0 || !isPositive) return;
+        
+        try {
+            const member = await message.guild.members.fetch(message.author.id);
+            const timeoutDurationMs = reactable.timeout * 1000; // Convert seconds to milliseconds
+            
+            await member.timeout(timeoutDurationMs, `Timed out by reactable: ${reactable.name}`);
+        } catch (error) {
+            console.error("💔 Couldn't apply timeout:", error);
+        }
+    }
+
     async sendReactionToConsole(message, reactingUser, reactable, karmaToAward, isPositive, isDiscovery = false) {
         const reactableName = reactable ? reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1) : "Global Reaction";
         const reactableAmount = " (" + (karmaToAward<0?"":"+") + karmaToAward + ")"
@@ -133,6 +205,48 @@ class Reaction {
         } else {
             console.log('💜 ' + message.author.username.magenta + " got " + reactPrefix + "reacted by " + reactingUser.username.gray + " with a " + reactableName.magenta.bold + reactableAmount.gray + (isDiscovery ? " (via Discover)".gray : ""));
         }
+    }
+
+    async reactablePassesChecks(message, member, reactable, reactionCount, isPositive) {
+        /* CHECKS
+        Validates whether a reactable passes all its check conditions before executing actions.
+        Returns true only if the reactable passes all applicable checks. */
+
+        // Reaction Threshold
+        if (reactable.reactionThreshold && reactionCount < reactable.reactionThreshold) {
+            return false;
+        }
+
+        // Fires Once
+        if (reactable.firesOnce && isPositive) {
+            const hasAlreadyReacted = await ReactionCheck.checkIfPreviouslyReacted(message, member.user, reactable);
+            if (hasAlreadyReacted) {
+                return false;
+            }
+        }
+
+        // Locked Behind Roles
+        if (!await this.checkMemberCanReact(member, reactable)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    async getReactionCount(reactable, message) {
+        // Counts the total reactions on a message that match this reactable's emoji IDs
+        let reactionCount = 0;
+
+        if (reactable && reactable.emojiIds) {
+            for (const emojiId of reactable.emojiIds) {
+                const reaction = message.reactions.cache.get(emojiId);
+                if (reaction) {
+                    reactionCount += reaction.count;
+                }
+            }
+        }
+
+        return reactionCount;
     }
 
     async checkMemberCanReact(member, reactable) {

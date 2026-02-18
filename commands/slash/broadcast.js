@@ -6,7 +6,7 @@ const News = require("../../classes/news");
 
 module.exports = {
 	category: 'News',
-	description: 'Publish a news article on subscribed Reactable Channels.',
+	description: 'Publish a news article on subscribed Pinnable Channels.',
 
 	type: CommandType.SLASH,
 	guildOnly: true,
