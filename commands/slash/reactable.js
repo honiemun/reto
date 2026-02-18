@@ -15,7 +15,6 @@ module.exports = {
 
 	type: CommandType.SLASH,
 	guildOnly: true,
-    testOnly: true,
 
     permissions: [
 		PermissionFlagsBits.ManageGuildExpressions
