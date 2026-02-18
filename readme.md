@@ -11,7 +11,9 @@ Reto was developed from 2022 to 2024. No further major updates are planned, but 
 
 ### Installation
 
-You may need to create a `.env` file with your [app token and secret](https://discord.com/developers/applications), along with other features.
+You will need to create a `.env` file with your [app token and secret](https://discord.com/developers/applications).
+
+You also need to create custom emoji in your Discord application, and change the existing ones in `/data/retoEmojis.js`.
 
 #### Local
 
