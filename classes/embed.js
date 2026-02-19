@@ -92,27 +92,12 @@ class Embed {
 		const allOptions = await this.getSelectorOptions(currentSetup.selector, channel, client);
 
 		if (allOptions.length > 24) {
-			const paginator = new PaginatedSelector(
-				currentSetup.selector,
-				allOptions,
-				async (selectedOption, values, i) => {
-					await i.deferUpdate();
-
-					this._activePaginator.stop();
-					this._activePaginator = null;
-					
-					await this.nextTab(selectedOption, msgInt, channel, member, client);
-					if (currentSetup.selector.function) {
-						currentSetup.selector.function(values, channel.guild, member);
-					}
-				},
-				buttonRow
-			);
-			this._activePaginator = paginator; // <-- instance-level
+			const paginator = new PaginatedSelector(currentSetup.selector, allOptions);
+			this._activePaginator = paginator;
 			return paginator.buildPage(0);
 		}
 
-		this._activePaginator = null; // <-- instance-level
+		this._activePaginator = null;
 		return this.createSelector(currentSetup.selector, allOptions);
 	}
 
@@ -161,60 +146,79 @@ class Embed {
 	async createCollector(currentSetup, embed, msgInt, channel, member, client) {
 		if (!currentSetup.components) return;
 
-		// If this step has a paginated selector, hand control to the paginator
-		if (this._activePaginator) {
-			this._activePaginator.attachCollector(embed, msgInt, member.id);
-		}
+		const filter = (i) => i.user.id === member.id;
+		const time = 1000 * 60 * 5;
 
-		const filter = (i) => {
-			if (i.user.id !== member.id) return false;
-			// Let the paginator handle its own select menu interactions
-			if (this._activePaginator && i.customId === currentSetup.selector?.id) return false;
-			return true;
-		}
-		const time = 1000 * 60 * 5
-
-		const collector = embed.createMessageComponentCollector({ filter, max: 1, time });
+		// No max:1 — we need to stay alive for pagination
+		const collector = embed.createMessageComponentCollector({ filter, time });
 
 		collector.on('collect', async (i) => {
 			if (!i) return;
 
-			// Modals
+			// ── Paginated select menu ──────────────────────────────────────
+			if (i.isStringSelectMenu() && this._activePaginator) {
+				const value = i.values?.[0];
+
+				if (value === '__paginate_next__') {
+					await i.deferUpdate();
+					const row = this._activePaginator.buildPage(this._activePaginator.page + 1);
+					const components = currentSetup.components ? [await this.createComponents(currentSetup.components), row] : [row];
+					await msgInt.editReply({ components });
+					return;
+				}
+
+				if (value === '__paginate_prev__') {
+					await i.deferUpdate();
+					const row = this._activePaginator.buildPage(this._activePaginator.page - 1);
+					const components = currentSetup.components ? [await this.createComponents(currentSetup.components), row] : [row];
+					await msgInt.editReply({ components });
+					return;
+				}
+
+				// Real selection
+				const selected = this._activePaginator.options.find(o => o.value === value);
+				collector.stop('selected');
+				await i.deferUpdate();
+				await this.nextTab(selected, msgInt, channel, member, client);
+				if (currentSetup.selector.function) {
+					currentSetup.selector.function(i.values, channel.guild, member);
+				}
+				return;
+			}
+
+			// ── Non-paginated select menu ──────────────────────────────────
+			if (i.isStringSelectMenu() && currentSetup.selector) {
+				const allOptions = await this.getSelectorOptions(currentSetup.selector, channel, client);
+				const selected = allOptions.find(o => o.value === i.values[0]);
+				if (selected) {
+					collector.stop('selected');
+					await i.deferUpdate();
+					await this.selectCollectorOption(selected, i, currentSetup, msgInt, channel, member, client);
+				}
+				return;
+			}
+
+			// ── Buttons ────────────────────────────────────────────────────
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
+					// Modals can't be deferred first
 					if (component.modal) {
+						collector.stop('selected');
 						await this.createModal(component.modal, i, currentSetup, msgInt, channel, member, client);
 						return;
 					}
-				}
-			}
 
-			await i.deferUpdate();
-
-			// Buttons (components)
-			for (let component of currentSetup.components) {
-				if (component.id === i.customId) {
+					collector.stop('selected');
+					await i.deferUpdate();
 					await this.selectCollectorOption(component, i, currentSetup, msgInt, channel, member, client);
 					return;
 				}
 			}
+		});
 
-			// Select Menu (non-paginated path only)
-			if (currentSetup.selector && !this._activePaginator) {
-				const allOptions = await this.getSelectorOptions(currentSetup.selector, channel, client);
-
-				for (let option of allOptions) {
-					if (option.value === i.values[0]) {
-						await this.selectCollectorOption(option, i, currentSetup, msgInt, channel, member, client);
-						return;
-					}
-				}
-			}
-		})
-
-		collector.on('end', (collected, reason) => {
-			if (reason == "messageDelete") return;
-			msgInt.editReply({ components: [] });
+		collector.on('end', (_, reason) => {
+			if (reason === 'selected' || reason === 'messageDelete') return;
+			msgInt.editReply({ components: [] }).catch(() => {});
 		});
 	}
 

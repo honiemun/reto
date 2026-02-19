@@ -106,53 +106,6 @@ class PaginatedSelector {
         return new ActionRowBuilder().addComponents(select);
     }
 
-    // Collector
-
-    /**
-     * Attaches a persistent collector to a message that handles pagination
-     * internally and calls onSelect() when the user picks a real option.
-     *
-     * @param {Message}      message       - The reply message to collect on
-     * @param {Interaction}  msgInt        - The original deferred interaction (for editReply)
-     * @param {string}       userId        - The user ID to filter on
-     * @param {number}       [time]        - Collector timeout in ms (default 5 min)
-     */
-    attachCollector(message, msgInt, userId, time = 1000 * 60 * 5) {
-        const filter = (i) => i.user.id === userId;
-        this.collector = message.createMessageComponentCollector({ filter, time });
-
-        this.collector.on('collect', async (i) => {
-            if (!i.isStringSelectMenu()) return;
-
-            const value = i.values?.[0];
-
-            if (value === '__paginate_next__') {
-                await i.deferUpdate();
-                const row = this.buildPage(this.page + 1);
-                const components = this.buttonRow ? [this.buttonRow, row] : [row];
-                await msgInt.editReply({ components });
-                return;
-            }
-
-            if (value === '__paginate_prev__') {
-                await i.deferUpdate();
-                const row = this.buildPage(this.page - 1);
-                const components = this.buttonRow ? [this.buttonRow, row] : [row];
-                await msgInt.editReply({ components });
-                return;
-            }
-
-            const selected = this.options.find(o => o.value === value);
-            this.collector.stop('selected'); // <-- this.collector, not collector
-            await this.onSelect(selected, i.values, i);
-        });
-
-        this.collector.on('end', (_, reason) => {
-            if (reason === 'selected' || reason === 'navigated' || reason === 'messageDelete') return;
-            msgInt.editReply({ components: [] }).catch(() => {});
-        });
-    }
-
     stop() {
         this.collector?.stop('navigated');
     }
