@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 // Classes
 const Embed = require("../classes/embed");
 const Parsing = require("../classes/parsing");
+const Validation = require("../classes/validation");
 
 // Schemas
 const guildSchema = require("../schemas/guild");
@@ -58,7 +59,16 @@ class Reactable {
 
     async addEmoji(interaction, reactable) {
         const reactableName = interaction.options.getString("reactable").charAt(0).toUpperCase() + interaction.options.getString("reactable").slice(1);
-        const emoji = interaction.options.getString("emoji");
+        const rawEmoji = interaction.options.getString("emoji");
+
+        // Validate emoji
+        const validationError = await Validation.validateEmoji(rawEmoji);
+        if (validationError) {
+            return await interaction.editReply({ embeds: [validationError] });
+        }
+
+        // Extract just the ID (or unicode emoji as-is)
+        const emoji = await Validation.getEmojiId(rawEmoji);
 
         // Check if emoji is already in the list
         if (reactable.emojiIds.includes(emoji)) {
@@ -67,12 +77,12 @@ class Reactable {
                     new EmbedBuilder()
                         .setColor("Orange")
                         .setTitle("⚠️ Emoji already exists")
-                        .setDescription("The emoji " + emoji + " is already part of this reactable.")
+                        .setDescription("The emoji " + rawEmoji + " is already part of this reactable.")
                 ]
             });
         }
 
-        // Add emoji to reactable
+        // Add emoji ID to reactable
         reactable.emojiIds.push(emoji);
         
         await reactableSchema.updateOne(
@@ -80,7 +90,6 @@ class Reactable {
             { $set: { emojiIds: reactable.emojiIds } }
         ).exec();
 
-        // Convert all emoji IDs to their proper emoji strings for display
         const displayEmojis = await Promise.all(
             reactable.emojiIds.map(id => Parsing.emoji(id, interaction.guild))
         );
@@ -91,14 +100,23 @@ class Reactable {
                 new EmbedBuilder()
                     .setColor("Green")
                     .setTitle("✅ Emoji added!")
-                    .setDescription("Added " + emoji + " to **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
+                    .setDescription("Added " + rawEmoji + " to **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
             ]
         });
     }
 
     async removeEmoji(interaction, reactable) {
         const reactableName = interaction.options.getString("reactable").charAt(0).toUpperCase() + interaction.options.getString("reactable").slice(1);
-        const emoji = interaction.options.getString("emoji");
+        const rawEmoji = interaction.options.getString("emoji");
+
+        // Validate emoji
+        const validationError = await Validation.validateEmoji(rawEmoji);
+        if (validationError) {
+            return await interaction.editReply({ embeds: [validationError] });
+        }
+
+        // Extract just the ID (or unicode emoji as-is)
+        const emoji = await Validation.getEmojiId(rawEmoji);
 
         // Check if emoji exists in the list
         if (!reactable.emojiIds.includes(emoji)) {
@@ -107,12 +125,12 @@ class Reactable {
                     new EmbedBuilder()
                         .setColor("Orange")
                         .setTitle("⚠️ Emoji not found")
-                        .setDescription("The emoji " + emoji + " is not part of this reactable.")
+                        .setDescription("The emoji " + rawEmoji + " is not part of this reactable.")
                 ]
             });
         }
 
-        // Remove emoji from reactable
+        // Remove emoji ID from reactable
         reactable.emojiIds = reactable.emojiIds.filter(e => e !== emoji);
         
         await reactableSchema.updateOne(
@@ -120,7 +138,6 @@ class Reactable {
             { $set: { emojiIds: reactable.emojiIds } }
         ).exec();
 
-        // Convert all emoji IDs to their proper emoji strings for display
         const displayEmojis = await Promise.all(
             reactable.emojiIds.map(id => Parsing.emoji(id, interaction.guild))
         );
@@ -133,20 +150,23 @@ class Reactable {
                 new EmbedBuilder()
                     .setColor("Green")
                     .setTitle("✅ Emoji removed!")
-                    .setDescription("Removed " + emoji + " from **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
+                    .setDescription("Removed " + rawEmoji + " from **" + reactableName + "**.\n\n**Current emojis:**\n" + updatedEmojisText)
             ]
         });
     }
 
     async createReactable(interaction) {
         const name = interaction.options.getString("name").toLowerCase();
-        let emoji = interaction.options.getString("emoji");
+        const rawEmoji = interaction.options.getString("emoji");
 
-        // Extract emoji ID from format, or just use as-is if it's already an ID
-        const emojiMatch = emoji.match(/:(\d+)>/);
-        if (emojiMatch) {
-            emoji = emojiMatch[1];
+        // Validate emoji
+        const validationError = await Validation.validateEmoji(rawEmoji);
+        if (validationError) {
+            return await interaction.editReply({ embeds: [validationError] });
         }
+
+        // Extract just the ID (or unicode emoji as-is)
+        const emoji = await Validation.getEmojiId(rawEmoji);
 
         // Check if reactable with this name already exists
         const existingReactable = await reactableSchema.findOne({
@@ -180,7 +200,7 @@ class Reactable {
                     new EmbedBuilder()
                         .setColor("Green")
                         .setTitle("✅ Reactable created!")
-                        .setDescription("Successfully created the **" + name + "** reactable with emoji " + emoji + ".\n\n- Reactables don't do much on their own, set up some actions to trigger when you react to a message with it by using `/reactable actions set`!\n- You can control who has access to this reactable by using `/reactable checks set`.\n- Want to add more emoji to this reactable? Use `/reactable emoji add`, or `/reactable emoji default` to set the default one.")
+                        .setDescription("Successfully created the **" + name + "** reactable with emoji " + rawEmoji + ".\n\n- Reactables don't do much on their own, set up some actions to trigger when you react to a message with it by using `/reactable actions set`!\n- You can control who has access to this reactable by using `/reactable checks set`.\n- Want to add more emoji to this reactable? Use `/reactable emoji add`, or `/reactable emoji default` to set the default one.")
                 ]
             });
         } catch (error) {

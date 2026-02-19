@@ -9,6 +9,16 @@ class Validation {
         Validation._instance = this;
     }
     
+    async getEmojiId(emoji) {
+        // Check if the emoji is a custom emoji
+        const customEmoji = emoji.match(/<a?:\w+:(\d+)>/);
+        if (customEmoji) {
+            return customEmoji[1];
+        }
+
+        // If it's not a custom emoji, return the emoji itself
+        return emoji;
+    }
 
     async validateEmoji(emoji) {
         // Check if the emoji is valid

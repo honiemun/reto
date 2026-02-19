@@ -207,18 +207,18 @@ module.exports = {
             const reactable = await Autocomplete.autocompleteValidate("reactable", {guildId: interaction.guild.id}, reactableName, interaction);
             
             if (!reactable || !reactable.emojiIds || reactable.emojiIds.length === 0) {
-                return [];
+                return interaction.respond([]);
             }
 
-            // Extract emoji name from ID and return as {name, value}
-            return reactable.emojiIds.map(emojiId => {
-                const emojiMatch = emojiId.match(/:(\w+):/);
-                const emojiName = emojiMatch ? emojiMatch[1] : emojiId;
+            const choices = reactable.emojiIds.map(emojiId => {
+                const guildEmoji = interaction.guild.emojis.cache.get(emojiId);
                 return {
-                    name: `:${emojiName}:`,
-                    value: emojiId
+                    name: guildEmoji ? `:${guildEmoji.name}:` : emojiId,
+                    value: guildEmoji ? `<:${guildEmoji.name}:${emojiId}>` : emojiId
                 };
             });
+
+            return interaction.respond(choices);
         }
 
         // Otherwise autocomplete the reactable
