@@ -1,14 +1,10 @@
-const { Guild, Message, PartialMessage } = require("discord.js");
 const retoEmojis = require('../data/retoEmojis');
 
 // Classes
-const Parsing = require("../classes/parsing");
-const Guide = require("../classes/guide");
 
 // Schemas
 const guildSchema = require('../schemas/guild');
 const reactableSchema = require('../schemas/reactable');
-const pinThresholdSchema = require('../schemas/pinThreshold');
 
 class Personalisation {
 
@@ -88,10 +84,6 @@ class Personalisation {
       .exec();
     }
     
-    async createGuideEmbed(client, guild) {
-      return Guide.createGuideEmbed(client, guild);
-    }
-
     async naturalJoin(input) {
       if (input.length > 1) return input.slice(0, -1).join(', ') + ' and ' + input.pop();
       return input[0];

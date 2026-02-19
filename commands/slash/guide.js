@@ -1,6 +1,6 @@
 const { CommandType } = require("wokcommands");
 
-const Personalisation = require("../../classes/personalisation");
+const Guide = require("../../classes/guide");
 
 module.exports = {
 	category: 'Personalisation',
@@ -10,7 +10,7 @@ module.exports = {
 	guildOnly: true,
 
 	callback: async ({ client, interaction, member }) => {
-        await Personalisation.createGuideEmbed(client, member.guild).then(embed => {
+        await Guide.createGuideEmbed(client, member.guild).then(embed => {
             interaction.reply({embeds: [embed]})
         })
 	},

@@ -28,7 +28,7 @@ class Guide {
       })
       .exec();
 
-      const guildKarma = await Personalisation.getGuildKarmaData(guild)
+      const guildKarma = await Personalisation.getGuildKarmaData(guild);
 
       let embed = {
           "title": "Welcome to Reto on " + guild.name + "!",
@@ -149,7 +149,7 @@ class Guide {
         })
       }
 
-      // TO-DO: Support for Awardable Roles
+      // TO-DO: Support for Role Rewards
 
       // Everything else
       embed.fields.push({
