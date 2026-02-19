@@ -87,31 +87,7 @@ class Personalisation {
       )
       .exec();
     }
-
-    async updateKarmaThreshold(reactableId, reactionThreshold) {
-      await reactableSchema.findOneAndUpdate(
-        { _id: reactableId },
-        { $set : {
-          'reactionThreshold' : reactionThreshold
-          }
-        },
-        { upsert: false }
-      )
-      .exec();
-    }
-
-    async updatePinChannel(reactableId, sendsToChannel) {
-      const update = sendsToChannel ?
-        { $set: { 'sendsToChannel': sendsToChannel } } :
-        { $unset: { 'sendsToChannel': null } }
-
-      await reactableSchema.findOneAndUpdate(
-        { _id: reactableId },
-        update,
-        { upsert: false }
-      )
-      .exec();
-    }
+    
     async createGuideEmbed(client, guild) {
       return Guide.createGuideEmbed(client, guild);
     }
