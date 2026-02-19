@@ -68,6 +68,7 @@ class Pin {
         // Select the message for up to one hour, in case Add to Chain needs to be used
         if (user) await SelectMessage.selectMessage(user, message);
 
+        // Send or edit the pinned message in each channel
         for (const iterableChannel of iterableChannels) {
             // Delete embeds, if the Reactable's Reaction Threshold is not met
             // or if the Pin Threshold is lesser or greater than the current Karma amount
@@ -78,33 +79,42 @@ class Pin {
                 continue;
             }
 
-            client.channels.fetch(iterableChannel.id).then((channel) => {
-    
-                // Attach a Jump to message button
-                const row = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setLabel('Jump to message')
-                        .setStyle("Link")
-                        .setURL(message.url)
-                );
-                
-                // Send or edit message.
-                // TO-DO: SPLIT INTO ANOTHER FUNCTION !!
-                if (!iterableChannel.edit) {
-                    channel.send({ content: karmaString, embeds: embed, components: [row], files: videos }).then((sentEmbed) => {
-                        this.storePinnedEmbed(sentEmbed, messageDocument);
-                    })
-                } else {
-                    channel.messages.fetch(iterableChannel.embed).then((pinnedMessage) => {
-                        try {
-                            pinnedMessage.edit({ content: karmaString, embeds: embed, components: [row], files: videos })
-                        } catch (e) {
-                            console.log("❌ Couldn't edit pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
-                        }
-                    })
-                }
-            });
+            await this.sendOrEditPinnedMessage(iterableChannel, client, karmaString, embed, videos, message, messageDocument);
+        }
+    }
+
+    async sendOrEditPinnedMessage(iterableChannel, client, karmaString, embed, videos, message, messageDocument) {
+        const row = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setLabel('Jump to message')
+                    .setStyle("Link")
+                    .setURL(message.url)
+            );
+
+        let channel;
+        try {
+            channel = await client.channels.fetch(iterableChannel.id);
+        } catch (e) {
+            console.log("❌ Couldn't fetch channel! ".red + "(ID: ".gray + iterableChannel.id.gray + ")".gray);
+            return;
+        }
+
+        if (!iterableChannel.edit) {
+            const sentEmbed = await channel.send({ content: karmaString, embeds: embed, components: [row], files: videos });
+            this.storePinnedEmbed(sentEmbed, messageDocument);
+        } else {
+            try {
+                const pinnedMessage = await channel.messages.fetch(iterableChannel.embed);
+                await pinnedMessage.edit({
+                    content: karmaString,
+                    embeds: embed,
+                    components: [row],
+                    files: videos
+                });
+            } catch (e) {
+                console.log("❌ Couldn't edit pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray);
+            }
         }
     }
 
@@ -155,7 +165,8 @@ class Pin {
         // Update pinned messages
         if (pinnedMessages.length > 0) {
             for (const pinnedMessage of pinnedMessages) {
-                if (reactionCount >= reactable.reactionThreshold || !isPositive || isChainUpdate) {
+                const thresholdMet = reactable && reactionCount >= reactable.reactionThreshold;
+                if (thresholdMet || !isPositive || isChainUpdate || !reactable) { // <-- add !reactable
                     iterableChannels.push({
                         id: pinnedMessage.channelId,
                         embed: pinnedMessage.pinnedEmbedId,
@@ -166,7 +177,7 @@ class Pin {
         }
         
         // Create new message [if this is a Channel-sending Reactable]
-        else if (reactable.sendsToChannel && reactionCount >= reactable.reactionThreshold) {
+        else if (reactable && reactable.sendsToChannel && reactionCount >= reactable.reactionThreshold) {
             iterableChannels.push({
                 id: reactable.sendsToChannel,
                 embed: "",
@@ -308,14 +319,22 @@ class Pin {
         return authorList;
     }
 
-    async getDirectReply (message) {
+    async getDirectReply(message) {
         if (!message.reference || !message.reference.messageId) return;
-        const reply = await message.channel.messages.fetch(message.reference.messageId); 
 
-        return {
-            document: null,
-            message: reply
-        };
+        try {
+            const reply = await message.channel.messages.fetch(message.reference.messageId);
+            return {
+                document: null,
+                message: reply
+            };
+        } catch (e) {
+            if (e.code === 10008) {
+                console.log("⚠️ Referenced message was deleted, skipping reply preview");
+                return null;
+            }
+            throw e; // Throw unexpected errors
+        }
     }
 
     async setEmbedMessages(baseMessage, chain) {
@@ -365,7 +384,10 @@ class Pin {
         if (previewMessage) messageChain.push(await this.getPreviewChain(previewMessage));
 
         // Add messages from direct replies
-        if (message.reference) messageChain.push(await this.getDirectReply(message));
+        if (message.reference) {
+            const directReply = await this.getDirectReply(message);
+            if (directReply) messageChain.push(directReply);
+        }
 
         return await this.orderMessageChain(messageChain);
     }
@@ -393,8 +415,16 @@ class Pin {
         if (!messageDocument.length) return [];
         
         for (let chainDocument of messageDocument[0].chainMessages) {
-            const chainMessage = await message.channel.messages.fetch(chainDocument.messageId);
-            if (!chainMessage) continue;
+            let chainMessage;
+            try {
+                chainMessage = await message.channel.messages.fetch(chainDocument.messageId);
+            } catch (e) {
+                if (e.code === 10008) {
+                    console.log("⚠️ Chain message was deleted, skipping");
+                    continue;
+                }
+                throw e;
+            }
 
             messageChain.push({
                 document: chainDocument,
