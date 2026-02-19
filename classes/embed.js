@@ -225,8 +225,11 @@ class Embed {
 	}
 
 	async modalCollector(modal, msgInt, currentSetup, channel, member, client) {
-		client.on(Events.InteractionCreate, async interaction => {
-			if (!interaction.isModalSubmit()) return;
+		try {
+			const interaction = await msgInt.awaitModalSubmit({
+				filter: (i) => i.customId === modal.id && i.user.id === member.id,
+				time: 1000 * 60 * 5,
+			});
 
 			let inputArray = [];
 
@@ -234,25 +237,23 @@ class Embed {
 				const value = interaction.fields.getTextInputValue(input.id);
 				const validation = await this.validateModalInput(input, value);
 
-				// Retry if the validation fails
 				if (validation) {
-					await this.generateModalRetry(modal, validation, interaction, currentSetup, msgInt, channel, member, client)
+					await this.generateModalRetry(modal, validation, interaction, currentSetup, msgInt, channel, member, client);
 					return;
 				}
 
 				inputArray.push(value);
 			}
 
-			if (interaction.customId === modal.id) {
-				interaction.deferUpdate(); // Hacky way to go about this!
-				await this.nextTab(modal, msgInt, channel, member, client);
-			}
+			await interaction.deferUpdate();
+			await this.nextTab(modal, msgInt, channel, member, client);
 
-			// Execute function
-			const modalSetup = currentSetup.components.find(x => x.modal.id === modal.id);
-			if (!modalSetup) return;
-			if (modalSetup.function) modalSetup.function(interaction.fields, channel.guild);
-		});		
+			const modalSetup = currentSetup.components.find(x => x.modal?.id === modal.id);
+			if (modalSetup?.function) modalSetup.function(interaction.fields, channel.guild);
+
+		} catch (err) {
+			// Timed out or other error - silently ignore
+		}
 	}
 
 	async validateModalInput(input, value) {
