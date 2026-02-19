@@ -166,7 +166,7 @@ class Pin {
         if (pinnedMessages.length > 0) {
             for (const pinnedMessage of pinnedMessages) {
                 const thresholdMet = reactable && reactionCount >= reactable.reactionThreshold;
-                if (thresholdMet || !isPositive || isChainUpdate || !reactable) { // <-- add !reactable
+                if (thresholdMet || !isPositive || isChainUpdate || !reactable) {
                     iterableChannels.push({
                         id: pinnedMessage.channelId,
                         embed: pinnedMessage.pinnedEmbedId,

@@ -1,11 +1,17 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
+        StringSelectMenuBuilder, StringSelectMenuOptionBuilder,
+        ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require("discord.js");
 
 // Schemas
 const reactableSchema = require("../schemas/reactable");
 
-class ReactableActions {
+// Classes
+const ReactableEmbeds = require("./reactableEmbeds");
+
+class ReactableActions extends ReactableEmbeds {
 
     constructor() {
+        super();
         if (ReactableActions._instance) {
             throw new Error("Singleton classes can't be instantiated more than once.")
         }
@@ -153,311 +159,104 @@ class ReactableActions {
     }
 
     async editKarmaAwarded(interaction, reactable, reactableName) {
-        const currentValue = reactable.karmaAwarded || 0;
-
-        const modal = new ModalBuilder()
-            .setCustomId('karma_modal')
-            .setTitle('Edit Karma Awarded');
-
-        const karmaInput = new TextInputBuilder()
-            .setCustomId('karma_value')
-            .setLabel('Karma Amount')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Enter a number (can be negative)')
-            .setValue(String(currentValue));
-
-        const actionRow = new ActionRowBuilder().addComponents(karmaInput);
-        modal.addComponents(actionRow);
-
-        await interaction.showModal(modal);
-
-        try {
-            const submitted = await interaction.awaitModalSubmit({ time: 900000 });
-            const newValue = parseInt(submitted.fields.getTextInputValue('karma_value'));
-
-            if (isNaN(newValue)) {
-                return await submitted.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Red")
-                            .setTitle("❌ Invalid input")
-                            .setDescription("Please enter a valid number (can be negative).")
-                    ],
-                    ephemeral: true
-                });
-            }
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { karmaAwarded: newValue } }
-            ).exec();
-
-            await submitted.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Karma Awarded Updated")
-                        .setDescription("The **" + reactableName + "** reactable will now award **" + newValue + "** karma.")
-                ]
-            });
-        } catch (error) {
-            if (error.code !== 'InteractionCollectorError') {
-                console.error('Error in karma modal:', error);
-            }
-        }
+        await this.modalInput(interaction, reactable, {
+            modalId:            'karma_modal',
+            modalTitle:         'Edit Karma Awarded',
+            inputId:            'karma_value',
+            inputLabel:         'Karma Amount',
+            inputPlaceholder:   'Enter a number (can be negative)',
+            currentValue:       reactable.karmaAwarded || 0,
+            validate:           'number',
+            dbField:            'karmaAwarded',
+            successTitle:       '✅ Karma Awarded Updated',
+            successDescription: (v) => `The **${reactableName}** reactable will now award **${v}** karma.`
+        });
     }
 
     async editDeletesMessage(interaction, reactable, reactableName) {
-        const currentValue = reactable.deletesMessage || false;
-
-        const buttonRow = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('delete_msg_true')
-                    .setLabel('Enable')
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('delete_msg_false')
-                    .setLabel('Disable')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Edit Deletes Message")
-                    .setDescription("Should the original message be deleted when this reactable is used?")
-                    .addFields(
-                        { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
-                    )
-            ],
-            components: [buttonRow]
-        });
-
-        const filter = i => (i.customId === 'delete_msg_true' || i.customId === 'delete_msg_false') && i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30000, max: 1 });
-
-        collector.on('collect', async i => {
-            const newValue = i.customId === 'delete_msg_true';
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { deletesMessage: newValue } }
-            ).exec();
-
-            await i.update({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Deletes Message Updated")
-                        .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " delete the original message.")
-                ],
-                components: []
-            });
-        });
-
-        collector.on('end', collected => {
-            if (collected.size === 0) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No option was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.booleanToggle(interaction, reactable, {
+            enableId:           'delete_msg_true',
+            disableId:          'delete_msg_false',
+            enableStyle:        ButtonStyle.Danger,
+            disableStyle:       ButtonStyle.Secondary,
+            enableLabel:        'Enable',
+            disableLabel:       'Disable',
+            dbField:            'deletesMessage',
+            embedTitle:         'Edit Deletes Message',
+            embedDescription:   'Should the original message be deleted when this reactable is used?',
+            embedColor:         'Green',
+            currentValue:       reactable.deletesMessage || false,
+            successTitle:       '✅ Deletes Message Updated',
+            successDescription: (v) => `The **${reactableName}** reactable will ${v ? '**now**' : '**no longer**'} delete the original message.`
         });
     }
 
     async editSendsToChannel(interaction, reactable, reactableName) {
         const guild = interaction.guild;
 
-        // Get all text channels from the guild (up to 25)
-        const allChannels = Array.from(guild.channels.cache
-            .filter(channel => channel.isTextBased() && !channel.isDMBased())
+        // Fetch fresh channels from Discord before reading cache
+        await guild.channels.fetch();
+
+        const channelOptions = Array.from(guild.channels.cache
+            .filter(channel =>
+                channel.type === ChannelType.GuildText ||
+                channel.type === ChannelType.GuildAnnouncement
+            )
             .sort((a, b) => a.position - b.position)
-            .values())
-            .slice(0, 25);
+            .values()
+        ).map(channel => ({ label: channel.name, value: channel.id }));
 
-        if (allChannels.length === 0) {
-            return await interaction.update({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Red")
-                        .setTitle("❌ No channels available")
-                        .setDescription("There are no text channels on this server to send messages to.")
-                ],
-                components: []
-            });
-        }
-
-        // Create select menu for channels
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId('channel_select')
-            .setPlaceholder('Select a channel to send pinned messages to')
-            .addOptions(
-                ...allChannels.map(channel =>
-                    new StringSelectMenuOptionBuilder()
-                        .setLabel(channel.name)
-                        .setValue(channel.id)
-                )
-            );
-
-        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
-
-        // Create disable button
-        const disableButton = new ButtonBuilder()
-            .setCustomId('channel_disable')
-            .setLabel('Disable Channel Sending')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(reactable.sendsToChannel ? false : true);
-
-        const buttonRow = new ActionRowBuilder().addComponents(disableButton);
-
-        // Display current channel
+        // Format current channel display text
         let currentChannelText = "None";
         if (reactable.sendsToChannel) {
             const currentChannel = guild.channels.cache.get(reactable.sendsToChannel);
-            currentChannelText = currentChannel ? `<#${reactable.sendsToChannel}>` : `Unknown Channel (${reactable.sendsToChannel})`;
+            currentChannelText = currentChannel
+                ? `<#${reactable.sendsToChannel}>`
+                : `Unknown Channel (${reactable.sendsToChannel})`;
         }
 
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Edit Sends To Channel")
-                    .setDescription("Select which channel pinned messages should be sent to, or disable channel sending.")
-                    .addFields(
-                        { name: "Current Channel", value: currentChannelText }
-                    )
-            ],
-            components: [selectRow, buttonRow]
-        });
-
-        let handled = false;
-
-        const filter = i => i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
-
-        collector.on('collect', async i => {
-            if (handled) return;
-            handled = true;
-
-            if (i.customId === 'channel_select') {
-                const selectedChannelId = i.values[0];
-
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { sendsToChannel: selectedChannelId } }
-                ).exec();
-
-                await i.update({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Channel Updated")
-                            .setDescription(`Pinned messages from **${reactableName}** will now be sent to <#${selectedChannelId}>.`)
-                    ],
-                    components: []
-                });
-            } else if (i.customId === 'channel_disable') {
-                // Defer the update to prevent interaction token timeout
-                await i.deferUpdate();
-
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { sendsToChannel: null } }
-                ).exec();
-
-                await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Channel Sending Disabled")
-                            .setDescription(`**${reactableName}** will no longer send pinned messages to any channel.`)
-                    ],
-                    components: []
-                });
-            }
-        });
-
-        collector.on('end', collected => {
-            if (collected.size === 0 && !handled) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No channel was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.paginatedSelect(interaction, reactable, {
+            selectorId:           'channel_select',
+            selectorPlaceholder:  'Select a channel to send pinned messages to',
+            options:              channelOptions,
+            disableId:            'channel_disable',
+            disableLabel:         'Disable Channel Sending',
+            disableEnabled:       !!reactable.sendsToChannel,
+            dbField:              'sendsToChannel',
+            embedTitle:           'Edit Sends To Channel',
+            embedDescription:     'Select which channel pinned messages should be sent to, or disable channel sending.',
+            embedColor:           'Green',
+            currentValueLabel:    'Current Channel',
+            currentValueText:     currentChannelText,
+            successTitle:         '✅ Channel Updated',
+            successDescription:   (v) => `Pinned messages from **${reactableName}** will now be sent to <#${v}>.`,
+            disabledTitle:        '✅ Channel Sending Disabled',
+            disabledDescription:  `**${reactableName}** will no longer send pinned messages to any channel.`,
+            emptyTitle:           '❌ No channels available',
+            emptyDescription:     'There are no text channels on this server to send messages to.'
         });
     }
 
     async editTimeout(interaction, reactable, reactableName) {
-        const currentValue = reactable.timeout || 0;
-
-        const modal = new ModalBuilder()
-            .setCustomId('timeout_modal')
-            .setTitle('Edit Timeout');
-
-        const timeoutInput = new TextInputBuilder()
-            .setCustomId('timeout_value')
-            .setLabel('Timeout Author Duration')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Enter timeout in seconds (0 to disable)')
-            .setValue(String(currentValue));
-
-        const actionRow = new ActionRowBuilder().addComponents(timeoutInput);
-        modal.addComponents(actionRow);
-
-        await interaction.showModal(modal);
-
-        try {
-            const submitted = await interaction.awaitModalSubmit({ time: 900000 });
-            const newValue = parseInt(submitted.fields.getTextInputValue('timeout_value'));
-
-            if (isNaN(newValue) || newValue < 0) {
-                return await submitted.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Red")
-                            .setTitle("❌ Invalid input")
-                            .setDescription("Please enter a valid number of seconds (or set to 0 to disable).")
-                    ],
-                    ephemeral: true
-                });
+        await this.modalInput(interaction, reactable, {
+            modalId:            'timeout_modal',
+            modalTitle:         'Edit Timeout',
+            inputId:            'timeout_value',
+            inputLabel:         'Timeout Author Duration',
+            inputPlaceholder:   'Enter timeout in seconds (0 to disable)',
+            currentValue:       reactable.timeout || 0,
+            validate:           'number',
+            dbField:            'timeout',
+            successTitle:       '✅ Timeout Author Updated',
+            successDescription: (v) => {
+                const statusText = v === 0 ? "disabled" : `set to ${v} seconds`;
+                return `The **${reactableName}** reactable timeout has been **${statusText}**.`;
             }
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { timeout: newValue } }
-            ).exec();
-
-            const statusText = newValue === 0 ? "disabled" : `set to ${newValue} seconds`;
-
-            await submitted.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Timeout Author Updated")
-                        .setDescription(`The **${reactableName}** reactable timeout has been **${statusText}**.`)
-                        .setFooter({ text: "Make sure the bot has the Time Out Members permission on this server before using this reactable." })
-                ]
-            });
-        } catch (error) {
-            if (error.code !== 'InteractionCollectorError') {
-                console.error('Error in timeout modal:', error);
-            }
-        }
+        });
     }
 
     async editReply(interaction, reactable, reactableName) {
+        // editReply uses a confirm/disable flow after the modal, so it stays custom
         const currentValue = reactable.reply || "";
 
         const modal = new ModalBuilder()
@@ -472,9 +271,7 @@ class ReactableActions {
             .setMaxLength(1000)
             .setRequired(false);
 
-        if (currentValue) {
-            replyInput.setValue(currentValue);
-        }
+        if (currentValue) replyInput.setValue(currentValue);
 
         const actionRow = new ActionRowBuilder().addComponents(replyInput);
         modal.addComponents(actionRow);
@@ -485,7 +282,7 @@ class ReactableActions {
             const submitted = await interaction.awaitModalSubmit({ time: 900000 });
             const newValue = submitted.fields.getTextInputValue('reply_value') || "";
 
-            // If empty, disable replies directly
+            // If empty, disable replies directly without confirmation
             if (!newValue || newValue.trim() === "") {
                 await reactableSchema.updateOne(
                     { _id: reactable._id },
@@ -502,7 +299,7 @@ class ReactableActions {
                 });
             }
 
-            // Show buttons for confirm or disable
+            // Show confirm/disable buttons before saving
             const buttonRow = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
@@ -521,9 +318,7 @@ class ReactableActions {
                         .setColor("Green")
                         .setTitle("Confirm Reply Change")
                         .setDescription("Choose an action:")
-                        .addFields(
-                            { name: "New Reply", value: "```\n" + newValue + "\n```" }
-                        )
+                        .addFields({ name: "New Reply", value: "```\n" + newValue + "\n```" })
                 ],
                 components: [buttonRow],
                 ephemeral: true
@@ -534,7 +329,6 @@ class ReactableActions {
 
             buttonCollector.on('collect', async buttonInteraction => {
                 if (buttonInteraction.customId === 'disable_reply') {
-                    // Set reply to null
                     await reactableSchema.updateOne(
                         { _id: reactable._id },
                         { $set: { reply: null } }
@@ -550,7 +344,6 @@ class ReactableActions {
                         components: []
                     });
                 } else {
-                    // Confirm the new reply value
                     await reactableSchema.updateOne(
                         { _id: reactable._id },
                         { $set: { reply: newValue } }
@@ -591,475 +384,139 @@ class ReactableActions {
     async editAwardedRole(interaction, reactable, reactableName) {
         const guild = interaction.guild;
 
-        // Get all roles from the guild (up to 25)
-        const allRoles = Array.from(guild.roles.cache
-            .sort((a, b) => b.position - a.position)
-            .values())
+        // Fetch fresh roles from Discord before reading cache
+        await guild.roles.fetch();
+
+        const roleOptions = Array.from(guild.roles.cache
             .filter(role => !role.managed && role.id !== guild.id)
-            .slice(0, 25);
+            .sort((a, b) => b.position - a.position)
+            .values()
+        ).map(role => ({ label: role.name, value: role.id }));
 
-        if (allRoles.length === 0) {
-            return await interaction.update({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Red")
-                        .setTitle("❌ No roles available")
-                        .setDescription("There are no manageable roles on this server.")
-                ],
-                components: []
-            });
-        }
-
-        // Create select menu for roles
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId('role_select')
-            .setPlaceholder('Select a role to award to message author')
-            .addOptions(
-                ...allRoles.map(role =>
-                    new StringSelectMenuOptionBuilder()
-                        .setLabel(role.name)
-                        .setValue(role.id)
-                )
-            );
-
-        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
-
-        // Create disable button
-        const disableButton = new ButtonBuilder()
-            .setCustomId('role_disable')
-            .setLabel('Remove Role')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(reactable.awardedRole ? false : true);
-
-        const buttonRow = new ActionRowBuilder().addComponents(disableButton);
-
-        // Display current role
+        // Format current role display text
         let currentRoleText = "None";
         if (reactable.awardedRole) {
             const currentRole = guild.roles.cache.get(reactable.awardedRole);
-            currentRoleText = currentRole ? `<@&${reactable.awardedRole}>` : `Unknown Role (${reactable.awardedRole})`;
+            currentRoleText = currentRole
+                ? `<@&${reactable.awardedRole}>`
+                : `Unknown Role (${reactable.awardedRole})`;
         }
 
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Edit Give Role to Author")
-                    .setDescription("Select which role to award to the original message author.")
-                    .addFields(
-                        { name: "Current Role", value: currentRoleText }
-                    )
-            ],
-            components: [selectRow, buttonRow]
-        });
-
-        let handled = false;
-
-        const filter = i => i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
-
-        collector.on('collect', async i => {
-            if (handled) return;
-            handled = true;
-
-            if (i.customId === 'role_select') {
-                const selectedRoleId = i.values[0];
-
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { awardedRole: selectedRoleId } }
-                ).exec();
-
-                await i.update({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Role Updated")
-                            .setDescription(`The **${reactableName}** reactable will now award the <@&${selectedRoleId}> role.`)
-                    ],
-                    components: []
-                });
-            } else if (i.customId === 'role_disable') {
-                await i.deferUpdate();
-
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { awardedRole: null } }
-                ).exec();
-
-                await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Role Removed")
-                            .setDescription(`The **${reactableName}** reactable will no longer award a role.`)
-                    ],
-                    components: []
-                });
-            }
-        });
-
-        collector.on('end', collected => {
-            if (collected.size === 0 && !handled) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No role was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.paginatedSelect(interaction, reactable, {
+            selectorId:           'role_select',
+            selectorPlaceholder:  'Select a role to award to message author',
+            options:              roleOptions,
+            disableId:            'role_disable',
+            disableLabel:         'Remove Role',
+            disableEnabled:       !!reactable.awardedRole,
+            dbField:              'awardedRole',
+            embedTitle:           'Edit Give Role to Author',
+            embedDescription:     'Select which role to award to the original message author.',
+            embedColor:           'Green',
+            currentValueLabel:    'Current Role',
+            currentValueText:     currentRoleText,
+            successTitle:         '✅ Role Updated',
+            successDescription:   (v) => `The **${reactableName}** reactable will now award the <@&${v}> role.`,
+            disabledTitle:        '✅ Role Removed',
+            disabledDescription:  `The **${reactableName}** reactable will no longer award a role.`,
+            emptyTitle:           '❌ No roles available',
+            emptyDescription:     'There are no manageable roles on this server.'
         });
     }
 
     async editReactorAwardedRole(interaction, reactable, reactableName) {
         const guild = interaction.guild;
 
-        // Get all roles from the guild (up to 25)
-        const allRoles = Array.from(guild.roles.cache
-            .sort((a, b) => b.position - a.position)
-            .values())
+        // Fetch fresh roles from Discord before reading cache
+        await guild.roles.fetch();
+
+        const roleOptions = Array.from(guild.roles.cache
             .filter(role => !role.managed && role.id !== guild.id)
-            .slice(0, 25);
+            .sort((a, b) => b.position - a.position)
+            .values()
+        ).map(role => ({ label: role.name, value: role.id }));
 
-        if (allRoles.length === 0) {
-            return await interaction.update({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Red")
-                        .setTitle("❌ No roles available")
-                        .setDescription("There are no manageable roles on this server.")
-                ],
-                components: []
-            });
-        }
-
-        // Create select menu for roles
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId('reactor_role_select')
-            .setPlaceholder('Select a role to award to reactors')
-            .addOptions(
-                ...allRoles.map(role =>
-                    new StringSelectMenuOptionBuilder()
-                        .setLabel(role.name)
-                        .setValue(role.id)
-                )
-            );
-
-        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
-
-        // Create disable button
-        const disableButton = new ButtonBuilder()
-            .setCustomId('reactor_role_disable')
-            .setLabel('Remove Role')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(reactable.reactorAwardedRole ? false : true);
-
-        const buttonRow = new ActionRowBuilder().addComponents(disableButton);
-
-        // Display current role
+        // Format current role display text
         let currentRoleText = "None";
         if (reactable.reactorAwardedRole) {
             const currentRole = guild.roles.cache.get(reactable.reactorAwardedRole);
-            currentRoleText = currentRole ? `<@&${reactable.reactorAwardedRole}>` : `Unknown Role (${reactable.reactorAwardedRole})`;
+            currentRoleText = currentRole
+                ? `<@&${reactable.reactorAwardedRole}>`
+                : `Unknown Role (${reactable.reactorAwardedRole})`;
         }
 
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Edit Give Role to Reactor")
-                    .setDescription("Select which role to award to users who react with this reactable.")
-                    .addFields(
-                        { name: "Current Role", value: currentRoleText }
-                    )
-            ],
-            components: [selectRow, buttonRow]
-        });
-
-        let handled = false;
-
-        const filter = i => i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
-
-        collector.on('collect', async i => {
-            if (handled) return;
-            handled = true;
-
-            if (i.customId === 'reactor_role_select') {
-                const selectedRoleId = i.values[0];
-
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { reactorAwardedRole: selectedRoleId } }
-                ).exec();
-
-                await i.update({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Role Updated")
-                            .setDescription(`Reactors with the **${reactableName}** reactable will now receive the <@&${selectedRoleId}> role.`)
-                    ],
-                    components: []
-                });
-            } else if (i.customId === 'reactor_role_disable') {
-                await i.deferUpdate();
-
-                await reactableSchema.updateOne(
-                    { _id: reactable._id },
-                    { $set: { reactorAwardedRole: null } }
-                ).exec();
-
-                await interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Green")
-                            .setTitle("✅ Role Removed")
-                            .setDescription(`Reactors will no longer receive a role from the **${reactableName}** reactable.`)
-                    ],
-                    components: []
-                });
-            }
-        });
-
-        collector.on('end', collected => {
-            if (collected.size === 0 && !handled) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No role was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.paginatedSelect(interaction, reactable, {
+            selectorId:           'reactor_role_select',
+            selectorPlaceholder:  'Select a role to award to reactors',
+            options:              roleOptions,
+            disableId:            'reactor_role_disable',
+            disableLabel:         'Remove Role',
+            disableEnabled:       !!reactable.reactorAwardedRole,
+            dbField:              'reactorAwardedRole',
+            embedTitle:           'Edit Give Role to Reactor',
+            embedDescription:     'Select which role to award to users who react with this reactable.',
+            embedColor:           'Green',
+            currentValueLabel:    'Current Role',
+            currentValueText:     currentRoleText,
+            successTitle:         '✅ Role Updated',
+            successDescription:   (v) => `Reactors with the **${reactableName}** reactable will now receive the <@&${v}> role.`,
+            disabledTitle:        '✅ Role Removed',
+            disabledDescription:  `Reactors will no longer receive a role from the **${reactableName}** reactable.`,
+            emptyTitle:           '❌ No roles available',
+            emptyDescription:     'There are no manageable roles on this server.'
         });
     }
 
     async editReactionEmoji(interaction, reactable, reactableName) {
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Set Reaction Emoji")
-                    .setDescription("React to this message with the emoji you'd like to use, or press the button below to disable.")
-            ],
-            components: [
-                new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('emoji_disable')
-                        .setLabel('Disable Reaction Emoji')
-                        .setStyle(ButtonStyle.Danger)
-                )
-            ]
-        });
-
-        let handled = false;
-
-        // Listen for reactions on the message
-        const reactionCollector = interaction.message.createReactionCollector({ time: 60000 });
-
-        reactionCollector.on('collect', async (reaction, user) => {
-            if (handled || user.id !== interaction.user.id) return;
-            handled = true;
-
-            const emojiToSave = reaction.emoji.id || reaction.emoji.name;
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { reactionEmoji: emojiToSave } }
-            ).exec();
-
-            reactionCollector.stop();
-
-            await interaction.editReply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Reaction Emoji Updated")
-                        .setDescription(`The **${reactableName}** reactable will now react with: ${reaction.emoji}`)
-                ],
-                components: []
-            }).catch(() => {});
-        });
-
-        // Listen for button clicks
-        const filter = i => i.customId === 'emoji_disable' && i.user.id === interaction.user.id;
-        const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 60000, max: 1 });
-
-        buttonCollector.on('collect', async i => {
-            if (handled) return;
-            handled = true;
-
-            await i.deferUpdate();
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { reactionEmoji: null } }
-            ).exec();
-
-            reactionCollector.stop();
-
-            await interaction.editReply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Reaction Emoji Disabled")
-                        .setDescription("The **" + reactableName + "** reactable will no longer react with an emoji.")
-                ],
-                components: []
-            });
-        });
-
-        reactionCollector.on('end', () => {
-            if (!handled) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No emoji was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.reactionEmojiInput(interaction, reactable, {
+            disableId:           'emoji_disable',
+            disableLabel:        'Disable Reaction Emoji',
+            dbField:             'reactionEmoji',
+            embedTitle:          'Set Reaction Emoji',
+            embedDescription:    "React to this message with the emoji you'd like to use, or press the button below to disable.",
+            embedColor:          'Green',
+            successTitle:        '✅ Reaction Emoji Updated',
+            successDescription:  (reaction) => `The **${reactableName}** reactable will now react with: ${reaction.emoji}`,
+            disabledTitle:       '✅ Reaction Emoji Disabled',
+            disabledDescription: `The **${reactableName}** reactable will no longer react with an emoji.`
         });
     }
 
     async editKicksUser(interaction, reactable, reactableName) {
-        const currentValue = reactable.kicksUser || false;
-
-        const buttonRow = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('kicks_true')
-                    .setLabel('Enable')
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('kicks_false')
-                    .setLabel('Disable')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Edit Kicks Author")
-                    .setDescription("Should the original message author be kicked when this reactable is used?")
-                    .addFields(
-                        { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
-                    )
-            ],
-            components: [buttonRow]
-        });
-
-        const filter = i => (i.customId === 'kicks_true' || i.customId === 'kicks_false') && i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30000, max: 1 });
-
-        collector.on('collect', async i => {
-            const newValue = i.customId === 'kicks_true';
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { kicksUser: newValue } }
-            ).exec();
-
-            await i.update({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Kicks Author Updated")
-                        .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " kick the original message author.")
-                        .setFooter({ text: "Make sure the bot has the Kick Members permission on this server before using this reactable." })
-                ],
-                components: []
-            });
-        });
-
-        collector.on('end', collected => {
-            if (collected.size === 0) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No option was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.booleanToggle(interaction, reactable, {
+            enableId:           'kicks_true',
+            disableId:          'kicks_false',
+            enableStyle:        ButtonStyle.Danger,
+            disableStyle:       ButtonStyle.Secondary,
+            enableLabel:        'Enable',
+            disableLabel:       'Disable',
+            dbField:            'kicksUser',
+            embedTitle:         'Edit Kicks Author',
+            embedDescription:   'Should the original message author be kicked when this reactable is used?',
+            embedColor:         'Green',
+            currentValue:       reactable.kicksUser || false,
+            successTitle:       '✅ Kicks Author Updated',
+            successDescription: (v) => `The **${reactableName}** reactable will ${v ? '**now**' : '**no longer**'} kick the original message author.`,
+            successFooter:      'Make sure the bot has the Kick Members permission on this server before using this reactable.'
         });
     }
 
     async editBansUser(interaction, reactable, reactableName) {
-        const currentValue = reactable.bansUser || false;
-
-        const buttonRow = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('bans_true')
-                    .setLabel('Enable')
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('bans_false')
-                    .setLabel('Disable')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("Edit Bans User")
-                    .setDescription("Should the original message author be banned when this reactable is used?")
-                    .addFields(
-                        { name: "Current Value", value: currentValue ? "✅ Enabled" : "❌ Disabled" }
-                    )
-            ],
-            components: [buttonRow]
-        });
-
-        const filter = i => (i.customId === 'bans_true' || i.customId === 'bans_false') && i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30000, max: 1 });
-
-        collector.on('collect', async i => {
-            const newValue = i.customId === 'bans_true';
-
-            await reactableSchema.updateOne(
-                { _id: reactable._id },
-                { $set: { bansUser: newValue } }
-            ).exec();
-
-            await i.update({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor("Green")
-                        .setTitle("✅ Bans User Updated")
-                        .setDescription("The **" + reactableName + "** reactable will " + (newValue ? "**now**" : "**no longer**") + " ban the original message author.")
-                        .setFooter({ text: "Make sure the bot has the Ban Members permission on this server before using this reactable." })
-
-                ],
-                components: []
-            });
-        });
-
-        collector.on('end', collected => {
-            if (collected.size === 0) {
-                interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No option was selected.")
-                    ],
-                    components: []
-                }).catch(() => {});
-            }
+        await this.booleanToggle(interaction, reactable, {
+            enableId:           'bans_true',
+            disableId:          'bans_false',
+            enableStyle:        ButtonStyle.Danger,
+            disableStyle:       ButtonStyle.Secondary,
+            enableLabel:        'Enable',
+            disableLabel:       'Disable',
+            dbField:            'bansUser',
+            embedTitle:         'Edit Bans User',
+            embedDescription:   'Should the original message author be banned when this reactable is used?',
+            embedColor:         'Green',
+            currentValue:       reactable.bansUser || false,
+            successTitle:       '✅ Bans User Updated',
+            successDescription: (v) => `The **${reactableName}** reactable will ${v ? '**now**' : '**no longer**'} ban the original message author.`,
+            successFooter:      'Make sure the bot has the Ban Members permission on this server before using this reactable.'
         });
     }
 }
