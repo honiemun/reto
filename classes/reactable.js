@@ -2,12 +2,8 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const mongoose = require('mongoose');
 
 // Classes
-const Personalisation = require("../classes/personalisation");
 const Embed = require("../classes/embed");
 const Parsing = require("../classes/parsing");
-const Premium = require("../classes/premium");
-const ReactableChecks = require("../classes/reactableChecks");
-const ReactableActions = require("../classes/reactableActions");
 
 // Schemas
 const guildSchema = require("../schemas/guild");

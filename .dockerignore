@@ -1,0 +1,5 @@
+node_modules
+.git
+mongodb_backups
+*.log
+.env
