@@ -219,7 +219,7 @@ Select an emoji from the list below to create this Reactable.`,
                     })
                 });
 
-                return emojis.slice(0, 17);
+                return emojis;
             },
             options: [
                 {
@@ -305,7 +305,7 @@ Select an emoji from the list below to create this Reactable.`,
                     })
                 });
 
-                return emojis.slice(0, 18);
+                return emojis;
             },
             options: [
                 {
@@ -390,7 +390,7 @@ Create a new channel *(\`#best-of\`, by default)*, or assign an existing channel
                     }
                 });
 
-                return guilds.slice(0, 24);
+                return guilds;
             },
             options: [
                 {
@@ -494,7 +494,7 @@ Select an emoji from the list below to create this Reactable.`,
                     })
                 });
 
-                return emojis.slice(0, 18);
+                return emojis;
             },
             options: [
                 {
@@ -580,7 +580,7 @@ Do you want to lock the Pin Reactable to a specific role?`,
                 });
 
                 if (roles.length > 0) {
-                    return roles.slice(0, 24);
+                    return roles;
                 }
             },
             options: [
@@ -682,7 +682,7 @@ You can also use Discord default emoji after the Setup using \`/karma emoji set\
                     })
                 });
 
-                return emojis.slice(0, 18);
+                return emojis;
             },
             options: [
                 {

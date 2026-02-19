@@ -4,6 +4,7 @@ const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, StringSelectMenuBuilder,
 
 // Classes
 const Validation = require("../classes/validation");
+const PaginatedSelector = require("../classes/paginatedSelector");
 
 // Data
 const embeds = require('../data/embeds');
@@ -24,7 +25,13 @@ class Embed {
 		// Find the setup assigned with the sent ID
 		const currentSetup = embeds.find(x => x.id === id);
 		if (!currentSetup) return;
-		
+
+		// Kill any paginator left over from the previous step
+		if (this._activePaginator) {
+			this._activePaginator.stop();
+			this._activePaginator = null;
+		}
+
 		// Setup default colour
 		// TO-DO: Custom colours
 		currentSetup.embed.color = brandingColors.brightPink;
@@ -36,16 +43,17 @@ class Embed {
 		}
 
 		// Add components if they exist
+		let buttonRow = null;
 		if (currentSetup.components) {
-			await this.createComponents(currentSetup.components).then(function(component) {
-				replyEmbed.components.push(component);
-			});
+			buttonRow = await this.createComponents(currentSetup.components)
+			replyEmbed.components.push(buttonRow);
 		}
 
+		// Add selector if it exists
 		if (currentSetup.selector) {
-			await this.createSelector(currentSetup.selector, channel, client).then(function(selector) {
-				replyEmbed.components.push(selector);
-			});
+			replyEmbed.components.push(
+				await this.buildSelectorRow(currentSetup, channel, client, msgInt, member, buttonRow)
+			);
 		}
 
 		// Send the embed
@@ -80,17 +88,45 @@ class Embed {
 
 	}
 
-	async createSelector (selector, channel, client) {
+	async buildSelectorRow(currentSetup, channel, client, msgInt, member, buttonRow) {
+		const allOptions = await this.getSelectorOptions(currentSetup.selector, channel, client);
+
+		if (allOptions.length > 24) {
+			const paginator = new PaginatedSelector(
+				currentSetup.selector,
+				allOptions,
+				async (selectedOption, values, i) => {
+					await i.deferUpdate();
+
+					this._activePaginator.stop();
+					this._activePaginator = null;
+					
+					await this.nextTab(selectedOption, msgInt, channel, member, client);
+					if (currentSetup.selector.function) {
+						currentSetup.selector.function(values, channel.guild, member);
+					}
+				},
+				buttonRow
+			);
+			this._activePaginator = paginator; // <-- instance-level
+			return paginator.buildPage(0);
+		}
+
+		this._activePaginator = null; // <-- instance-level
+		return this.createSelector(currentSetup.selector, allOptions);
+	}
+
+	// NOTE: allOptions is now passed in directly from createEmbed (already resolved)
+	// so we don't call getSelectorOptions a second time here.
+	async createSelector (selector, allOptions) {
 		const select = new StringSelectMenuBuilder()
 			.setCustomId(selector.id)
 			.setPlaceholder(selector.placeholder);
 		
 		if (selector.minValues) select.setMinValues(selector.minValues);
 		if (selector.maxValues) select.setMaxValues(selector.maxValues);
-		
-		const options = await this.getSelectorOptions(selector, channel, client);
 
-		for (const option of options) {
+		for (const option of allOptions) {
 			let optionBuilder = new StringSelectMenuOptionBuilder()
 				.setLabel(option.label)
 				.setValue(option.value);
@@ -106,39 +142,46 @@ class Embed {
 	}
 
 	async getSelectorOptions (selector, channel, client) {
-		let options = selector.options;
+		let options = [...selector.options]; // shallow copy so we don't mutate the data file
 		
 		if (selector.populate) {
-			const populator = selector.populate(client, channel.guild.id)
-			if (populator.length == 0) return options.slice(0, 24);
-			
-			for (const option of populator) {
-				if (!options.find(o => o.value === option.value)) { // Don't push duplicate entries
-					options.push(option);
+			const populator = selector.populate(client, channel.guild.id);
+			if (populator && populator.length > 0) {
+				for (const option of populator) {
+					if (!options.find(o => o.value === option.value)) {
+						options.push(option);
+					}
 				}
 			}
 		}
 		
-		return options.slice(0, 24);
+		return options;
 	}
 
-	async createCollector (currentSetup, embed, msgInt, channel, member, client) {
-		// Create a collector
+	async createCollector(currentSetup, embed, msgInt, channel, member, client) {
 		if (!currentSetup.components) return;
 
-		const filter = (i) => i.user.id === member.id
+		// If this step has a paginated selector, hand control to the paginator
+		if (this._activePaginator) {
+			this._activePaginator.attachCollector(embed, msgInt, member.id);
+		}
+
+		const filter = (i) => {
+			if (i.user.id !== member.id) return false;
+			// Let the paginator handle its own select menu interactions
+			if (this._activePaginator && i.customId === currentSetup.selector?.id) return false;
+			return true;
+		}
 		const time = 1000 * 60 * 5
 
 		const collector = embed.createMessageComponentCollector({ filter, max: 1, time });
 
-		// Add a listener to the collector
 		collector.on('collect', async (i) => {
 			if (!i) return;
-			
+
 			// Modals
 			for (let component of currentSetup.components) {
 				if (component.id === i.customId) {
-					// Modals
 					if (component.modal) {
 						await this.createModal(component.modal, i, currentSetup, msgInt, channel, member, client);
 						return;
@@ -146,7 +189,6 @@ class Embed {
 				}
 			}
 
-			// Modals can't be deferred, so we're executing this after that check
 			await i.deferUpdate();
 
 			// Buttons (components)
@@ -157,12 +199,11 @@ class Embed {
 				}
 			}
 
-			// Select Menu (selectors)
-			if (currentSetup.selector) {
-				const options = await this.getSelectorOptions(currentSetup.selector, channel, client);
-				
-				for (let option of options) {
-					// TO-DO: Should actually be various values?
+			// Select Menu (non-paginated path only)
+			if (currentSetup.selector && !this._activePaginator) {
+				const allOptions = await this.getSelectorOptions(currentSetup.selector, channel, client);
+
+				for (let option of allOptions) {
 					if (option.value === i.values[0]) {
 						await this.selectCollectorOption(option, i, currentSetup, msgInt, channel, member, client);
 						return;
@@ -171,7 +212,6 @@ class Embed {
 			}
 		})
 
-		// On collector end, remove all buttons
 		collector.on('end', (collected, reason) => {
 			if (reason == "messageDelete") return;
 			msgInt.editReply({ components: [] });
@@ -252,56 +292,32 @@ class Embed {
 			if (modalSetup?.function) modalSetup.function(interaction.fields, channel.guild);
 
 		} catch (err) {
-			// Timed out or other error - silently ignore
+			// Timed out — silently clean up
 		}
 	}
 
 	async validateModalInput(input, value) {
-		// False means it passes validation.
 		if (!input.validation) return false;
 
 		switch (input.validation) {
 			case "number":
-				if (isNaN(value)) return await this.createErrorEmbed("The `" + input.label + "` element is not a number.\n> Retries are currently unavailable. Please restart `?setup`."); // TO-DO: Remove this once usable!
+				if (isNaN(value)) return await this.createErrorEmbed("The `" + input.label + "` element is not a number.\n> Retries are currently unavailable. Please restart `?setup`.");
 				break;
-			/*
-			// We can't really write emoji on a modal
-			// Discord summoning 10000 unnamed developers
-			// to create the most pointless restrictions
-			case "emoji":
-				return await Validation.validateEmoji(value);
-				break;
-			*/
 			default:
 				return false;
-				break;
 		}
 	}
 
 	async generateModalRetry(modal, validation, interaction, currentSetup, msgInt, channel, member, client) {
-		// Create retry button
 		const retry = new ButtonBuilder()
-		.setLabel("Retry")
-		.setStyle(ButtonStyle.Primary)
-		.setCustomId("retry")
-		.setDisabled(true); // TO-DO: Please enable this when it does work!!
-		
-		// Send error embed
-		/*
-		
-		await interaction.reply({
-			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ], fetchReply: true 
-		}).then((embed) => {
-			this.createCollector(currentSetup, embed, msgInt, channel, member, client);
-		});
-		
-		*/
+			.setLabel("Retry")
+			.setStyle(ButtonStyle.Primary)
+			.setCustomId("retry")
+			.setDisabled(true);
 
-		// Doing it manually - Modals are fickle things, and using the usual methods kind of breaks everything!
 		await interaction.reply({
 			embeds: [ validation ], components: [ new ActionRowBuilder().addComponents(retry) ], fetchReply: true 
 		}).then((embed) => {
-			// Create collector
 			const collector = embed.createMessageComponentCollector({
 				max: 1,
 				time: 1000 * 60 * 5,
@@ -318,7 +334,6 @@ class Embed {
 				interaction.editReply({ components: [] });
 			});
 		});
-
 	}
 	
     async createErrorEmbed(reason) {
@@ -351,7 +366,7 @@ class Embed {
 		if (includesAll) {
 			select.addOptions(
 				new StringSelectMenuOptionBuilder()
-					.setLabel("All reactables") // Uppercase
+					.setLabel("All reactables")
 					.setValue("all")
 			);
 		}
@@ -359,7 +374,7 @@ class Embed {
 		for (const reactable of reactables) {
 			select.addOptions(
 				new StringSelectMenuOptionBuilder()
-					.setLabel(reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1)) // Uppercase
+					.setLabel(reactable.name.charAt(0).toUpperCase() + reactable.name.slice(1))
 					.setEmoji(reactable.emojiIds[0])
 					.setValue(reactable._id.toString())
 			);
@@ -374,7 +389,6 @@ class Embed {
 				.setTitle(title)
 				.setDescription("Pick a reactable from the list below!")
 		], components: [ row ] })
-
 
 		return reactableSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
 	}
@@ -417,11 +431,10 @@ class Embed {
 				.setDescription("The bot will autoreact to any messages that include certain types of content on <#" + channel + ">.\nPlease select which types of content will trigger the auto-reaction.")
 		], components: [ row ] })
 
-
 		return reactableSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
 	}
 
-	async createDefaultEmojiSelectorEmbed(interaction, reactable,reactableName) {
+	async createDefaultEmojiSelectorEmbed(interaction, reactable, reactableName) {
 		const select = new StringSelectMenuBuilder()
 			.setCustomId('selectedAutoreact')
 			.setPlaceholder('Select the default emoji for ' + reactableName)
@@ -444,7 +457,6 @@ class Embed {
 				.setTitle("Default Emoji")
 				.setDescription("Which emoji will become the Default Emoji for the **" + reactableName + "**?")
 		], components: [ row ] })
-
 
 		return emojiSelect.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 3_600_000 });
 	}
