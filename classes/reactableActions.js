@@ -417,6 +417,7 @@ class ReactableActions extends ReactableEmbeds {
             currentValueText:     currentRoleText,
             successTitle:         '✅ Role Updated',
             successDescription:   (v) => `The **${reactableName}** reactable will now award the <@&${v}> role.`,
+            successFooter:        'Make sure the bot has a role above the one you selected before using this reactable.', // TO-DO: Add a check for this
             disabledTitle:        '✅ Role Removed',
             disabledDescription:  `The **${reactableName}** reactable will no longer award a role.`,
             emptyTitle:           '❌ No roles available',
@@ -460,6 +461,7 @@ class ReactableActions extends ReactableEmbeds {
             currentValueText:     currentRoleText,
             successTitle:         '✅ Role Updated',
             successDescription:   (v) => `Reactors with the **${reactableName}** reactable will now receive the <@&${v}> role.`,
+            successFooter:        'Make sure the bot has a role above the one you selected before using this reactable.', // TO-DO: Add a check for this
             disabledTitle:        '✅ Role Removed',
             disabledDescription:  `Reactors will no longer receive a role from the **${reactableName}** reactable.`,
             emptyTitle:           '❌ No roles available',

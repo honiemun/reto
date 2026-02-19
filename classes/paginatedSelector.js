@@ -160,7 +160,7 @@ class PaginatedSelector {
         });
 
         this.collector.on('end', (_, reason) => {
-            if (reason === 'selected' || reason === 'navigated' || reason === 'messageDelete') return;
+            if (reason === 'selected' || reason === 'navigated' || reason === 'messageDelete' || reason === 'disabled' || reason === 'reset') return;
             msgInt.editReply({ components: [] }).catch(() => {});
         });
     }

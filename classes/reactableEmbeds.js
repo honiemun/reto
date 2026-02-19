@@ -273,17 +273,7 @@ class ReactableEmbeds {
 
                 disableCollector.stop('selected');
             },
-            {
-                onTimeout: () => interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor("Grey")
-                            .setTitle("⏱️ Selection timed out")
-                            .setDescription("No option was selected.")
-                    ],
-                    components: []
-                }).catch(() => {})
-            }
+            { extraRows: [disableRow] }
         );
 
         // Disable button — runs in parallel with the paginator
@@ -308,6 +298,20 @@ class ReactableEmbeds {
                 ],
                 components: []
             });
+        });
+
+        disableCollector.on('end', (collected, reason) => {
+            // Only show timeout if neither the selector nor disable button was used
+            if (reason === 'selected' || reason === 'disabled' || reason === 'messageDelete') return;
+            interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Grey")
+                        .setTitle("⏱️ Selection timed out")
+                        .setDescription("No option was selected.")
+                ],
+                components: []
+            }).catch(() => {});
         });
     }
 
