@@ -69,9 +69,9 @@ class ReactableEmbeds {
             let newValue = submitted.fields.getTextInputValue(config.inputId);
 
             // Validation
-            if (config.validate === 'number') {
+            if (config.validate === 'positiveInt' || config.validate === 'number') {
                 const parsed = parseInt(newValue);
-                if (isNaN(parsed) || parsed < 0) {
+                if (isNaN(parsed) || (config.validate === 'positiveInt' && parsed < 0)) {
                     return await submitted.reply({
                         embeds: [
                             new EmbedBuilder()

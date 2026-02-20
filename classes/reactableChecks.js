@@ -138,7 +138,7 @@ class ReactableChecks extends ReactableEmbeds {
             inputLabel:         'Reaction Threshold',
             inputPlaceholder:   'Enter a number (0 = disabled)',
             currentValue:       reactable.reactionThreshold || 0,
-            validate:           'number',
+            validate:           'positiveInt',
             dbField:            'reactionThreshold',
             successTitle:       '✅ Reaction Threshold Updated',
             successDescription: (v) => `The reaction threshold for **${reactableName}** is now set to **${v}**.`

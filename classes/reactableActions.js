@@ -245,7 +245,7 @@ class ReactableActions extends ReactableEmbeds {
             inputLabel:         'Timeout Author Duration',
             inputPlaceholder:   'Enter timeout in seconds (0 to disable)',
             currentValue:       reactable.timeout || 0,
-            validate:           'number',
+            validate:           'positiveInt',
             dbField:            'timeout',
             successTitle:       '✅ Timeout Author Updated',
             successDescription: (v) => {
@@ -512,11 +512,11 @@ class ReactableActions extends ReactableEmbeds {
             enableLabel:        'Enable',
             disableLabel:       'Disable',
             dbField:            'bansUser',
-            embedTitle:         'Edit Bans User',
+            embedTitle:         'Edit Bans Author',
             embedDescription:   'Should the original message author be banned when this reactable is used?',
             embedColor:         'Green',
             currentValue:       reactable.bansUser || false,
-            successTitle:       '✅ Bans User Updated',
+            successTitle:       '✅ Bans Author Updated',
             successDescription: (v) => `The **${reactableName}** reactable will ${v ? '**now**' : '**no longer**'} ban the original message author.`,
             successFooter:      'Make sure the bot has the Ban Members permission on this server before using this reactable.'
         });
