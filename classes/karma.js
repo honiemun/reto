@@ -31,10 +31,13 @@ class Karma {
 		// Don't execute the following if the karma equals zero
 		if (karmaToAward == 0) return;
 
+		// Normalize the karma to award to either 1 or -1 for global karma
+		const globalKarmaToAward = karmaToAward > 0 ? 1 : -1;
+
 		// Update the user's global karma
 		await userSchema.findOneAndUpdate(
 			{ userId: user.id },
-			{ $inc : { 'globalKarma' : karmaToAward } },
+			{ $inc: { 'globalKarma': globalKarmaToAward } },
 			{ upsert: true }
 		).exec();
 	

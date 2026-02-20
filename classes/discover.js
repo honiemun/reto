@@ -95,14 +95,14 @@ class Discover {
 
         row.addComponents(
             new ButtonBuilder()
-                .setEmoji(emoji.plus)
+                .setEmoji(emoji.plus.emoji)
                 .setStyle("Primary")
                 .setCustomId("plus")
         );
 
         row.addComponents(
             new ButtonBuilder()
-                .setEmoji(emoji.minus)
+                .setEmoji(emoji.minus.emoji)
                 .setStyle("Primary")
                 .setCustomId("minus")
         );
@@ -266,37 +266,51 @@ class Discover {
     }
     
 
-    async getDefaultReactableEmoji (interaction) {
+    async getDefaultReactableEmoji(interaction) {
+        // Estimate the default reactable emoji by finding reactables with the following criteria
         const reactables = await reactableSchema.find({
-            guildId: interaction.guild.id
+            guildId: interaction.guild.id,
+            globalKarma: true,
+            karmaAwarded: { $in: [1, -1] },
+            lockedBehindRoles: { $size: 0 },
+            reactionThreshold: { $in: [0, 1] }
         }).exec();
 
-        // TO-DO: When Custom Reactables are integrated, we might need to add more
-        // conditions to make sure we don't depend on Reactable Name
+        // Find the best Plus candidate: prefers name "plus", must not send to a channel
+        const plusReactable =
+            reactables.find(r => r.name === "plus" && !r.sendsToChannel) ||
+            reactables.find(r => r.karmaAwarded === 1 && !r.sendsToChannel);
+
+        // Find the best Minus candidate: prefers name "minus", must not send to a channel
+        const minusReactable =
+            reactables.find(r => r.name === "minus" && !r.sendsToChannel) ||
+            reactables.find(r => r.karmaAwarded === -1 && !r.sendsToChannel);
         
+        // TO-DO: Find the Pin reactable.
+        // Not necessary for Discover, but may be re-used in future features.
+
         return {
-            plus: reactables.find((reactable) => reactable.name === "plus").emoji || 
-                  reactablePacks.reto.emoji.plus,
-            minus: reactables.find((reactable) => reactable.name === "minus").emoji || 
-                   reactablePacks.reto.emoji.minus,
-            pin: reactables.find((reactable) => reactable.name === "pin").emoji ||
-                 reactablePacks.reto.emoji.pin
-        }
+            plus: {
+                emoji: plusReactable?.emojiIds[0] || reactablePacks.reto.emoji.plus,
+                reactable: plusReactable || null
+            },
+            minus: {
+                emoji: minusReactable?.emojiIds[0] || reactablePacks.reto.emoji.minus,
+                reactable: minusReactable || null
+            }
+        };
     }
 
-    async reactToMessage (amount, message, interaction, member, messages, emoji, toDelete, isGlobal, page) {
+    async reactToMessage(amount, message, interaction, member, messages, emoji, toDelete, isGlobal, page) {
         let isPositive = true;
-        
-        const reactable = await reactableSchema.findOne({
-            guildId: message.guild.id,
-            karmaAwarded: amount,
-            globalKarma: true
-        });
+
+        // Reuse the reactable found at load time instead of querying again
+        const reactable = amount === 1 ? emoji.plus.reactable : emoji.minus.reactable;
 
         const previouslyReacted = await ReactionCheck.checkIfPreviouslyReacted(
             message,
             interaction.user,
-            reactable ? reactable : undefined,
+            reactable || undefined,
             reactable ? false : true
         );
 
@@ -317,29 +331,28 @@ class Discover {
             : amount * -1;
     
         const savedReaction = await Reaction.saveOrDeleteReaction(message, interaction.user, reactable, isPositive);
-        console.log(savedReaction);
         if (!savedReaction) return;
 
+        // If no reactable was found, still award global karma, just skip local tracking
         await Karma.awardKarmaToUser(
             karmaToAward,
             message.author,
             message,
-            isGlobal // or if there's no reactable?
+            reactable ? isGlobal : true  // Force skipLocalUpdates if there's no reactable
         );
 
         // Continue to next message
-        // TO-DO: Consider just updating the current message (Tiktok-style) instead of skipping it (Tinder-style)
-        const updatedMessage = messages.findIndex(messageData => messageData.messageId === message.id);
-        messages[updatedMessage].karma = messages[updatedMessage].karma + karmaToAward;
+        const updatedIndex = messages.findIndex(m => m.messageId === message.id);
+        messages[updatedIndex].karma = messages[updatedIndex].karma + karmaToAward;
 
-        let skipReact = interaction.options.getBoolean("skipReact") || false;
+        const skipReact = interaction.options.getBoolean("skipReact") || false;
         await this.findMessage(interaction, member, messages, emoji, toDelete, isGlobal, skipReact ? page + 1 : page);
     }
 
     async storeMissingMessages (error, messageData, interaction, member, messages, emoji, toDelete, isGlobal, page) {
         const errorMessage = error == "channel" ? "channel" : error.message;
         
-        if (errorMessage == "channel" || errorMessage == "Unknown Message") {
+        if (errorMessage == "channel" || errorMessage == "Unknown Message" || errorMessage == "Missing Access") {
             // Delete these messages once we find a valid one
             const newToDelete = [...toDelete, messageData.messageId];
             // Until then, remove it from the valid messages

@@ -97,7 +97,8 @@ const reactableSchema = new mongoose.Schema({
 		required: false
 	},
 
-	// The amount of karma this reactable awards. Can be positive or negative.
+	// The amount of server karma this reactable awards. Can be positive or negative.
+	// Global karma is normalized to +1 or -1, depending on whether the karma is positive or negative.
 	karmaAwarded: {
 		type: Number,
 		required: false,

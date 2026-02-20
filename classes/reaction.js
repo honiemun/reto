@@ -173,7 +173,7 @@ class Reaction {
         return new reactionSchema({
             messageId: message.id,
             userId: reactingUser.id,
-            reactableId: reactable._id
+            reactableId: reactable?._id || null
         }).save();
     }
 
@@ -181,7 +181,7 @@ class Reaction {
         return reactionSchema.deleteMany({
             messageId: message.id,
             userId: reactingUser.id,
-            reactableId: reactable._id
+            reactableId: reactable?._id || null
         }).exec();
     }
 

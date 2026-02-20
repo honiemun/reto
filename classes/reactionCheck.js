@@ -19,8 +19,11 @@ class ReactionCheck {
             userId: reactingUser.id,
         }
 
-        if (reactable) query.reactableId = reactable._id;
-        if (globalReactable) query.globalReacion = true;
+        if (reactable) {
+            query.reactableId = reactable._id;
+        } else if (globalReactable) {
+            query.reactableId = null;
+        }
 
         const reactions = await reactionSchema.find(query).exec();
 
