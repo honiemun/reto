@@ -14,7 +14,7 @@ class Karma {
         Karma._instance = this;
     }
 
-	async awardKarmaToUser (karmaToAward, user, message, globalReaction = false) {
+	async awardKarmaToUser (karmaToAward, user, message, globalReaction = false, globalKarma = true) {
 		// Update the message's karma
 		// TO-DO: Check for user's canStoreMessages permission first
 		if (!globalReaction) {
@@ -35,11 +35,13 @@ class Karma {
 		const globalKarmaToAward = karmaToAward > 0 ? 1 : -1;
 
 		// Update the user's global karma
-		await userSchema.findOneAndUpdate(
-			{ userId: user.id },
-			{ $inc: { 'globalKarma': globalKarmaToAward } },
-			{ upsert: true }
-		).exec();
+		if (globalKarma) {
+			await userSchema.findOneAndUpdate(
+				{ userId: user.id },
+				{ $inc: { 'globalKarma': globalKarmaToAward } },
+				{ upsert: true }
+			).exec();
+		}
 	
 		// Update the member's karma on the specified guild
 		if (!globalReaction) {

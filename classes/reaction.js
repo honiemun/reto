@@ -83,7 +83,9 @@ class Reaction {
             await Karma.awardKarmaToUser(
                 karmaToAward,
                 message.author,
-                message
+                message,
+                false,
+                user.id != message.author.id
             )
 
             // Send message to channel

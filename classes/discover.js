@@ -67,7 +67,8 @@ class Discover {
         const messageKarma = await Pin.getKarmaTotalString(message, messageData);
         const messageRanking = await this.getRankingString(sortInput, page);
 
-        const buttons = await this.generateDiscoveryButtons(message, messages, isGlobal, page, emoji);
+        const isSelfMessage = message.author.id === interaction.user.id;
+        const buttons = await this.generateDiscoveryButtons(message, messages, isGlobal, page, emoji, isSelfMessage);
 
         const reply = await interaction.editReply({ content: sortInput == "karma" ? messageRanking + "  |  " + messageKarma : messageKarma, embeds: messageEmbed, components: [buttons] });
 
@@ -82,7 +83,7 @@ class Discover {
         await this.generateDiscoveryCollector(reply, interaction, member, message, messages, emoji, toDelete, isGlobal, page);
     }
 
-    async generateDiscoveryButtons (message, messages, isGlobal, page, emoji) {
+    async generateDiscoveryButtons (message, messages, isGlobal, page, emoji, isSelfMessage = false) {
         const row = new ActionRowBuilder();
 
         row.addComponents(
@@ -98,6 +99,7 @@ class Discover {
                 .setEmoji(emoji.plus.emoji)
                 .setStyle("Primary")
                 .setCustomId("plus")
+                .setDisabled(isSelfMessage)
         );
 
         row.addComponents(
@@ -105,6 +107,7 @@ class Discover {
                 .setEmoji(emoji.minus.emoji)
                 .setStyle("Primary")
                 .setCustomId("minus")
+                .setDisabled(isSelfMessage)
         );
 
 
@@ -338,7 +341,8 @@ class Discover {
             karmaToAward,
             message.author,
             message,
-            reactable ? isGlobal : true  // Force skipLocalUpdates if there's no reactable
+            reactable ? isGlobal : true,  // Force skipLocalUpdates if there's no reactable
+            message.author.id != interaction.user.id // Don't allow self-reactions
         );
 
         // Continue to next message
