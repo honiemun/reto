@@ -13,6 +13,9 @@ const Embed = require("../classes/embed");
 const Pin = require("../classes/pin");
 const Scroll = require("../classes/scroll");
 
+// Helper: throttle sends to avoid Discord rate limits
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 class News {
     
     constructor() {
@@ -191,25 +194,59 @@ class News {
 
     async broadcastNews (interaction, message, embeds, urlRow, client) {
         let broadcastedNews = [];
+        let failedCount = 0;
+
         const guilds = await this.findBroadcastChannels(client, interaction.options.getBoolean("override"));
+
+        // Get the news document first so we can check which guilds already received this broadcast
+        // This makes the broadcast safe to re-run if it crashes partway through
+        const existingNews = await newsSchema.findOne({ messageId: message.id });
+        const alreadySent = existingNews
+            ? await broadcastedNewsSchema.find({ newsId: existingNews._id }).distinct("guildId")
+            : [];
       
         for (const guildId of Object.keys(guilds)) { // for...of loop for async iteration
-          let channelId = guilds[guildId];
-          let broadcastedMessage = await this.sendNewsToGuild(guildId, channelId, embeds, urlRow, client);
+            // Skip guilds that already received this broadcast, to prevent duplicates on retry
+            if (alreadySent.includes(guildId)) {
+                console.log("⏭️  Skipping guild (already received): ".gray + guildId);
+                continue;
+            }
+
+            let channelId = guilds[guildId];
+            let broadcastedMessage;
+
+            // Wrap each send in its own try/catch so a single failure can't abort the entire loop
+            try {
+                broadcastedMessage = await this.sendNewsToGuild(guildId, channelId, embeds, urlRow, client);
+            } catch (e) {
+                console.log("❌ Unexpected error sending to guild ".red + guildId + ": " + e.message);
+                failedCount++;
+            }
       
-          if (broadcastedMessage) {
-            broadcastedNews.push({
-              messageId: broadcastedMessage.id,
-              channelId: channelId,
-              guildId: guildId
-            });
-          }
+            if (broadcastedMessage) {
+                broadcastedNews.push({
+                    messageId: broadcastedMessage.id,
+                    channelId: channelId,
+                    guildId: guildId
+                });
+
+                // Save each successful broadcast immediately,
+                // so progress is preserved if the process crashes mid-broadcast
+                await this.updateNewsDocument(interaction, message, [{
+                    messageId: broadcastedMessage.id,
+                    channelId,
+                    guildId
+                }]);
+            } else {
+                failedCount++;
+            }
+
+            // Throttle sends to avoid hitting Discord's rate limits
+            await sleep(1000);
         }
 
-        const news = await this.updateNewsDocument(interaction, message, broadcastedNews);
-        
         return await interaction.editReply({
-            content: `Your news article, **${news.title}**, has been broadcast to ${broadcastedNews.length} servers!`,
+            content: `Your news article has been broadcast to **${broadcastedNews.length}** servers! *(${failedCount} failed — check logs)*`,
             embeds: [],
             components: []
         });
@@ -229,7 +266,8 @@ class News {
                 from: "reactables",
                 pipeline: [{
                     $match: {
-                        "sendsToChannel": { $exists: true }
+                        // Explicitly exclude null values, not just check existence
+                        "sendsToChannel": { $exists: true, $ne: null }
                     }
                 }, {
                     $sort: { "karmaAwarded": -1 }
@@ -257,7 +295,7 @@ class News {
 
         for (const guild of guilds) {
             
-            // Reactable-sent channel
+            // Reactable with Sends to Channel action
             if (guild.reactables.length > 0 && client.channels.cache.has(guild.reactables[0].sendsToChannel)) {
                 broadcastChannels[guild.guildId] = guild.reactables[0].sendsToChannel;
                 continue;
@@ -271,27 +309,33 @@ class News {
 
             const guildObject = client.guilds.cache.get(guild.guildId);
             if (!guildObject) continue;
-            
-            // TO-DO: CHECK IF THIS WORKS! LIKE, AT ALL!
 
             let firstValidChannel;
+            let foundNamedChannel = false;
 
-            guildObject.channels.cache.forEach(async (channel) => {
-                if (!channel.type === 0 &&
-                    channel.permissionsFor(guildObject.members.me).has(PermissionFlagsBits.SendMessages)) return;
+            for (const channel of guildObject.channels.cache.values()) {
+                if (channel.type !== 0 ||
+                    !channel.permissionsFor(guildObject.members.me)?.has(PermissionsBitField.Flags.SendMessages)) continue;
                 
                 if (!firstValidChannel) firstValidChannel = channel;
                 
                 // Admin/Mod/Bots channel
                 if (channel.name.toLowerCase().includes("mod") || channel.name.toLowerCase().includes("admin") || channel.name.toLowerCase().includes("bot")) {
                     broadcastChannels[guild.guildId] = channel.id;
-                    return;
+                    foundNamedChannel = true;
+                    break;
                 }
-            })
+            }
 
-            // First accessible channel
-            if (firstValidChannel) broadcastChannels[guild.guildId] = firstValidChannel.id;
-            console.log("Found any accessible channel for the guild " + guild.guildId + ": " + firstValidChannel.id);
+            // First accessible channel (only if we didn't already find a named one)
+            if (!foundNamedChannel) {
+                if (firstValidChannel) {
+                    broadcastChannels[guild.guildId] = firstValidChannel.id;
+                    console.log("Found accessible channel for guild ".gray + guild.guildId + ": ".gray + firstValidChannel.id);
+                } else {
+                    console.log("❌ No accessible channel found for guild ".red + guild.guildId);
+                }
+            }
         }
 
         console.log(broadcastChannels);
@@ -299,17 +343,29 @@ class News {
     }
 
     async sendNewsToGuild (guildId, channelId, embeds, urlRow, client) {
-        const guild = await client.guilds.cache.get(guildId);
-        if (!guild) return console.log("❌ Couldn't send news to guild! ".red + "(ID: ".gray + guildId + ")".gray);
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) {
+            console.log("❌ Couldn't send news to guild! ".red + "(ID: ".gray + guildId + ")".gray);
+            return;
+        }
 
-        const channel = await guild.channels.cache.get(channelId);
-        if (!channel) return console.log("❌ Couldn't send news to guild! ".red + "(".gray + guild.name + ")".gray);
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel) {
+            console.log("❌ Couldn't send news to guild! ".red + "(".gray + guild.name + " — channel not found)".gray);
+            return;
+        }
+
+        const canSend = channel.permissionsFor(guild.members.me)?.has(PermissionsBitField.Flags.SendMessages);
+        if (!canSend) {
+            console.log("❌ Missing send permissions in ".red + "#" + channel.name + " (".gray + guild.name + ")".gray);
+            return;
+        }
 
         try {
             console.log("🗞️  Sending news article to ".gray + "#".green + channel.name.green + " (".gray + guild.name.green + ")".gray);
             return await channel.send({ embeds: embeds, components: urlRow ? [urlRow] : [] });
         } catch (e) {
-            console.log("❌ Couldn't send news to guild! ".red + "(ID: ".gray + guild.gray + ")".gray + "\n" + e)
+            console.log("❌ Couldn't send news to guild! ".red + "(".gray + guild.name + ")".gray + "\n" + e);
         }
     }
 
@@ -399,16 +455,18 @@ class News {
         }
     }
 
-    async getUrlRow (url, urlText) {
+    async getUrlRow(url, urlText) {
         if (!url) return;
 
-        urlRow = new ActionRowBuilder()
+        const urlRow = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setLabel(urlText || "Learn more")
                     .setStyle(ButtonStyle.Link)
                     .setURL(url)
-            )
+            );
+        
+        return urlRow;
     }
 
     async findOfficialNewsArticle (message) {
