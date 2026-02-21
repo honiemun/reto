@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
 		default: true
 	},
 
-	// Whether this user was part of Reto Legacy (2018-2023).
+	// Whether this user was part of Reto Legacy (2019-2023).
 	earlySupporter: {
 		type: Boolean,
 		required: false,

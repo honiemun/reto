@@ -20,7 +20,12 @@ class Personalisation {
             guildId: guild.id
         })
         .exec();
-        if (!guildDocument) return;
+
+        // Fallback for server not set up correctly
+        if (!guildDocument) return {
+            name: guild.name + ' Karma',
+            emoji: retoEmojis.karmaEmoji
+        };
 
         return {
             name: guildDocument.karmaName ? guildDocument.karmaName : guild.name + ' Karma',

@@ -90,8 +90,17 @@ class Privacy {
             .setTitle("User data export")
             .setDescription("Here is your Reto user data, as requested! You can download it as a .JSON file and read at your leisure.");
         
-        await interaction.user.send({ embeds: [embedDM], files: [jsonFile] });
-        await interaction.editReply({ embeds: [embedGuild] });
+        try {
+            await interaction.user.send({ embeds: [embedDM], files: [jsonFile] });
+            await interaction.editReply({ embeds: [embedGuild] });
+        } catch (e) {
+            const errorEmbed = new EmbedBuilder()
+                .setTitle("Couldn't send DM!")
+                .setDescription("We weren't able to send you a DM. Please make sure your DMs are open and try again.")
+                .setColor("Red");
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
     }
 
     // Data deleting
@@ -172,17 +181,16 @@ If you plan to continue using Reto, we'll continue to store data on you, your me
     }
 
     async deletePinnedEmbed(iterableChannel, client) {
-        client.channels.fetch(iterableChannel.id).then(async (channel) => {
-            try {
-                channel.messages.delete(iterableChannel.embed);
-            } catch (e) {
-                console.log("❌ Couldn't delete pinned message! ".red + "(ID: ".gray + iterableChannel.embed.gray + ")".gray)
-            }
+        try {
+            const channel = await client.channels.fetch(iterableChannel.id);
+            await channel.messages.delete(iterableChannel.embed);
+        } catch (e) {
+            console.log("❌ Couldn't delete pinned message! ".red + "(ID: ".gray + iterableChannel.embed + " | " + e.message + ")".gray);
+        }
 
-            await pinnedEmbedSchema.deleteOne({
-                pinnedEmbedId: iterableChannel.embed
-            }).exec();
-        });
+        await pinnedEmbedSchema.deleteOne({
+            pinnedEmbedId: iterableChannel.embed
+        }).exec();
     }
 }
 
