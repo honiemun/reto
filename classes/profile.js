@@ -66,6 +66,17 @@ class Profile {
         const userDatabase = userQuery[0];
         let memberDatabase;
 
+        // If the user hasn't used Reto before, kick 'em out!
+        if (!userDatabase) {
+            embed.fields.push({
+                "name": "***Looks like you're new to Reto!***",
+                "value": "You don't have any Karma just yet - use `/guide` to get started, react to others' messages, and enjoy your stay on the server!",
+                "inline": false
+            })
+
+            return embed;
+        }
+
         let localRanking;
         let globalRanking;
 
@@ -90,17 +101,6 @@ class Profile {
                     "inline": false
                 }
             ]
-        }
-
-        // If the user hasn't used Reto before, kick 'em out!
-        if (!userDatabase) {
-            embed.fields.push({
-                "name": "***Looks like you're new to Reto!***",
-                "value": "You don't have any Karma just yet - use `/guide` to get started, react to others' messages, and enjoy your stay on the server!",
-                "inline": false
-            })
-
-            return embed;
         }
 
         if (isOnGuild) {
