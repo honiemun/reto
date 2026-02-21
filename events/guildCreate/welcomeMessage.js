@@ -14,6 +14,7 @@ module.exports = async (guild) => {
 
         if ( channel.type === 0 &&
             channel.permissionsFor(guild.members.me).has(PermissionFlagsBits.SendMessages) &&
+            channel.permissionsFor(guild.members.me).has(PermissionFlagsBits.ViewChannel) &&
             !messageSent ) {
             
             const file = new AttachmentBuilder('./assets/logos/pfp.png');
@@ -33,7 +34,14 @@ module.exports = async (guild) => {
             );
 
             messageSent = true;
-            return await channel.send({ embeds: [embed], files: [file] });
+            
+            try {
+                return await channel.send({ embeds: [embed], files: [file] });
+                console.log("✅ Welcome message sent in #".gray + channel.name.yellow + " for the ".gray + guild.name.yellow + " server!".gray);
+            } catch (e) {
+                console.log("❌ Couldn't send welcome message!".red + (" | " + e.message).gray);
+                messageSent = false; // Try the next channel
+            }
 
         }
     })
