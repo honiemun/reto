@@ -101,8 +101,12 @@ class Pin {
         }
 
         if (!iterableChannel.edit) {
-            const sentEmbed = await channel.send({ content: karmaString, embeds: embed, components: [row], files: videos });
-            this.storePinnedEmbed(sentEmbed, messageDocument);
+            try {
+                const sentEmbed = await channel.send({ content: karmaString, embeds: embed, components: [row], files: videos });
+                this.storePinnedEmbed(sentEmbed, messageDocument);
+            } catch (e) {
+                console.log("❌ Couldn't send pinned message! ".red + "(ID: ".gray + iterableChannel.id.gray + " | " + e.message + ")".gray);
+            }
         } else {
             try {
                 const pinnedMessage = await channel.messages.fetch(iterableChannel.embed);
