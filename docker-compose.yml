@@ -11,17 +11,18 @@ services:
     volumes:
       - mongo-data:/data/db
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
 
-  reto:
+  bot:
     build: .
     container_name: reto-bot
     restart: unless-stopped
-    depends_on:
-      - mongo
     env_file:
       - .env
-    command: node index.js
+    depends_on:
+      - mongo
+    ports:
+      - "127.0.0.1:6370:6370"
 
 volumes:
   mongo-data:

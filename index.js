@@ -69,4 +69,8 @@ client.on("ready", async () => {
 	}
 });
 
+// Start the API server
+const { startServer } = require('./api/server');
+startServer(client);
+
 client.login(process.env.TOKEN);
