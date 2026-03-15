@@ -22,7 +22,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - "127.0.0.1:6370:6370"
+      - "6370:6370"
 
 volumes:
   mongo-data:
